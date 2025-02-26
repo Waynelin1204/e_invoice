@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>發票管理</title>
+    <!-- 引入 Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        .navbar {
+            background-color: #6f5499;
+        }
+        .nav-link {
+            color: white !important;
+        }
+        .dropdown-menu {
+            background-color: #f8f9fa;
+        }
+                body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }  
+        .nav-link.dropdown-toggle::after {
+			content: none !important;
+        }
+        .dashboard-container {
+            padding: 20px;
+        }
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+
+<body>
+<!-- 頂部導航欄 -->
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">儀表板</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="customerMenu" role="button" data-bs-toggle="dropdown">客戶</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'test' %}">發票</a></li>
+                        <li><a class="dropdown-item" href="#">發票記錄</a></li>
+                        <li><a class="dropdown-item" href="#">付款</a></li>
+                        <li><a class="dropdown-item" href="#">產品</a></li>
+                        <li><a class="dropdown-item" href="#">客戶</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="customerMenu" role="button" data-bs-toggle="dropdown">供應商</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">帳單</a></li>
+                        <li><a class="dropdown-item" href="#">退款</a></li>
+                        <li><a class="dropdown-item" href="#">付款</a></li>
+                        <li><a class="dropdown-item" href="#">員工費用</a></li>
+                        <li><a class="dropdown-item" href="#">產品</a></li>
+                        <li><a class="dropdown-item" href="#">供應商</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="customerMenu" role="button" data-bs-toggle="dropdown">會計</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">日記帳記項</a></li>
+                        <li><a class="dropdown-item" href="#">日記帳項目</a></li>
+                        <li><a class="dropdown-item" href="#">分析項目</a></li>
+                        <li><a class="dropdown-item" href="#">安全記項</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">報告</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">配置</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+   
+    <div class="dashboard-container">
+        <h2>發票數據圖表</h2>
+        <div class="chart-container">
+            <div id="invoiceChart" style="width: 100%; height: 400px;"></div>
+        </div>
+    </div>
+   
+    <script>
+        fetch('/invoice_data/')
+            .then(response => response.json())
+            .then(data => {
+                const labels = data.map(item => item.date);
+                const values = data.map(item => item.amount);
+               
+                const chartDom = document.getElementById('invoiceChart');
+                const myChart = echarts.init(chartDom);
+                const option = {
+                    title: {
+                        text: '發票金額'
+                    },
+                    tooltip: {},
+                    xAxis: {
+                        type: 'category',
+                        data: labels
+                    },
+                    yAxis: {
+                        type: 'value'
+                    },
+                    series: [{
+                        name: '金額',
+                        type: 'bar',
+                        data: values,
+                        itemStyle: { color: '#7a5ea7' }
+                    }]
+                };
+                myChart.setOption(option);
+            });
+    </script>
+</body>
+</html>

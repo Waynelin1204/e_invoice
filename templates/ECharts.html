@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+</head>
+<body>
+    <h2>發票數據圖表</h2>
+    <div id="invoiceChart" style="width: 600px; height: 400px;"></div>
+    <script>
+        fetch('/invoice_data/')
+            .then(response => response.json())
+            .then(data => {
+                const labels = data.map(item => item.date);
+                const values = data.map(item => item.amount);
+               
+                const chartDom = document.getElementById('invoiceChart');
+                const myChart = echarts.init(chartDom);
+                const option = {
+                    title: {
+                        text: '發票金額'
+                    },
+                    tooltip: {},
+                    xAxis: {
+                        type: 'category',
+                        data: labels
+                    },
+                    yAxis: {
+                        type: 'value'
+                    },
+                    series: [{
+                        name: '金額',
+                        type: 'bar',
+                        data: values,
+                        itemStyle: { color: 'blue' }
+                    }]
+                };
+                myChart.setOption(option);
+            });
+    </script>
+</body>
+</html>

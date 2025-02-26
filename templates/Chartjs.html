@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h2>發票數據圖表</h2>
+    <canvas id="invoiceChart"></canvas>
+    <script>
+        fetch('/invoice_data/')
+            .then(response => response.json())
+            .then(data => {
+                const labels = data.map(item => item.date);
+                const values = data.map(item => item.amount);
+
+                const ctx = document.getElementById('invoiceChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '發票金額',
+                            data: values,
+                            backgroundColor: 'blue'
+                        }]
+                    }
+                });
+            });
+    </script>
+</body>
+</html>

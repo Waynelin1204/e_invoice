@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice List</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* Ensure the body and html elements take up the full height of the window */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Flexbox layout to use the full screen */
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            margin-left: 60px; /* 60px space on the left */
+            margin-right: 60px; /* 60px space on the right */
+        }
+
+        /* Title section */
+        .title-section {
+            text-align: left;
+            margin-bottom: 10px;
+        }
+
+        .title-section h2 {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        /* Bold line under the title */
+        .bold-line {
+            border: 0;
+            border-top: 4px solid #000;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Full flex container for the main content (left and right side) */
+        .main-content {
+            display: flex;
+            flex: 1; /* Ensures the container takes the full remaining space */
+            margin-top: 20px; /* Margin from the top */
+        }
+
+        /* Left side: Fixed width */
+        .left-side {
+            width: 220px; /* Fixed width for the left side */
+            flex-shrink: 0; /* Prevent shrinking */
+            padding-right: 10px; /* Space between left side and right side */
+            background-color: #f8f9fa; /* Light background for the left side */
+        }
+
+        /* Vertical line between left and right */
+        .vertical-line {
+            width: 1px;
+            background-color: #ccc;
+            margin: 0 10px;
+        }
+
+        /* Right side: Takes the remaining space */
+        .right-side {
+            flex: 1;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        /* Status counts and other styling */
+        .status-counts {
+            margin-bottom: 10px;
+        }
+
+        .status-item {
+            margin-bottom: 10px;
+        }
+
+        /* Buttons layout */
+        .btn-spacing {
+            margin-right: 15px;
+        }
+
+        /* Table styling */
+        table {
+            width: 100%;
+            table-layout: auto; /* Allow columns to auto-adjust to content width */
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            white-space: nowrap; /* Prevent word wrapping in cells */
+            overflow: hidden; /* Hide overflow content */
+            text-overflow: ellipsis; /* Add ellipsis for overflow text */
+        }
+
+        /* Ensure that the layout occupies the full height */
+        .container-flex {
+            display: flex;
+            justify-content: flex-start;
+            height: 100%;
+        }
+
+        /* Adjust the form layout */
+        .input-group {
+            margin-bottom: 15px; /* Add space between search input and buttons */
+        }
+
+    </style>
+</head>
+<body>
+	<div class="container mt-4">
+	        <div class="title-section">
+            <h2>發票列表</h2>
+        </div>
+
+        <!-- Bold line under the title -->
+        <hr class="bold-line">	
+		
+		
+        <!-- Main content area with two columns (left and right) -->
+        <div class="main-content"></div>
+		            <!-- Thin vertical line separating left and right columns -->
+        <div class="vertical-line"></div>
+        
+        <div class="right-side">
+                <!-- Search form above the buttons -->
+            <form method="GET" class="mb-3">
+                <div class="input-group">
+                    <input type="text" name="search" placeholder="Search Document Number" class ="form-control" value= "{{ search_query }}"/>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+            <form method="GET" action = "{% url 'reconcil' %}">
+                <select name="tax_code" id="tax_code">
+                    <option value="">--Select Tax Code</option>
+                    <option value="V0">V0</option>
+                    <option value="A0">A0</option>
+                    <option value="U0">U0</option>
+                    <option value="A1">A1</option>
+                </select>
+                <select name="document_type" id="document_type">
+                    <option value="">--Select Document Type</option>
+                    <option value="DR">DR</option>
+                    <option value="KR">KR</option>
+                    <option value="KX">KX</option>
+                    <option value="RV">RV</option>
+                    <option value="RZ">RZ</option>
+                </select>
+                
+                <select name="display_limit" id="display_limit">
+                    <option value="25" {% if display_limit == 25 %}selected{% endif %}>25</option>
+                    <option value="50" {% if display_limit == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if display_limit == 100 %}selected{% endif %}>100</option>
+                </select>
+                
+                <button type="submit">Filter</button>
+            </Form>
+			<table class="table table-striped table-hover">
+				<thead>
+					<tr>
+		                <th>Document Number</th>
+		                <th>Tax Code</th>
+		                <th>Dcoument Type</th>
+		                <th>Posting Date</th>
+		                <th>Amount in Doc Curr</th>
+		                <th>Document Currency</th>
+		                <th>Amount in LC</th>
+		                <th>Local Currency</th>
+		                <th>Including Tax Amount</th>
+		                <th>Internal ID</th>
+		                <th>Total Payable Amount</th>
+		                <th>Total Excluding Tax</th>
+		                <th>Total Ner Amount</th>
+		            </tr>
+		        </thead>
+		        <tbody>
+		            {% for item in merged_data %}
+		            <tr>
+		                <td>{{ item.document_number }}</td>
+		                <td>{{ item.tax_code }}</td>
+		                <td>{{ item.document_type }}</td>
+		                <td>{{ item.posting_date }}</td>
+		                <td>{{ item.amount_in_doc_curr }}</td>
+		                <td>{{ item.document_currency }}</td>
+		                <td>{{ item.amount_in_lc }}</td>
+		                <td>{{ item.local_currency }}</td>
+		                <td>{{ item.including_tax_amount }}</td>
+		                <td>{{ item.internalId }}</td>
+		                <td>{{ item.totalPayableAmount }}</td>
+		                <td>{{ item.totalExcludingTax }}</td>
+		                <td>{{ item.totalNetAmount }}</td>
+		            </tr>
+		            {% endfor %}
+		        </tbody>
+		    </table>
+</body>
+</html>
