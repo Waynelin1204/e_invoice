@@ -40,7 +40,7 @@ def calculate_including_tax(row):
 grouped_df["Including Tax Amount"] = grouped_df.apply(calculate_including_tax, axis=1)
 
 # 連接 SQLite
-conn = sqlite3.connect("/home/pi/mydjango/e_invoice/db.sqlite3")
+conn = sqlite3.connect("/home/pi/mydjango/e_invoice/e_invoice/db.sqlite3")
 cursor = conn.cursor()
 
 # 創建表格（如果尚未存在）

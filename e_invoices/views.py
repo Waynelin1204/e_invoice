@@ -14,13 +14,54 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
+from django.http import JsonResponse
 from e_invoices.models import Sapfagll03
 from e_invoices.models import Myinvoiceportal 
 from django.db import connection
 from e_invoices.models import Twa0101
+from e_invoices.models import Ocritem
+from e_invoices.models import Ocr
 import pandas as pd
 from django.http import HttpResponse
 from django.shortcuts import get_list_or_404
+from django.shortcuts import render
+from django.http import JsonResponse
+import subprocess
+from django.views.decorators.csrf import csrf_exempt
+
+UPLOAD_DIR = "/home/pi/OCR/Samples"
+@csrf_exempt
+def upload_file(request):
+    
+    if request.method == "POST":
+        if "file" not in request.FILES:
+            return JsonResponse({"success":False, "error": "Didn't Receive"}, status=400)
+
+        file = request.FIELS["file"]
+        file=path = os.path.join(UPLOAD_DIR, file.name)
+
+        try:
+            with open(file_path, "wb") as f:
+                 for chunk in file.chunks():
+                     f.write(chunk)
+		
+            return JsonResponse({"success":True, "file_path": file_path})
+        except Exception as e:
+            return JsonResponse({"success":False, "error": str(e)}, status=500)
+    return JsonResponse({"success":False, "error": "Invalid"}, status=400)
+@csrf_exempt    
+def run_script(request):
+    """Execute the OCR script and return output as JSON."""
+    if request.method == "POST":
+        try:
+            script_output = subprocess.check_output(["python3", "/home/pi/OCR/AWS_PARSE_multi.py"], text=True)
+            return JsonResponse({"success": True, "output": script_output})
+        except subprocess.CalledProcessError as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+    return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
+
+
 
 def front4(request):
 	return render(request,'front4.html')
@@ -348,4 +389,11 @@ def reconcil(request):
 		# })
 		
 	# return render(request, "reconcil.html", {"merged_data":merged_data})
+def invoice_list(request):
+    invoices = Ocr.objects.all()  # Fetch all invoices
+    return render(request, 'invoices/invoice_list.html', {'invoices': invoices})
+
+def invoice_detail(request, invoice_id):
+    invoice = Ocr.objects.get(id=invoice_id)  # Fetch a specific invoice
+    return render(request, 'invoices/invoice_detail.html', {'invoice': invoice})
 		

@@ -126,18 +126,30 @@
             <thead>
                 <tr>
                     <th><input type="checkbox" id="selectAll"> Select All</th>
-                    <th>data_type</th>
-                    <th>job_type</th>
-                    <th>corporate_id</th>
+                    <th>號碼</th>
+                    <th>買方</th>
+                    <th>發票日期</th>
+                    <th>總計</th>
+                    <th>付款狀態</th>
+                    <th>狀態</th>
+                    <th>統一發票號碼</th>
+                    <th>發票作廢狀態</th>
+                    <th>發票開立狀態</th>
                 </tr>
             </thead>
             <tbody>
                 {% for document in documents %}
                 <tr>
                     <td><input type="checkbox" name="selected_documents" value="{{ document.id }}" data-invoice-number="{{ document.invoice_number }}"></td>
-                    <td>{{ document.data_type }}</td>
-                    <td>{{ document.job_type }}</td>
-                    <td>{{ document.corporate_id }}</td>
+                    <td>{{ document.invoice_number }}</td>
+                    <td>{{ document.buyer_name }}</td>
+                    <td>{{ document.invoice_date}}</td>
+                    <td>{{ document.total_amount}}</td>
+                    <td>{{ document.invoice_date}}</td>
+                    <td>{{ document.invoice_date}}</td>
+                    <td>{{ document.invoice_date}}</td>
+                    <td>{{ document.invoice_date}}</td>
+                    <td>{{ document.invoice_date}}</td>
                 </tr>
                 {% empty %}
                 <tr>

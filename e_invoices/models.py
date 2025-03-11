@@ -89,7 +89,7 @@ class Invoice(models.Model):
 
     # Item details
     item_id = models.CharField(max_length=50)
-    item_quantity = models.IntegerField(max_length=50)
+    item_quantity = models.IntegerField()
     item_name = models.CharField(max_length=100)
     item_unit_price = models.DecimalField(max_digits=12, decimal_places=2)
 
@@ -300,7 +300,24 @@ class Twa0101(models.Model):
     original_currency_amount = models.DecimalField(max_digits=20, decimal_places=7, blank=True, null=True)  # 原幣金額
     exchange_rate = models.DecimalField(max_digits=13, decimal_places=5, blank=True, null=True)  # 匯率
     currency = models.CharField(max_length=10, blank=True, null=True)  # 幣別
-
+    payment_status = models.CharField(max_length=10, blank=True, null=True)
+    status = models.CharField(max_length=10, blank=True, null=True)
+    uniform_invoice_number = models.CharField(max_length=10, blank=True, null=True)
+    
 	
+class Ocr(models.Model):
+    invoice_number = models.CharField(max_length=20, unique=True)  # 發票號碼
+    random_code = models.CharField(max_length=4, blank=True, null=True)  # 隨機碼
+    invoice_date = models.DateField()  # 發票日期
+    buyer_tax_id = models.CharField(max_length=8, blank=True, null=True)  # 買方統一編號
+    seller_tax_id = models.CharField(max_length=8)  # 賣方統一編號
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)  # 總金額
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  # 稅額
+
+class Ocritem(models.Model):
+    ocr = models.ForeignKey(Ocr, related_name='items', on_delete=models.CASCADE)  # 關聯發票
+    product_name = models.CharField(max_length=255)  # 品名
+    quantity = models.CharField(max_length=50)  # 數量 (String to handle non-numeric values like '3C商品')
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)  # 單價	
 	
 # Create your models here.

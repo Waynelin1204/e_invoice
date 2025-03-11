@@ -25,9 +25,7 @@ from e_invoices.views import reconcil
 from e_invoices.views import front4
 from e_invoices.views import twa0101
 from e_invoices.views import export_invoices
-
- 
-
+from e_invoices.views  import invoice_list, invoice_detail, upload_file, run_script
 
 
 urlpatterns = [
@@ -40,6 +38,11 @@ urlpatterns = [
     path('edocument/',document_list, name='document_list'),
     path('reconcil/',reconcil, name = 'reconcil'),
     path('generate_pdf/<str:document_id>/', generate_pdf, name='generate_pdf'),
-    path("export-invoices/", export_invoices, name="export_invoices")
+    path("export-invoices/", export_invoices, name="export_invoices"),
+    path('invoices/', invoice_list, name='invoice_list'),  
+    path('invoices/<int:invoice_id>/', invoice_detail, name='invoice_detail'),
+    path('upload/', upload_file, name='upload_file'),  # Ensure this exists
+    path('', invoice_list, name='invoice_list'),
+    path("run-script/", run_script, name="run_script"),
 ]
 

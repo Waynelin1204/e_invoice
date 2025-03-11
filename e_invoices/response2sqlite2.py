@@ -135,7 +135,7 @@ for xml_file in xml_files:
 	
 	
 	# Connect to SQLite database (adjust path if needed)
-	conn = sqlite3.connect("/home/pi/mydjango/e_invoice/db.sqlite3")
+	conn = sqlite3.connect("/home/pi/mydjango/e_invoice/e_invoice/db.sqlite3")
 	cursor = conn.cursor()
 	
 	# (Optional) Create table with the expected schema if not exists.

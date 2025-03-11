@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>發票詳情</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        .navbar {
+            background-color: #6f5499;
+        }
+        .nav-link {
+            color: white !important;
+        }
+        .table th, .table td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .btn-spacing {
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 頂部導航欄 -->
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="{% url 'front4' %}">儀表板</a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">客戶</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">發票</a></li>
+                        <li><a class="dropdown-item" href="#">發票記錄</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item"><a class="nav-link" href="#">供應商</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">會計</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- 發票詳情 -->
+<div class="container mt-4">
+    <h3>發票詳情</h3>
+
+    <p><strong>發票號碼:</strong> {{ invoice.invoice_number }}</p>
+    <p><strong>賣方稅號:</strong> {{ invoice.seller_tax_id }}</p>
+    <p><strong>買方稅號:</strong> {{ invoice.buyer_tax_id }}</p>
+    <p><strong>發票日期:</strong> {{ invoice.invoice_date }}</p>
+    <p><strong>總金額:</strong> {{ invoice.total_amount }}</p>
+
+    <h4>發票項目</h4>
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>商品名稱</th>
+                <th>數量</th>
+                <th>單價</th>
+                <th>總計</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.unit_price }}</td>
+                <td>{{ item.total_price }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">沒有發票項目</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{% url 'invoice_list' %}" class="btn btn-secondary">返回列表</a>
+</div>
+
+</body>
+</html>
