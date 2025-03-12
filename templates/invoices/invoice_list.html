@@ -39,6 +39,11 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
     </style>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap JS (needed for modals) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </head>
 <body>
 
@@ -112,12 +117,12 @@
 
 
     <!-- 搜索表單 -->
-    <form method="get" class="mb-3">
-        <div class="input-group">
-            <input type="text" name="search" placeholder="搜索發票號碼" class="form-control" />
-            <button type="submit" class="btn btn-primary">搜索</button>
-        </div>
-    </form>
+<form method="get" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="search" placeholder="搜索發票號碼" class="form-control" value="{{ search_query }}">
+        <button type="submit" class="btn btn-primary">搜索</button>
+    </div>
+</form>
     
     <!-- 表格 -->
     <table class="table table-striped table-hover">
@@ -149,25 +154,42 @@
         </tbody>
     </table>
 </div>
+<!-- Bootstrap Loading Modal -->
+<!-- Bootstrap Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center p-3">
+      <div class="modal-body">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">正在處理發票，請稍候...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
     document.getElementById("runScriptBtn").addEventListener("click", function() {
+        let loadingModal = new bootstrap.Modal(document.getElementById('loadingModal')); 
+        loadingModal.show(); 
+
         fetch("{% url 'run_script' %}", {
-            method: "POST"
+            method: "POST",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                "Content-Type": "application/json",
+            },
         })
         .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById("scriptOutput").innerHTML = `<pre>${data.output}</pre>`;
-            } else {
-                document.getElementById("scriptOutput").innerHTML = `<p class="text-danger">Error: ${data.error}</p>`;
-            }
+        .then(() => {
+            loadingModal.hide();  
+            location.reload();  
         })
-        .catch(error => {
-            console.error("Error:", error);
-            document.getElementById("scriptOutput").innerHTML = `<p class="text-danger">發生錯誤</p>`;
+        .catch(() => {
+            loadingModal.hide();  
         });
     });
 </script>
-
 </body>
 </html>

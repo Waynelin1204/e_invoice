@@ -391,7 +391,12 @@ def reconcil(request):
 	# return render(request, "reconcil.html", {"merged_data":merged_data})
 def invoice_list(request):
     invoices = Ocr.objects.all()  # Fetch all invoices
+    
+    search_query = request.GET.get('search', '')
+    if search_query:
+        invoices = invoices.filter(invoice_number__icontains=search_query)
     return render(request, 'invoices/invoice_list.html', {'invoices': invoices})
+
 
 def invoice_detail(request, invoice_id):
     invoice = Ocr.objects.get(id=invoice_id)  # Fetch a specific invoice
