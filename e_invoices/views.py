@@ -69,7 +69,7 @@ def front4(request):
 #def test(request):
 #	return render(request,'test.html')
 
-
+@login_required	
 def twa0101(request):
     # Fetch documents for display, with optional search filtering
     documents = Twa0101.objects.all()
@@ -136,16 +136,16 @@ def sign_in(request):
 
         if user is not None:
              login(request, user)
-             return redirect('document_list')  # ✅ Corrected
+             return redirect('main')  # ✅ Corrected
 
     context = {
         'form': form
     }
-    return render(request, 'accounts/login.html', context)
+    return render(request, 'login.html', context)
 
 def logout(request):
 	logout(request)
-	return redirect('/account/login.html')
+	return redirect('/login.html')
 
 @login_required(login_url="Login")
 def document_list(request):
@@ -401,4 +401,21 @@ def invoice_list(request):
 def invoice_detail(request, invoice_id):
     invoice = Ocr.objects.get(id=invoice_id)  # Fetch a specific invoice
     return render(request, 'invoices/invoice_detail.html', {'invoice': invoice})
-		
+	
+@login_required		
+def main(request):
+    return render(request, 'main.html')
+
+
+def update_invoice_status(request):
+    if request.method == 'POST':
+        selected_invoice_numbers = request.POST.getlist('selected_documents')
+        print(selected_invoice_numbers)
+        if selected_invoice_numbers:
+            Twa0101.objects.filter(invoice_number__in=selected_invoice_numbers).update(invoice_status='已開立')
+        else:
+            print("沒有選中的發票")
+    return redirect('test')  # 替換為您的發票列表頁面名稱
+
+
+

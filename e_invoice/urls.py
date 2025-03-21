@@ -25,13 +25,13 @@ from e_invoices.views import reconcil
 from e_invoices.views import front4
 from e_invoices.views import twa0101
 from e_invoices.views import export_invoices
-from e_invoices.views  import invoice_list, invoice_detail, upload_file, run_script
-
+from e_invoices.views import invoice_list, invoice_detail, upload_file, run_script
+from e_invoices.views import main, update_invoice_status
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/register/', register, name='register'),
-    path('accounts/login/',sign_in, name='login'),
+    path('login/',sign_in, name='login'),
     path('front4/', front4, name = 'front4'),
     path('test/', twa0101, name='test'),
     #path('loguot/', logout, name = 'logout'),
@@ -39,10 +39,12 @@ urlpatterns = [
     path('reconcil/',reconcil, name = 'reconcil'),
     path('generate_pdf/<str:document_id>/', generate_pdf, name='generate_pdf'),
     path("export-invoices/", export_invoices, name="export_invoices"),
-    path('invoices/', invoice_list, name='invoice_list'),  
+    path('invoices/invoice_list/', invoice_list, name='invoice_list'),  
     path('invoices/<int:invoice_id>/', invoice_detail, name='invoice_detail'),
     path('upload/', upload_file, name='upload_file'),  # Ensure this exists
     path('', invoice_list, name='invoice_list'),
     path("run-script/", run_script, name="run_script"),
+    path('main/',main, name='main'),
+    path('update_invoice_status/', update_invoice_status, name = 'update_invoice_status')
 ]
 

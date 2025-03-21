@@ -264,7 +264,7 @@ class Twa0101(models.Model):
     data_type = models.CharField(max_length=4) # Consistent H1 
     job_type = models.CharField(max_length=4) # H or G
     corporate_id =  models.CharField(max_length=8)
-    invoice_number = models.CharField(max_length=20, unique=True)  # 發票號碼
+    invoice_number = models.CharField(max_length=20, unique=True, primary_key=True)  # 發票號碼
     invoice_date = models.DateField()  # 發票日期
     invoice_time = models.TimeField()  # 發票時間
     seller_name = models.CharField(max_length=225)  # 賣方
@@ -303,6 +303,9 @@ class Twa0101(models.Model):
     payment_status = models.CharField(max_length=10, blank=True, null=True)
     status = models.CharField(max_length=10, blank=True, null=True)
     uniform_invoice_number = models.CharField(max_length=10, blank=True, null=True)
+    invoice_status = models.CharField(max_length=10, blank=True, null=True, default='未開立')
+    void_status = models.CharField(max_length=10, blank=True, null=True)
+    
     
 	
 class Ocr(models.Model):
