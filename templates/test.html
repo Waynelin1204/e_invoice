@@ -86,6 +86,7 @@
         }
         .title-section h3 {
             display: block !important;
+            color: black; /* Set text color to black */
         }
 
     </style>
@@ -148,6 +149,11 @@
                 <option value="">--請選擇發票狀態</option>
                 <option value="未開立">未開立</option>
                 <option value="已開立">已開立</option>
+            </select>
+            <select name="invoice_date_year" id="invoice_date_year">
+                <option value="">--請選擇開立年份</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
             </select>
             <select name="invoice_date" id="invoice_date">
                 <option value="">--請選擇開立月份</option>
@@ -251,7 +257,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center">No records found</td>
+                            <td colspan="8" class="text-center">沒有發票記錄</td>
                         </tr>
                         {% endfor %}
                     </tbody>

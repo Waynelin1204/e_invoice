@@ -306,6 +306,8 @@ class Twa0101(models.Model):
     invoice_status = models.CharField(max_length=10, blank=True, null=True, default='未開立')
     void_status = models.CharField(max_length=10, blank=True, null=True)
     
+    def __str__(self):
+        return f"{self.invoice_number} - {self.buyer_name}"
     
 	
 class Ocr(models.Model):

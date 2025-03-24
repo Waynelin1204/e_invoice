@@ -28,6 +28,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 import subprocess
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Q
 
 UPLOAD_DIR = "/home/pi/OCR/Samples"
 @csrf_exempt
@@ -69,16 +70,38 @@ def front4(request):
 #def test(request):
 #	return render(request,'test.html')
 
-@login_required	
+#@login_required	
+#def twa0101(request):
+#    # Fetch documents for display, with optional search filtering
+#    documents = Twa0101.objects.all()
+#    context = {
+#	'documents': documents,
+#    }
+#    return render(request, 'test.html', context)
+
+@login_required
 def twa0101(request):
-    # Fetch documents for display, with optional search filtering
-    documents = Twa0101.objects.all()
+    user = request.user
+    documents = Twa0101.objects.none()  # 預設不回傳任何資料
+
+    # 建立查詢條件
+    filter_conditions = Q()
+
+    if user.groups.filter(name="South").exists():
+        filter_conditions |= Q(buyer_name__icontains="UAS")  # South 群組可以看到 "UAS"
+
+    if user.groups.filter(name="North").exists():  # ✅ 修正 "Nouth" → "North"
+        filter_conditions |= Q(buyer_name__icontains="KKK")  # North 群組可以看到 "KKK"
+
+    # 如果 user 屬於 South 或 North，則執行查詢
+    if filter_conditions:
+        documents = Twa0101.objects.filter(filter_conditions)
+
     context = {
-	'documents': documents,
+        'documents': documents,
     }
 
     return render(request, 'test.html', context)
-
 
 
 def export_invoices(request):

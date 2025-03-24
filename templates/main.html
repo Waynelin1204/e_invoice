@@ -74,6 +74,18 @@
 
     <!-- 圖示區塊 (保持中央) -->
     <div class="icon-container">
+        <a href="{% url 'front4' %}" class="text-decoration-none text-dark">
+            <img src="{% static 'dashboard.png' %}" alt="儀表板">
+            <h5>儀表板</h5>
+        </a>
+    </div>
+    <div class="icon-container">
+        <a href="{% url 'test' %}" class="text-decoration-none text-dark">
+            <img src="{% static 'data-migration.png' %}" alt="電子發票">
+            <h5>資料匯入</h5>
+        </a>
+    </div>
+    <div class="icon-container">
         <a href="{% url 'test' %}" class="text-decoration-none text-dark">
             <img src="{% static 'invoice.png' %}" alt="電子發票">
             <h5>電子發票</h5>
