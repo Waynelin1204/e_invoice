@@ -26,7 +26,7 @@ from e_invoices.views import front4
 from e_invoices.views import twa0101
 from e_invoices.views import export_invoices
 from e_invoices.views import invoice_list, invoice_detail, upload_file, run_script
-from e_invoices.views import main, update_invoice_status
+from e_invoices.views import main, update_invoice_status, invoice_filter
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -45,6 +45,7 @@ urlpatterns = [
     path('', invoice_list, name='invoice_list'),
     path("run-script/", run_script, name="run_script"),
     path('main/',main, name='main'),
-    path('update_invoice_status/', update_invoice_status, name = 'update_invoice_status')
+    path('update_invoice_status/', update_invoice_status, name = 'update_invoice_status'),
+    path('invoice_filter/', invoice_filter, name = 'invoice_filter')
 ]
 

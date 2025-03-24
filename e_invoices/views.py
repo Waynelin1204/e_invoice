@@ -279,6 +279,82 @@ def generate_pdf(request, document_id):
 
     return response
 
+def invoice_filter(request):
+        display_limit = int(request.GET.get("display_limit", 25))
+        invoice_status_filter = request.GET.get("invoice_status")
+        void_status_filter = request.GET.get("void_status")
+        tax_type_filter = request.GET.get("tax_type")
+
+        query = """
+		SELECT
+			s.invoice_number,
+			s.buyer_name,
+			s.seller_name,
+			s.invoice_date,
+			s.tax_type,
+			s.total_amount,
+			s.payment_status,
+			s.invoice_status,
+			s.void_status
+
+		FROM e_invoices_twa0101 s
+	"""
+	
+        filters = []
+        if invoice_status_filter:
+                filters.append(f"s.invoice_status = '{invoice_status_filter}'")
+        if void_status_filter:
+                filters.append(f"s.void_status = '{void_status_filter}'")
+        if tax_type_filter:
+                filters.append(f"s.tax_type = '{tax_type_filter}'")
+	#if document_number_filter:
+	#	document_number_filter = document_number_filter.strip()
+	#	filters.append(f"CAST(s.document_number AS TEXT) LIKE '%{document_number_filter}%'")
+		
+	
+        if filters:
+                query += " WHERE " + " AND ".join(filters)
+		
+        query += " ORDER BY s.invoice_date DESC"
+        query += f" LIMIT {display_limit}"
+
+
+        with connection.cursor() as cursor:
+                cursor.execute(query)
+                merged_data = [
+                        {
+				"invoice_number": row[0],
+				"buyer_name": row[1],
+				"seller_name":row[2],
+				"invoice_date": row[3],
+				"tax_type":row[4],
+				"total_amount":row[5],
+				"payment_status":row[6],
+				"invoice_status":row[7],
+				"void_status":row[8]
+			}
+			for row in cursor.fetchall()
+		]
+	
+                cursor.execute('SELECT DISTINCT "invoice_status" FROM e_invoices_twa0101')
+                invoice_status = [row[0] for row in cursor.fetchall()]
+		
+                cursor.execute('SELECT DISTINCT "void_status" FROM e_invoices_twa0101')
+                void_status = [row[0] for row in cursor.fetchall()]
+		
+                cursor.execute('SELECT DISTINCT "tax_type" FROM e_invoices_twa0101')
+                tax_type = [row[0] for row in cursor.fetchall()]		
+
+	
+        return render(request, "test.html", {
+		"invoice_status":invoice_status,
+		"void_status":void_status,
+		"tax_type":tax_type,
+		"display_limit":display_limit,
+		"documents":merged_data,
+	})	
+
+
 @login_required(login_url="Login")
 def reconcil(request):
 	display_limit = int(request.GET.get("display_limit",25))
