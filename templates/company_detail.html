@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>儀表板</title>
+    <title>營業人管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
     <style>
         /* 外層容器，包含導航欄與內容 */
         .content-wrapper {
             display: flex;
-            height: 150vh;
+            height: 100vh;
             padding: 20px;
         }
  
@@ -40,9 +40,10 @@
  
         /* 展開的下拉選單 */
         .collapse {
-            padding-left: 15px;
+
         }
-        .collaspe .nav-link {
+        .collapse .nav-link {
+            padding-left: 15px;
             text-align: right;
             color: black;
         }
@@ -55,6 +56,7 @@
             border-radius: 8px;
             box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.1); /* 內容區域也有陰影 */
             margin-left: 20px;
+            color: black; /* Set text color to black */
         }
         
         .table-wrapper {
@@ -87,57 +89,32 @@
         }
         .title-section h3 {
             display: block !important;
-        }
-        
-        .dashboard-container {
-            padding: 100px;
-        }
-        .chart-container {
-            width:100% !important;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        .chart-container h3 {
-            margin-bottom: 15px;
-            color: #000000; /* 黑色字體 */
-        }
-        /* 使用 Flexbox 將圖表水平排列 */
-        .charts-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 30px; /* 間距 */
-            flex-wrap: wrap; /* 如果螢幕較小則換行 */
+            color: black; /* Set text color to black */
         }
 
-        .chart-item {
-            flex: 1;
-            min-width: 500px;
-            max-width: 50%; /* 最大寬度 */
+        .collapse.show {
+            visibility: visible;
         }
+
     </style>
 </head>
-
 <body>
-<!-- 頂部導航欄 -->
 <div class="content-wrapper">
     <!-- 側邊導航欄 -->
-<!--
     <nav class="sidebar">
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'front4' %}">儀表板</a>
             </li>
-            <!-- 點擊展開>
+            <!-- 點擊展開 -->
             <li class="nav-item">
                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
                     發票管理
                 </a>
                 <div class="collapse" id="invoiceMenu">
                     <ul class="nav flex-column text-end">
-                        <li><a class="nav-link" href="#">已傳送發票</a></li>
-                        <li><a class="nav-link" href="#">未傳送發票</a></li>
+                        <li><a class="nav-link" href="{% url 'invoice_filter' %}?invoice_status=已開立">已傳送發票</a></li>
+                        <li><a class="nav-link" href="{% url 'invoice_filter' %}?invoice_status=未開立">未傳送發票</a></li>
                         <li><a class="nav-link" href="#">零稅率發票</a></li>
                         <li><a class="nav-link" href="#">折讓與作廢發票</a></li>
                     </ul>
@@ -158,72 +135,36 @@
                 <a class="nav-link" href="#">報告</a>
             </li>
         </ul>
-    </nav -->
-   
-    <div class="dashboard-container">
+    </nav>
+    
+    <div class="content">
+
+        <!-- 主要內容 -->
         <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
+
         <div class="mb-3"></div>
-        <h2>發票數據圖表</h2>
-
-        <!-- Horizontal Layout for Charts -->
-        <div class="charts-row">
-            <!-- First Chart -->
-            <div class="chart-item">
-                <div class="chart-container">
-                    <h3>發票金額趨勢</h3>
-                    <div id="invoiceChart" style="width: 100%; height: 400px;"></div>
-                </div>
+        <!-- 測試用的假資料 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition">
+                <h2 class="text-xl font-semibold text-gray-800">台灣科技公司</h2>
+                <p class="text-gray-600 mt-2"><strong>統一編號:</strong> 12345678</p>
+                <p class="text-gray-500"><strong>類型:</strong> 科技業</p>
             </div>
-
-            <!-- Second Chart -->
-            <div class="chart-item">
-                <div class="chart-container">
-                    <h3>發票類別統計</h3>
-                    <div id="categoryChart" style="width: 100%; height: 400px;"></div>
-                </div>
+            
+            <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition">
+                <h2 class="text-xl font-semibold text-gray-800">亞洲食品有限公司</h2>
+                <p class="text-gray-600 mt-2"><strong>統一編號:</strong> 87654321</p>
+                <p class="text-gray-500"><strong>類型:</strong> 食品業</p>
             </div>
-
-            <!-- Third Chart -->
-            <div class="chart-item">
-                <div class="chart-container">
-                    <h3>地區銷售趨勢</h3>
-                    <div id="regionChart" style="width: 100%; height: 400px;"></div>
-                </div>
+    
+            <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition">
+                <h2 class="text-xl font-semibold text-gray-800">全球物流股份有限公司</h2>
+                <p class="text-gray-600 mt-2"><strong>統一編號:</strong> 11223344</p>
+                <p class="text-gray-500"><strong>類型:</strong> 物流業</p>
             </div>
         </div>
     </div>
-</div>   
-<script>
-    fetch('/invoice_data/')
-        .then(response => response.json())
-        .then(data => {
-            const labels = data.map(item => item.date); // X 軸：日期
-            const values = data.map(item => item.amount); // Y 軸：發票金額
-
-            const chartDom = document.getElementById('invoiceChart');
-            const myChart = echarts.init(chartDom);
-            const option = {
-                title: {
-                    text: '發票金額趨勢'
-                },
-                tooltip: {},
-                xAxis: {
-                    type: 'category',
-                    data: labels
-                },
-                yAxis: {
-                    type: 'value'
-                },
-                series: [{
-                    name: '金額',
-                    type: 'bar',
-                    data: values,
-                    itemStyle: { color: '#7a5ea7' }
-                }]
-            };
-            myChart.setOption(option);
-        })
-        .catch(error => console.error('發票數據載入失敗:', error));
-</script>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

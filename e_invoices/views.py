@@ -29,6 +29,9 @@ from django.http import JsonResponse
 import subprocess
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
+from e_invoices.models import Company
+from rest_framework import serializers, viewsets
+import os
 
 UPLOAD_DIR = "/home/pi/OCR/Samples"
 @csrf_exempt
@@ -129,7 +132,14 @@ def export_invoices(request):
     
     return response
 
-
+def company_detail(request):
+    company = Company.objects.all()
+    
+    context = {
+        'company': company,
+    }
+    return render(request, 'company_detail.html', context)
+    
 
     
 def register(request):
@@ -515,6 +525,27 @@ def update_invoice_status(request):
         else:
             print("沒有選中的發票")
     return redirect('test')  # 替換為您的發票列表頁面名稱
+    
+def company_detail(request):
+    return render(request, 'company_detail.html')
 
+def test_view(request):
+    # 取得 URL 參數
+    invoice_status = request.GET.get('invoice_status', '')  # 預設為空值
 
+    # 取得所有發票
+    document = Twa0101.objects.all()
 
+    # 如果有 invoice_status，則篩選發票
+    if invoice_status:
+        document = document.filter(status=invoice_status)
+
+    # 傳遞篩選後的數據到前端
+    context = {
+        'document_number':document_number,
+        'invoice_status':invoice_status,
+        "tax_codes":tax_codes,
+        "document_types":document_types,
+    }
+
+    return render(request, 'test.html', context)

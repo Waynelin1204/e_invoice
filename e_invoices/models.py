@@ -108,6 +108,20 @@ class Invoice(models.Model):
     def __str__(self):
         return f"Invoice {self.document_id} - {self.status}"
 
+class Company(models.Model):
+    company_register_name = models.CharField(max_length=255)
+    company_identifier = models.CharField(max_length=255)
+    head_company_identifer = models.CharField(max_length=255)
+    company_name = models.CharField(max_length=255)
+    company_address = models.CharField(max_length=255)
+    company_type = models.CharField(max_length=255)
+    tax_identifer = models.CharField(max_length=255)
+    apply_eGUI = models.CharField(max_length=255)
+    
+    def __str__(self):
+        return self.company_name
+
+
 
 
 class RegisterForm(UserCreationForm):
