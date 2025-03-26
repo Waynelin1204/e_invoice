@@ -6,6 +6,8 @@ from e_invoices.models import Twa0101
 from e_invoices.models import Ocr
 from e_invoices.models import Ocritem
 from e_invoices.models import Company
+from e_invoices.models import UserProfile
+
 
 admin.site.register(Invoice)
 admin.site.register(Myinvoiceportal)
@@ -14,6 +16,6 @@ admin.site.register(Twa0101)
 admin.site.register(Ocr)
 admin.site.register(Ocritem)
 admin.site.register(Company)
-
+admin.site.register(UserProfile)
 
 # Register your models here.

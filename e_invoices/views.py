@@ -30,7 +30,12 @@ import subprocess
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 from e_invoices.models import Company
-from rest_framework import serializers, viewsets
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+from e_invoices.models import UserProfile, Company
+from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_exempt
+import json
 import os
 
 UPLOAD_DIR = "/home/pi/OCR/Samples"
@@ -82,29 +87,130 @@ def front4(request):
 #    }
 #    return render(request, 'test.html', context)
 
+
+# 只有管理員可以訪問
+def is_admin(user):
+    return user.is_superuser or user.is_staff
+
+@login_required
+@user_passes_test(is_admin)
+def manage_user_permissions(request):
+    all_users = User.objects.all()
+    companies = {company.id: company.company_name for company in Company.objects.all()}  
+    return render(request, "permissions.html", {"all_users": all_users, "companies": json.dumps(companies)})
+
+# @login_required
+# @user_passes_test(is_admin)
+# def get_user_permissions(request, user_id):
+    # user = get_object_or_404(User, id=user_id)
+
+    # # **如果 `UserProfile` 不存在，則自動建立**
+    # user_profile, _ = UserProfile.objects.get_or_create(user=user)
+
+    # #viewable_companies = list(user_profile.viewable_companies.values_list("id", flat=True))
+    # viewable_companies = list(Company.objects.values_list("id", flat=True))
+
+    # return JsonResponse({"status": "exists", "viewable_companies": viewable_companies})
+
+# @login_required
+# @user_passes_test(is_admin)
+# @csrf_exempt
+# def update_permissions(request, user_id):
+    # if request.method == "POST":
+        # user = get_object_or_404(User, id=user_id)
+        # user_profile, _ = UserProfile.objects.get_or_create(user=user)
+
+        # selected_companies = request.POST.getlist("viewable_companies[]")  # 確保接收前端資料
+        # selected_companies = list(map(int, selected_companies))  # 轉換為整數 ID
+
+        # user_profile.viewable_companies.set(Company.objects.filter(id__in=selected_companies))
+        # return JsonResponse({"status": "success", "message": "權限更新成功！"})
+
+    # return JsonResponse({"status": "error", "message": "無效的請求"}, status=400)
+
+
+@login_required
+@user_passes_test(is_admin)
+def get_user_permissions(request, user_id):
+    try:
+        user = get_object_or_404(User, id=user_id)
+
+        # 確保 UserProfile 存在
+        user_profile, _ = UserProfile.objects.get_or_create(user=user)
+
+        # 取得該使用者已選取的公司
+        viewable_companies = list(user_profile.viewable_companies.values_list("id", flat=True))
+
+        return JsonResponse({"status": "exists", "viewable_companies": viewable_companies})
+
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": f"發生錯誤: {str(e)}"})
+
+# **更新使用者的可查看公司權限**
+@csrf_exempt  # 這裡使用 @csrf_exempt 來免除 CSRF 檢查，視情況而定可選擇開啟 CSRF 檢查
+@login_required
+@user_passes_test(is_admin)
+def update_permissions(request, user_id):
+    if request.method == "POST":
+        try:
+            user = get_object_or_404(User, id=user_id)
+            user_profile, _ = UserProfile.objects.get_or_create(user=user)
+
+            # 解析前端傳過來的 JSON 資料
+            data = json.loads(request.body)
+            selected_companies = data.get("viewable_companies", [])
+
+            # 確保傳入的 ID 是有效的
+            valid_companies = Company.objects.filter(id__in=selected_companies)
+            
+            # 更新使用者的 viewable_companies 權限
+            user_profile.viewable_companies.set(valid_companies)
+
+            return JsonResponse({"status": "success", "message": "權限更新成功！"})
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": f"發生錯誤: {str(e)}"})
+
+    return JsonResponse({"status": "error", "message": "無效的請求"}, status=400)
+
+    
 @login_required
 def twa0101(request):
-    user = request.user
-    documents = Twa0101.objects.none()  # 預設不回傳任何資料
+    """ 只顯示該使用者有權限查看的發票 """
+    user_profile = request.user.profile  # 取得登入使用者的 UserProfile
+    viewable_company_names = user_profile.viewable_companies.values_list('name', flat=True)  # 取得該使用者可查看的公司名稱列表
 
-    # 建立查詢條件
-    filter_conditions = Q()
-
-    if user.groups.filter(name="South").exists():
-        filter_conditions |= Q(buyer_name__icontains="UAS")  # South 群組可以看到 "UAS"
-
-    if user.groups.filter(name="North").exists():  # ✅ 修正 "Nouth" → "North"
-        filter_conditions |= Q(buyer_name__icontains="KKK")  # North 群組可以看到 "KKK"
-
-    # 如果 user 屬於 South 或 North，則執行查詢
-    if filter_conditions:
-        documents = Twa0101.objects.filter(filter_conditions)
-
+    document = Twa0101.objects.filter(seller_name__in=viewable_company_names)  # 過濾 seller_name
+    
     context = {
         'documents': documents,
     }
 
     return render(request, 'test.html', context)
+# @login_required
+# def twa0101(request):
+    
+    # user = request.user
+    # documents = Twa0101.objects.none()  # 預設不回傳任何資料
+
+    # # 建立查詢條件
+    # filter_conditions = Q()
+
+    # if user.groups.filter(name="South").exists():
+        # filter_conditions |= Q(buyer_name__icontains="UAS")  # South 群組可以看到 "UAS"
+
+    # if user.groups.filter(name="North").exists():  # ✅ 修正 "Nouth" → "North"
+        # filter_conditions |= Q(buyer_name__icontains="KKK")  # North 群組可以看到 "KKK"
+
+    # # 如果 user 屬於 South 或 North，則執行查詢
+    # if filter_conditions:
+        # documents = Twa0101.objects.filter(filter_conditions)
+
+    # context = {
+        # 'documents': documents,
+    # }
+
+    # return render(request, 'test.html', context)
 
 
 def export_invoices(request):
@@ -529,23 +635,7 @@ def update_invoice_status(request):
 def company_detail(request):
     return render(request, 'company_detail.html')
 
-def test_view(request):
-    # 取得 URL 參數
-    invoice_status = request.GET.get('invoice_status', '')  # 預設為空值
 
-    # 取得所有發票
-    document = Twa0101.objects.all()
 
-    # 如果有 invoice_status，則篩選發票
-    if invoice_status:
-        document = document.filter(status=invoice_status)
 
-    # 傳遞篩選後的數據到前端
-    context = {
-        'document_number':document_number,
-        'invoice_status':invoice_status,
-        "tax_codes":tax_codes,
-        "document_types":document_types,
-    }
 
-    return render(request, 'test.html', context)

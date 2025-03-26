@@ -26,7 +26,9 @@ from e_invoices.views import front4
 from e_invoices.views import twa0101
 from e_invoices.views import export_invoices
 from e_invoices.views import invoice_list, invoice_detail, upload_file, run_script
-from e_invoices.views import main, update_invoice_status, invoice_filter, company_detail, test_view
+from e_invoices.views import main, update_invoice_status, invoice_filter, company_detail
+from e_invoices.views import manage_user_permissions, update_permissions, get_user_permissions
+
 
 
 urlpatterns = [
@@ -49,7 +51,9 @@ urlpatterns = [
     path('update_invoice_status/', update_invoice_status, name = 'update_invoice_status'),
     path('invoice_filter/', invoice_filter, name = 'invoice_filter'),
     path('company_detail/', company_detail, name='company_detail'),
-    path('test/', test_view, name='test')
+    path('update-permissions/<int:user_id>/', update_permissions, name='update_permissions'),
+    path('permissions/', manage_user_permissions, name='manage_permissions'),
+    path('get-user-permissions/<int:user_id>/', get_user_permissions, name='get_user_permissions'),
     
 ]
 

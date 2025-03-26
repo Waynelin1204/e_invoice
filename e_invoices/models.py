@@ -7,6 +7,10 @@ from django.core.exceptions import ValidationError
 
 from django.db import models
 
+
+
+        
+            
 class Invoice(models.Model):
 
     STATUS_CHOICES = [
@@ -121,9 +125,24 @@ class Company(models.Model):
     def __str__(self):
         return self.company_name
 
+# class Company(models.Model):
+    # name = models.CharField(max_length=255)
+    # tax_id = models.CharField(max_length=8, unique=True)
+    # parent_companies = models.ManyToManyField('self', symmetrical=False, related_name='subsidiary_companies', blank=True)
+
+    # def __str__(self):
+        # return self.name
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="users")  # 所屬公司
+    #company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True)  # or use `null=False` if mandatory
+    viewable_companies = models.ManyToManyField(Company, related_name="viewable_by_users")  # 可查看的公司
 
 
-
+    def __str__(self):
+        return self.user.username
+        
 class RegisterForm(UserCreationForm):
     username = forms.CharField(
 	label="Account",
