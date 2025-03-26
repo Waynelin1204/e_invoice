@@ -178,9 +178,9 @@ def update_permissions(request, user_id):
 def twa0101(request):
     """ 只顯示該使用者有權限查看的發票 """
     user_profile = request.user.profile  # 取得登入使用者的 UserProfile
-    viewable_company_names = user_profile.viewable_companies.values_list('name', flat=True)  # 取得該使用者可查看的公司名稱列表
+    viewable_company_names = user_profile.viewable_companies.values_list('company_name', flat=True)  # 取得該使用者可查看的公司名稱列表
 
-    document = Twa0101.objects.filter(seller_name__in=viewable_company_names)  # 過濾 seller_name
+    documents = Twa0101.objects.filter(seller_name__in=viewable_company_names)  # 過濾 seller_name
     
     context = {
         'documents': documents,
