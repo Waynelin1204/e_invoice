@@ -115,7 +115,7 @@ class Invoice(models.Model):
 class Company(models.Model):
     company_register_name = models.CharField(max_length=255)
     company_identifier = models.CharField(max_length=255)
-    head_company_identifer = models.CharField(max_length=255)
+    head_company_identifer = models.CharField(max_length=100, blank=True, null=True)
     company_name = models.CharField(max_length=255)
     company_address = models.CharField(max_length=255)
     company_type = models.CharField(max_length=255)
@@ -342,6 +342,20 @@ class Twa0101(models.Model):
     def __str__(self):
         return f"{self.invoice_number} - {self.buyer_name}"
     
+class Twa0101Item(models.Model):
+    twa0101 = models.ForeignKey(Twa0101, related_name='items', on_delete=models.CASCADE)  # 關聯 Twa0101
+    product_name = models.CharField(max_length=500)  # 品名
+    quantity = models.CharField(max_length=50)  # 數量 (可支援 '3C商品' 這類非數值)
+    unit = models.CharField(max_length=6, blank=True, null=True)  # 單位
+    unit_price = models.DecimalField(max_digits=20, decimal_places=7)  # 單價
+    amount = models.DecimalField(max_digits=20, decimal_places=7)  # 金額
+    remark = models.CharField(max_length=200, blank=True, null=True)  # 備註
+    sequence_number = models.CharField(max_length=4)  # 明細排列序號
+
+    def __str__(self):
+        return f"{self.product_name} ({self.quantity}) - {self.amount}"
+
+
 	
 class Ocr(models.Model):
     invoice_number = models.CharField(max_length=20, unique=True)  # 發票號碼

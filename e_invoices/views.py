@@ -19,6 +19,7 @@ from e_invoices.models import Sapfagll03
 from e_invoices.models import Myinvoiceportal 
 from django.db import connection
 from e_invoices.models import Twa0101
+from e_invoices.models import Twa0101Item
 from e_invoices.models import Ocritem
 from e_invoices.models import Ocr
 import pandas as pd
@@ -174,20 +175,7 @@ def update_permissions(request, user_id):
     return JsonResponse({"status": "error", "message": "無效的請求"}, status=400)
 
     
-@login_required
-def twa0101(request):
-    """ 只顯示該使用者有權限查看的發票 """
-    user_profile = request.user.profile  # 取得登入使用者的 UserProfile
-    viewable_company_names = user_profile.viewable_companies.values_list('company_name', flat=True)  # 取得該使用者可查看的公司名稱列表
-    filter_conditions = Q(seller_name__in=viewable_company_names)
 
-    documents = Twa0101.objects.filter(filter_conditions)  # 過濾 seller_namename__in=viewable_company_names)  # 過濾 seller_name
-    
-    context = {
-        'documents': documents,
-    }
-
-    return render(request, 'test.html', context)
 # @login_required
 # def twa0101(request):
     
@@ -622,6 +610,28 @@ def invoice_list(request):
 def invoice_detail(request, invoice_id):
     invoice = Ocr.objects.get(id=invoice_id)  # Fetch a specific invoice
     return render(request, 'invoices/invoice_detail.html', {'invoice': invoice})
+    
+
+@login_required
+def twa0101(request):
+    """ 只顯示該使用者有權限查看的發票 """
+    user_profile = request.user.profile  # 取得登入使用者的 UserProfile
+    viewable_company_names = user_profile.viewable_companies.values_list('company_name', flat=True)  # 取得該使用者可查看的公司名稱列表
+    filter_conditions = Q(seller_name__in=viewable_company_names)
+    documents = Twa0101.objects.filter(seller_name__in=viewable_company_names).prefetch_related('items') # 過濾 seller_namename__in=viewable_company_names)  # 過濾 seller_name
+    
+    context = {
+        'documents': documents,
+    }
+
+    return render(request, 'test.html', context)
+    
+def twa0101_detail(request, invoice_number):
+    document = get_object_or_404(Twa0101, invoice_number=invoice_number)
+    items = document.items.all()  # 確保有正確查詢
+    return render(request, 'document/twa0101_detail.html', {'document': document, 'items': items})
+
+
 	
 @login_required		
 def main(request):

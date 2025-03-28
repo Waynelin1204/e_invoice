@@ -62,14 +62,32 @@
         .top-buttons .btn {
             margin-left: 10px;
         }
+        button {
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+        }
+        /* 讓選單在按鈕下方顯示 */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0; /* 確保選單從按鈕開始展開 */
+            top: 40px; /* 讓選單顯示在按鈕的下方 */
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <!-- 右上角按鈕 -->
     <div class="top-buttons">
-        <button class="btn btn-light">🔔</button>
-        <button class="btn btn-light">⚙️</button>
-        <button class="btn btn-light">👤</button>
+        <button class="btn btn-light">&#128276;</button> <!-- 🔔 -->
+        <button class="btn btn-light">&#9881;</button>   <!-- ⚙️ -->
+        <button class="btn btn-light" id="profileButton">&#128100;</button> <!-- 👤 -->
+        <div class="dropdown-menu" id="profileMenu">
+            <a class="dropdown-item" href="#">個人資料</a>
+            <a class="dropdown-item" href="#">更改密碼</a>
+            <a class="dropdown-item" href="javascript:void(0);" id="logoutLink">登出</a>
+        </div>
     </div>
 
     <!-- 圖示區塊 (保持中央) -->
@@ -97,5 +115,47 @@
             <h5>掃描帳單</h5>
         </a>
     </div>
+    <div class="icon-container">
+        <a href="{% url 'manage_permissions' %}" class="text-decoration-none text-dark">
+            <img src="{% static 'settings.png' %}" alt="設定">
+            <h5>設定</h5>
+        </a>
+    </div>
 </body>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 用來控制按鈕點擊時展開選單
+    $(document).ready(function() {
+        $('#profileButton').click(function() {
+            $('#profileMenu').toggleClass('show');
+        });
+
+        // 點選其他地方時隱藏選單
+        $(document).click(function(event) {
+            if (!$(event.target).closest('#profileButton').length && 
+                !$(event.target).closest('#profileMenu').length) {
+                $('#profileMenu').removeClass('show');
+            }
+        });
+    });
+</script>
+<script>
+    document.getElementById('logoutLink').addEventListener('click', function () {
+        fetch("{% url 'logout' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': "{{ csrf_token }}",
+            },
+            credentials: 'same-origin',  // 保證 CSRF Token 會隨請求一起發送
+        }).then(response => {
+            if (response.ok) {
+                alert("已成功登出");
+                window.location.href = '/login/';  // 重定向到登入頁
+            }
+        }).catch(error => {
+            console.error('登出失敗:', error);
+        });
+    });
+</script>
 </html>

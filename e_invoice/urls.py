@@ -25,7 +25,7 @@ from e_invoices.views import reconcil
 from e_invoices.views import front4
 from e_invoices.views import twa0101
 from e_invoices.views import export_invoices
-from e_invoices.views import invoice_list, invoice_detail, upload_file, run_script
+from e_invoices.views import invoice_list, invoice_detail, upload_file, run_script, twa0101_detail
 from e_invoices.views import main, update_invoice_status, invoice_filter, company_detail
 from e_invoices.views import manage_user_permissions, update_permissions, get_user_permissions
 from django.contrib.auth import views as auth_views
@@ -45,6 +45,7 @@ urlpatterns = [
     path("export-invoices/", export_invoices, name="export_invoices"),
     path('invoices/invoice_list/', invoice_list, name='invoice_list'),  
     path('invoices/<int:invoice_id>/', invoice_detail, name='invoice_detail'),
+    path('document/<str:invoice_number>/', twa0101_detail, name='twa0101_detail'),
     path('upload/', upload_file, name='upload_file'),  # Ensure this exists
     path('', invoice_list, name='invoice_list'),
     path("run-script/", run_script, name="run_script"),
