@@ -28,6 +28,7 @@ from e_invoices.views import export_invoices
 from e_invoices.views import invoice_list, invoice_detail, upload_file, run_script
 from e_invoices.views import main, update_invoice_status, invoice_filter, company_detail
 from e_invoices.views import manage_user_permissions, update_permissions, get_user_permissions
+from django.contrib.auth import views as auth_views
 
 
 
@@ -54,6 +55,7 @@ urlpatterns = [
     path('update-permissions/<int:user_id>/', update_permissions, name='update_permissions'),
     path('permissions/', manage_user_permissions, name='manage_permissions'),
     path('get-user-permissions/<int:user_id>/', get_user_permissions, name='get_user_permissions'),
-    
+    path('logout/', auth_views.LogoutView.as_view(next_page='/login/'), name='logout'),
+
 ]
 

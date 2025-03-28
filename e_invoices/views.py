@@ -179,8 +179,9 @@ def twa0101(request):
     """ 只顯示該使用者有權限查看的發票 """
     user_profile = request.user.profile  # 取得登入使用者的 UserProfile
     viewable_company_names = user_profile.viewable_companies.values_list('company_name', flat=True)  # 取得該使用者可查看的公司名稱列表
+    filter_conditions = Q(seller_name__in=viewable_company_names)
 
-    documents = Twa0101.objects.filter(seller_name__in=viewable_company_names)  # 過濾 seller_name
+    documents = Twa0101.objects.filter(filter_conditions)  # 過濾 seller_namename__in=viewable_company_names)  # 過濾 seller_name
     
     context = {
         'documents': documents,
@@ -423,7 +424,10 @@ def invoice_filter(request):
         invoice_status_filter = request.GET.get("invoice_status")
         void_status_filter = request.GET.get("void_status")
         tax_type_filter = request.GET.get("tax_type")
-
+	# 獲取當前用戶的可查看公司名稱列表
+        user_profile = request.user.profile
+        viewable_company_names = user_profile.viewable_companies.values_list('company_name', flat=True)
+        viewable_company_names_str = ', '.join([f"'{name}'" for name in viewable_company_names])
         query = """
 		SELECT
 			s.invoice_number,
@@ -450,7 +454,9 @@ def invoice_filter(request):
 	#	document_number_filter = document_number_filter.strip()
 	#	filters.append(f"CAST(s.document_number AS TEXT) LIKE '%{document_number_filter}%'")
 		
-	
+        if viewable_company_names_str:
+            filters.append(f"s.seller_name IN ({viewable_company_names_str})")
+	    
         if filters:
                 query += " WHERE " + " AND ".join(filters)
 		

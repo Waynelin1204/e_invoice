@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理使用者權限</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .container { margin-top: 50px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>管理使用者權限</h2>
+
+        <!-- 下拉選單選擇使用者 -->
+        <label for="userSelect">選擇使用者：</label>
+        <select id="userSelect" class="form-control">
+            <option value="">請選擇使用者</option>
+            {% for user in all_users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- 權限區塊 -->
+        <div id="permissionsSection" class="hidden mt-3">
+            <h4>可查看公司</h4>
+            <div id="companyList"></div>
+
+            <!-- 隱藏的 input 用來儲存選中的公司 -->
+            <input type="hidden" id="selectedCompanies" name="viewable_companies">
+
+            <button class="btn btn-primary mt-3" id="savePermissions">更新權限</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var companies = {{ companies|safe }};  // 從 Django 傳遞公司 JSON
+
+            // 當選擇使用者時，載入可查看公司
+            $("#userSelect").change(function() {
+                var userId = $(this).val();
+                $("#companyList").empty();
+
+                if (userId) {
+                    $("#permissionsSection").removeClass("hidden");
+
+                    $.get("/get-user-permissions/" + userId + "/", function(response) {
+                        if (response.status === "new") {
+                            alert("此使用者還沒有權限，請分配！");
+                        }
+
+                        // 加載已選的公司
+                        response.viewable_companies.forEach(function(companyId) {
+                            $("#companyList").append(
+                                `<div class="form-check">
+                                    <input class="form-check-input viewable-companies" type="checkbox" value="${companyId}" checked>
+                                    <label class="form-check-label">${companies[companyId]}</label>
+                                </div>`
+                            );
+                        });
+
+                        // 加載未選中的公司
+                        for (var id in companies) {
+                            if (!response.viewable_companies.includes(parseInt(id))) {
+                                $("#companyList").append(
+                                    `<div class="form-check">
+                                        <input class="form-check-input viewable-companies" type="checkbox" value="${id}">
+                                        <label class="form-check-label">${companies[id]}</label>
+                                    </div>`
+                                );
+                            }
+                        }
+                    }).fail(function() {
+                        alert("載入權限時發生錯誤");
+                    });
+                } else {
+                    $("#permissionsSection").addClass("hidden");
+                }
+            });
+
+            // 當 checkbox 改變時，更新 selectedCompanies
+            function updateSelectedCompanies() {
+                var selectedCompanies = [];
+                $(".viewable-companies:checked").each(function() {
+                    selectedCompanies.push($(this).val());
+                });
+                // 更新隱藏的 input 的值
+                $("#selectedCompanies").val(selectedCompanies.join(","));
+            }
+
+            // 監聽每個 checkbox 的變化
+            $("#companyList").on("change", ".viewable-companies", updateSelectedCompanies);
+
+            // 更新權限
+            $("#savePermissions").click(function() {
+                var userId = $("#userSelect").val();
+                var selectedCompanies = $("#selectedCompanies").val();
+
+                // 檢查是否有選擇公司
+                if (!selectedCompanies) {
+                    alert("請選擇至少一個公司！");
+                    return;
+                }
+
+                // 使用 $.ajax 發送 POST 請求並以 JSON 格式傳送資料
+                $.ajax({
+                    url: "/update-permissions/" + userId + "/",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        "viewable_companies": selectedCompanies.split(","),
+                        "csrfmiddlewaretoken": "{{ csrf_token }}"
+                    }),
+                    success: function(response) {
+                        alert(response.message);
+                    },
+                    error: function(xhr, status, error) {
+                        alert("更新失敗: " + error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

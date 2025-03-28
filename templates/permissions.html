@@ -4,127 +4,282 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理使用者權限</title>
+    <title>權限管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         .container { margin-top: 50px; }
         .hidden { display: none; }
+        /* 外層容器，包含導航欄與內容 */
+        .content-wrapper {
+            display: flex;
+            height: 100vh;
+            padding: 20px;
+        }
+ 
+        /* 側邊導覽欄 */
+        .sidebar {
+            width: 220px;
+            background-color: #ffffff; /* 背景顏色 */
+            border-radius: 8px; /* 圓角 */
+            padding: 20px;
+            height: calc(100vh - 40px); /* 滿版高度但減去 padding */
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2); /* 懸浮陰影 */
+            transition: all 0.3s ease;
+        }
+
+        /* 導覽列內的連結 */
+        .sidebar .nav-link {
+            color: black !important;
+            padding: 10px 15px;
+            display: block;
+            transition: background 0.3s;
+            border-radius: 6px;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #dfdee0; /* 滑鼠懸停變色 */
+        }
+ 
+        /* 展開的下拉選單 */
+        .collaspe {
+            padding-left: 15px;
+        }
+        .collaspe .nav-link {
+            text-align: right;
+            color: black;
+        }
+ 
+        /* 內容區域 */
+        .content {
+            flex: 1;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.1); /* 內容區域也有陰影 */
+            margin-left: 20px;
+        }
+        
+        .table-wrapper {
+            width: 100%;
+            max-width: 100%;
+            padding: 0px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table {
+            width: 100%;
+            margin: 0;
+        }
+
+        /* 背景漸層效果 */
+        body {
+            background: linear-gradient(to bottom, #bdc3c7, #2c3e50); /* 背景漸層 */
+            color: white;
+            height: 100vh;
+            margin: 0;
+        }
+        
+        /* 已開立狀態的綠色背景 */
+        .invoice-status-issued {
+            background-color: #28a745; /* 綠色背景 */
+            color: white; /* 白色字 */
+        }
+        .title-section h3 {
+            display: block !important;
+            color: black; /* Set text color to black */
+        }
+
+        #companyList label {
+            color: black;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>管理使用者權限</h2>
+<div class="content-wrapper">
+    <!-- 側邊導航欄 -->
+    <nav class="sidebar">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'front4' %}">儀表板</a>
+            </li>
+            <!-- 點擊展開 -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
+                    發票管理
+                </a>
+                <div class="collapse" id="invoiceMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'invoice_filter' %}?invoice_status=已開立">已傳送發票</a></li>
+                        <li><a class="nav-link" href="{% url 'invoice_filter' %}?invoice_status=未開立">未傳送發票</a></li>
+                        <li><a class="nav-link" href="#">零稅率發票</a></li>
+                        <li><a class="nav-link" href="#">折讓與作廢發票</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                    設定
+                </a>
+                <div class="collapse" id="settingMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
+                        <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">報告</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0);" id="logoutLink">登出</a>
+            </li>
+        </ul>
+    </nav>
 
-        <!-- 下拉選單選擇使用者 -->
-        <label for="userSelect">選擇使用者：</label>
-        <select id="userSelect" class="form-control">
-            <option value="">請選擇使用者</option>
-            {% for user in all_users %}
-                <option value="{{ user.id }}">{{ user.username }}</option>
-            {% endfor %}
-        </select>
+    <!-- 主要內容 -->
+    <div class="content">
+        <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
+        <!-- 發票列表 -->
+        <div class="title-section mt-3">
+            <h3>權限管理</h3>
+        </div>
+        <!-- 搜尋表單 -->
 
-        <!-- 權限區塊 -->
-        <div id="permissionsSection" class="hidden mt-3">
-            <h4>可查看公司</h4>
-            <div id="companyList"></div>
+        <div class="content">
+            <label for="userSelect" style="color: black; font-size: 20px; display: inline-block; margin-right: 10px;">
+                選擇使用者：
+            </label>
+            <select id="userSelect" class="form-control" style="display: inline-block; width: auto;">
+                <option value="">請選擇使用者</option>
+                {% for user in all_users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+            </select>
+
+            <div id="permissionsSection" class="hidden mt-3">
+                <label for="userSelect" style="color: black; font-size: 20px; display: inline-block; margin-right: 10px;">
+                    選擇可查看公司：
+                </label>
+                <div id="companyList"></div>
 
             <!-- 隱藏的 input 用來儲存選中的公司 -->
-            <input type="hidden" id="selectedCompanies" name="viewable_companies">
-
-            <button class="btn btn-primary mt-3" id="savePermissions">更新權限</button>
+                <input type="hidden" id="selectedCompanies" name="viewable_companies">
+                <button class="btn btn-primary mt-3" id="savePermissions">更新權限</button>
+            </div>
         </div>
     </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var companies = {{ companies|safe }};  // 從 Django 傳遞公司 JSON
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var companies = {{ companies|safe }};  // 從 Django 傳遞公司 JSON
+        // 當選擇使用者時，載入可查看公司
+        $("#userSelect").change(function() {
+            var userId = $(this).val();
+            $("#companyList").empty();
 
-            // 當選擇使用者時，載入可查看公司
-            $("#userSelect").change(function() {
-                var userId = $(this).val();
-                $("#companyList").empty();
+            if (userId) {
+                $("#permissionsSection").removeClass("hidden");
 
-                if (userId) {
-                    $("#permissionsSection").removeClass("hidden");
+                $.get("/get-user-permissions/" + userId + "/", function(response) {
+                    if (response.status === "new") {
+                        alert("此使用者還沒有權限，請分配！");
+                    }
 
-                    $.get("/get-user-permissions/" + userId + "/", function(response) {
-                        if (response.status === "new") {
-                            alert("此使用者還沒有權限，請分配！");
-                        }
+                    // 加載已選的公司
+                    response.viewable_companies.forEach(function(companyId) {
+                        $("#companyList").append(
+                            `<div class="form-check">
+                                <input class="form-check-input viewable-companies" type="checkbox" value="${companyId}" checked>
+                                <label class="form-check-label">${companies[companyId]}</label>
+                            </div>`
+                        );
+                    });
 
-                        // 加載已選的公司
-                        response.viewable_companies.forEach(function(companyId) {
+                    // 加載未選中的公司
+                    for (var id in companies) {
+                        if (!response.viewable_companies.includes(parseInt(id))) {
                             $("#companyList").append(
                                 `<div class="form-check">
-                                    <input class="form-check-input viewable-companies" type="checkbox" value="${companyId}" checked>
-                                    <label class="form-check-label">${companies[companyId]}</label>
+                                    <input class="form-check-input viewable-companies" type="checkbox" value="${id}">
+                                    <label class="form-check-label">${companies[id]}</label>
                                 </div>`
                             );
-                        });
-
-                        // 加載未選中的公司
-                        for (var id in companies) {
-                            if (!response.viewable_companies.includes(parseInt(id))) {
-                                $("#companyList").append(
-                                    `<div class="form-check">
-                                        <input class="form-check-input viewable-companies" type="checkbox" value="${id}">
-                                        <label class="form-check-label">${companies[id]}</label>
-                                    </div>`
-                                );
-                            }
                         }
-                    }).fail(function() {
-                        alert("載入權限時發生錯誤");
-                    });
-                } else {
-                    $("#permissionsSection").addClass("hidden");
-                }
-            });
-
-            // 當 checkbox 改變時，更新 selectedCompanies
-            function updateSelectedCompanies() {
-                var selectedCompanies = [];
-                $(".viewable-companies:checked").each(function() {
-                    selectedCompanies.push($(this).val());
+                    }
+                }).fail(function() {
+                    alert("載入權限時發生錯誤");
                 });
-                // 更新隱藏的 input 的值
-                $("#selectedCompanies").val(selectedCompanies.join(","));
+            } else {
+                $("#permissionsSection").addClass("hidden");
+            }
+        });
+
+        // 當 checkbox 改變時，更新 selectedCompanies
+        function updateSelectedCompanies() {
+            var selectedCompanies = [];
+            $(".viewable-companies:checked").each(function() {
+                selectedCompanies.push($(this).val());
+            });
+            // 更新隱藏的 input 的值
+            $("#selectedCompanies").val(selectedCompanies.join(","));
+        }
+
+        // 監聽每個 checkbox 的變化
+        $("#companyList").on("change", ".viewable-companies", updateSelectedCompanies);
+
+        // 更新權限
+        $("#savePermissions").click(function() {
+            var userId = $("#userSelect").val();
+            var selectedCompanies = $("#selectedCompanies").val();
+
+            // 檢查是否有選擇公司
+            if (!selectedCompanies) {
+                alert("請選擇至少一個公司！");
+                return;
             }
 
-            // 監聽每個 checkbox 的變化
-            $("#companyList").on("change", ".viewable-companies", updateSelectedCompanies);
-
-            // 更新權限
-            $("#savePermissions").click(function() {
-                var userId = $("#userSelect").val();
-                var selectedCompanies = $("#selectedCompanies").val();
-
-                // 檢查是否有選擇公司
-                if (!selectedCompanies) {
-                    alert("請選擇至少一個公司！");
-                    return;
+            // 使用 $.ajax 發送 POST 請求並以 JSON 格式傳送資料
+            $.ajax({
+                url: "/update-permissions/" + userId + "/",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    "viewable_companies": selectedCompanies.split(","),
+                    "csrfmiddlewaretoken": "{{ csrf_token }}"
+                }),
+                success: function(response) {
+                    alert(response.message);
+                },
+                error: function(xhr, status, error) {
+                    alert("更新失敗: " + error);
                 }
-
-                // 使用 $.ajax 發送 POST 請求並以 JSON 格式傳送資料
-                $.ajax({
-                    url: "/update-permissions/" + userId + "/",
-                    type: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        "viewable_companies": selectedCompanies.split(","),
-                        "csrfmiddlewaretoken": "{{ csrf_token }}"
-                    }),
-                    success: function(response) {
-                        alert(response.message);
-                    },
-                    error: function(xhr, status, error) {
-                        alert("更新失敗: " + error);
-                    }
-                });
             });
         });
-    </script>
-</body>
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById('logoutLink').addEventListener('click', function () {
+        fetch("*", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': "{{ csrf_token }}",
+            },
+            credentials: 'same-origin',  // 保證 CSRF Token 會隨請求一起發送
+        }).then(response => {
+            if (response.ok) {
+                alert("登出成功！");
+                window.location.href = '/login/';  // 重定向到登入頁
+            }
+        }).catch(error => {
+            console.error('登出失敗:', error);
+        });
+    });
+</script>
 </html>

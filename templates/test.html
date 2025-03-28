@@ -119,13 +119,16 @@
                 </a>
                 <div class="collapse" id="settingMenu">
                     <ul class="nav flex-column text-end">
-                        <li><a class="nav-link" href="#">權限管理</a></li>
+                        <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
                         <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
                     </ul>
                 </div>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#">報告</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0);" id="logoutLink">登出</a>
             </li>
         </ul>
     </nav>
@@ -328,6 +331,24 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+</script>
+<script>
+    document.getElementById('logoutLink').addEventListener('click', function () {
+        fetch("{% url 'logout' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': "{{ csrf_token }}",
+            },
+            credentials: 'same-origin',  // 保證 CSRF Token 會隨請求一起發送
+        }).then(response => {
+            if (response.ok) {
+                alert("登出成功！");
+                window.location.href = '/login/';  // 重定向到登入頁
+            }
+        }).catch(error => {
+            console.error('登出失敗:', error);
+        });
+    });
 </script>
 </body>
 </html>
