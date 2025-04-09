@@ -26,7 +26,7 @@ from e_invoices.views import front4
 from e_invoices.views import twa0101
 from e_invoices.views import export_invoices
 from e_invoices.views import invoice_list, invoice_detail, upload_file, run_script, twa0101_detail
-from e_invoices.views import main, update_invoice_status, invoice_filter, company_detail
+from e_invoices.views import main, update_invoice_status, invoice_filter, company_detail, company_detail_sub
 from e_invoices.views import manage_user_permissions, update_permissions, get_user_permissions
 from django.contrib.auth import views as auth_views
 
@@ -42,17 +42,18 @@ urlpatterns = [
     path('edocument/',document_list, name='document_list'),
     path('reconcil/',reconcil, name = 'reconcil'),
     path('generate_pdf/<str:document_id>/', generate_pdf, name='generate_pdf'),
-    path("export-invoices/", export_invoices, name="export_invoices"),
+    path("export_invoices/", export_invoices, name="export_invoices"),
     path('invoices/invoice_list/', invoice_list, name='invoice_list'),  
     path('invoices/<int:invoice_id>/', invoice_detail, name='invoice_detail'),
-    path('document/<str:invoice_number>/', twa0101_detail, name='twa0101_detail'),
+    path('document/<int:id>/', twa0101_detail, name='twa0101_detail'),
     path('upload/', upload_file, name='upload_file'),  # Ensure this exists
     path('', invoice_list, name='invoice_list'),
     path("run-script/", run_script, name="run_script"),
     path('main/',main, name='main'),
     path('update_invoice_status/', update_invoice_status, name = 'update_invoice_status'),
     path('invoice_filter/', invoice_filter, name = 'invoice_filter'),
-    path('company_detail/', company_detail, name='company_detail'),
+    path('company_detail/', company_detail, name='company_detail'),  # 營業人列表
+    path('company_detail/<str:company_id>/', company_detail_sub, name='company_detail_sub'),  # 營業人詳細頁面
     path('update-permissions/<int:user_id>/', update_permissions, name='update_permissions'),
     path('permissions/', manage_user_permissions, name='manage_permissions'),
     path('get-user-permissions/<int:user_id>/', get_user_permissions, name='get_user_permissions'),

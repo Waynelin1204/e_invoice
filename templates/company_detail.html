@@ -131,7 +131,7 @@
 
         <div class="mb-3"></div>
         <!-- 測試用的假資料 -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <!--<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition">
                 <h2 class="text-xl font-semibold text-gray-800">台灣科技公司</h2>
                 <p class="text-gray-600 mt-2"><strong>統一編號:</strong> 12345678</p>
@@ -149,6 +149,23 @@
                 <p class="text-gray-600 mt-2"><strong>統一編號:</strong> 11223344</p>
                 <p class="text-gray-500"><strong>類型:</strong> 物流業</p>
             </div>
+        </div>-->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {% for company in companies %}
+                <a href="{% url 'company_detail_sub' company.company_id %}" class="no-underline">
+                    <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition cursor-pointer">
+                        <h2 class="text-xl font-semibold text-gray-800">{{ company.company_register_name }}</h2>
+                        <p class="text-gray-600 mt-2"><strong>統一編號:</strong> {{ company.company_identifier }}</p>
+                        <p class="text-gray-500"><strong>類型:</strong> 
+                            {% if company.company_type == 0 %}
+                                Headquarter
+                            {% else %}
+                                Branch
+                            {% endif %}
+                        </p>
+                    </div>
+                </a>
+            {% endfor %}
         </div>
     </div>
 </div>

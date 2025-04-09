@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>營業人管理-檢視</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 外層容器，包含導航欄與內容 */
+        .content-wrapper {
+            display: flex;
+            height: auto;
+            padding: 20px;
+        }
+ 
+        /* 側邊導覽欄 */
+        .sidebar {
+            width: 220px;
+            background-color: #ffffff; /* 背景顏色 */
+            border-radius: 8px; /* 圓角 */
+            padding: 20px;
+            height: calc(auto - 40px); /* 滿版高度但減去 padding */
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2); /* 懸浮陰影 */
+            transition: all 0.3s ease;
+        }
+
+        /* 導覽列內的連結 */
+        .sidebar .nav-link {
+            color: black !important;
+            padding: 10px 15px;
+            display: block;
+            transition: background 0.3s;
+            border-radius: 6px;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #dfdee0; /* 滑鼠懸停變色 */
+        }
+ 
+        /* 展開的下拉選單 */
+        .collapse {
+
+        }
+        .collapse .nav-link {
+            padding-left: 15px;
+            text-align: right;
+            color: black;
+        }
+ 
+        /* 內容區域 */
+        .content {
+            flex: 1;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.1); /* 內容區域也有陰影 */
+            margin-left: 20px;
+            color: black; /* Set text color to black */
+        }
+        
+        .table-wrapper {
+            width: 100%;
+            max-width: 100%;
+            padding: 0px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table {
+            width: 100%;
+            margin: 0;
+        }
+
+        /* 背景漸層效果 */
+        body {
+            background: linear-gradient(to bottom, #bdc3c7, #2c3e50); /* 背景漸層 */
+            color: white;
+            height: auto;
+            margin: 0;
+        }
+        
+        /* 已開立狀態的綠色背景 */
+        .invoice-status-issued {
+            background-color: #28a745; /* 綠色背景 */
+            color: white; /* 白色字 */
+        }
+        .title-section h3 {
+            display: block !important;
+            color: black; /* Set text color to black */
+        }
+
+        .collapse.show {
+            visibility: visible;
+        }
+
+    </style>
+</head>
+<body>
+<div class="content-wrapper">
+    <!-- 側邊導航欄 -->
+    <nav class="sidebar">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'main' %}">首頁</a>
+            </li>
+            <!-- 點擊展開 -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                    設定
+                </a>
+                <div class="collapse" id="settingMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
+                        <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0);" id="logoutLink">登出</a>
+            </li>
+        </ul>
+    </nav>
+    
+    <form method="post" action="{% url 'company_detail_sub' company.company_id %}">
+        {% csrf_token %}
+        <div class="content">
+            <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
+            <button type="button" id="edit_button" onclick="enableEdit();" class="btn btn-primary">修改</button>
+                
+                <div class="mb-4">
+                    <label for="company_id" class="block text-sm font-medium text-gray-700">公司ID (不可修改)</label>
+                    <input type="text" name="company_id" id="company_id" value="{{ company.company_id }}" class="mt-1 block w-full border border-gray-300 rounded-md" readonly>
+                </div>
+            
+                <div class="mb-4">
+                    <label for="company_register_name" class="block text-sm font-medium text-gray-700">公司註冊名稱</label>
+                    <input type="text" name="company_register_name" id="company_register_name" value="{{ company.company_register_name }}" class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                </div>
+        
+                <div class="mb-4">
+                    <label for="company_identifier" class="block text-sm font-medium text-gray-700">統一編號</label>
+                    <input type="text" name="company_identifier" id="company_identifier" value="{{ company.company_identifier }}" class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                </div>
+        
+                <div class="mb-4">
+                    <label for="company_name" class="block text-sm font-medium text-gray-700">公司名稱</label>
+                    <input type="text" name="company_name" id="company_name" value="{{ company.company_name }}" class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                </div>
+        
+                <div class="mb-4">
+                    <label for="company_address" class="block text-sm font-medium text-gray-700">公司地址</label>
+                    <input type="text" name="company_address" id="company_address" value="{{ company.company_address }}" class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                </div>
+        
+                <div class="mb-4">
+                    <label for="head_company_identifer" class="block text-sm font-medium text-gray-700">總公司統一編號</label>
+                    <input type="text" name="head_company_identifer" id="head_company_identifer" value="{{ company.head_company_identifer|default:'' }}" class="mt-1 block w-full border border-gray-300 rounded-md">
+                </div>
+        
+                <div class="mb-4">
+                    <label for="company_type" class="block text-sm font-medium text-gray-700">公司類型</label>
+                    <select name="company_type" id="company_type" class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                        <option value="0" {% if company.company_type == 0 %}selected{% endif %}>Headquarter</option>
+                        <option value="1" {% if company.company_type == 1 %}selected{% endif %}>Branch</option>
+                    </select>
+                </div>
+        
+                <div class="mb-4">
+                    <label for="is_foreign_ecomm" class="block text-sm font-medium text-gray-700">是否為境外電商</label>
+                    <select name="is_foreign_ecomm" id="is_foreign_ecomm" class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                        <option value="0" {% if company.is_foreign_ecomm == 0 %}selected{% endif %}>否</option>
+                        <option value="1" {% if company.is_foreign_ecomm == 1 %}selected{% endif %}>是</option>
+                    </select>
+                </div>
+        
+                <div class="mb-4">
+                    <label for="tax_identifer" class="block text-sm font-medium text-gray-700">稅務識別碼</label>
+                    <input type="text" name="tax_identifer" id="tax_identifer" value="{{ company.tax_identifer }}" class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                </div>
+        
+                <div class="mb-4">
+                    <label for="apply_eGUI" class="block text-sm font-medium text-gray-700">eGUI 申請狀態</label>
+                    <input type="text" name="apply_eGUI" id="apply_eGUI" value="{{ company.apply_eGUI }}" class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                </div>
+                <button type="submit" id="save_button" class="btn btn-success" style="display: none;">儲存</button>    
+        </div>
+    </form>
+</div>
+
+<script>
+    // 當按下"修改"按鈕時，啟用編輯模式並顯示儲存按鈕
+    function enableEdit() {
+        // 讓所有欄位除了 company_id 可以編輯
+        document.getElementById("company_register_name").disabled = false;
+        document.getElementById("company_identifier").disabled = false;
+        document.getElementById("company_name").disabled = false;
+        document.getElementById("company_address").disabled = false;
+        document.getElementById("head_company_identifer").disabled = false;
+        document.getElementById("company_type").disabled = false;
+        document.getElementById("is_foreign_ecomm").disabled = false;
+        document.getElementById("tax_identifer").disabled = false;
+        document.getElementById("apply_eGUI").disabled = false;
+        
+        // 顯示儲存按鈕
+        document.getElementById("save_button").style.display = "inline-block";
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById('logoutLink').addEventListener('click', function () {
+        fetch("{% url 'logout' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': "{{ csrf_token }}",
+            },
+            credentials: 'same-origin',  // 保證 CSRF Token 會隨請求一起發送
+        }).then(response => {
+            if (response.ok) {
+                alert("登出成功！");
+                window.location.href = '/login/';  // 重定向到登入頁
+            }
+        }).catch(error => {
+            console.error('登出失敗:', error);
+        });
+    });
+</script>
+</html>

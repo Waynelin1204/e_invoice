@@ -91,10 +91,20 @@
             display: block !important;
             color: black; /* Set text color to black */
         }
-
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+        }
     </style>
 </head>
 <body>
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mt-2" role="alert">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
 <div class="content-wrapper">
     <!-- 側邊導航欄 -->
     <nav class="sidebar">
@@ -156,36 +166,29 @@
             </div>
         </form>
         <form method="GET" action="{% url 'invoice_filter' %}" id="invoice_filter_form">
+            <label for="start_date">開始日期：</label>
+            <input type="date" id="start_date" name="start_date" value="{{ start_date }}">
+            
+            <label for="end_date">結束日期：</label>
+            <input type="date" id="end_date" name="end_date" value="{{ end_date }}">
+            <!-- <select name="company_name" id="company_name">
+                <option value="">--請選擇公司名稱--</option>
+                {% for company in companies %}
+                    <option value="{{ company.company_name }}">{{ company.company_name }}</option>
+                {% endfor %}
+            </select> -->
             <select name="invoice_status" id="invoice_status">
                 <option value="">--請選擇發票狀態</option>
                 <option value="未開立">未開立</option>
                 <option value="已開立">已開立</option>
             </select>
-            <select name="invoice_date_year" id="invoice_date_year">
-                <option value="">--請選擇開立年份</option>
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
-            </select>
-            <select name="invoice_date" id="invoice_date">
-                <option value="">--請選擇開立月份</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
-                <option value="11">11</option>
-                <option value="12">12</option>
-            </select>
             <select name="tax_type" id="tax_type">
                 <option value="">--請選擇稅種</option>
-                <option value="應稅">應稅</option>
-                <option value="免稅">免稅</option>
-                <option value="零稅率">零稅率</option>
+                <option value="1">應稅</option>
+                <option value="2">零稅</option>
+                <option value="3">免稅</option>
+                <option value="4">特稅</option>
+                <option value="9">混和應稅</option>
             </select>
             <select name="void_status" id="void_status">
                 <option value="">--請選擇作廢狀態</option>
@@ -199,37 +202,38 @@
                 <option value="100" {% if display_limit == 100 %}selected{% endif %}>100</option>
             </select>
             
-            <button type="submit">Filter</button>
+            <button type="submit">篩選發票</button>
         </form>        
         <div class="mb-3"></div>
         <!-- 匯出表單與傳送發票按鈕並排 -->
         <div class="d-flex justify-content-start gap-3 mb-3">
             <!-- 匯出表單 -->
-            <form method="post" action="">
+            <!-- <form method="post" action="">
                 {% csrf_token %}
                 <div class="d-flex justify-content-start gap-1 mb-10">
                     <button class="btn btn-secondary btn-spacing" id="pdfButton">預覽發票</button>
                 </div>
-            </form>
+            </form> -->
             <form method="post" action="{% url 'export_invoices' %}">
                 {% csrf_token %}
+                <input type="hidden" name="selected_documents" id="selectedInvoicesExport">
                 <div class="d-flex justify-content-start gap-1 mb-10">
-                    <button class="btn btn-secondary btn-spacing" id="exportExcel">匯出檔案</button>
+                    <button type= "submit" class="btn btn-secondary btn-spacing" id="exportExcel">匯出檔案</button>
                 </div>
             </form>
             <!-- 傳送發票按鈕，移至上方 -->
-            <form method="post" action="{% url 'update_invoice_status' %}">
+            <!-- <form method="post" action="{% url 'update_invoice_status' %}">
                 {% csrf_token %}
                 <input type="hidden" name="selected_documents" id="selectedInvoices">
                 <div class="d-flex justify-content-start gap-1 mb-3">
-                    <button type="submit" class="btn btn-primary" id="submitButton">傳送發票</button>
+                    <button type="submit" class="btn btn-secondary btn-spacing" id="submitButton">傳送發票</button>
                 </div>
-            </form>
-            <form method="post" action="{% url 'update_invoice_status' %}">
+            </form> -->
+            <!-- <form method="post" action="{% url 'update_invoice_status' %}">
                 <div class="d-flex justify-content-start gap-1 mb-3">
                     <button type="submit" class="btn btn-warning" id="updateButton">更新作廢狀態</button>
                 </div>
-            </form>
+            </form> -->
         </div>
         
 
@@ -239,11 +243,12 @@
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
-                            <th><input type="checkbox" id="selectAll"> Select All</th>
+                            <th><input type="checkbox" id="selectAll"></th>
                             <th>號碼</th>
                             <th>買方</th>
                             <th>賣方</th>
                             <th>發票日期</th>
+                            <th>相關號碼</th>
                             <th>稅種</th>
                             <th>總計</th>
                             <th>付款狀態</th>
@@ -254,11 +259,12 @@
                     <tbody>
                         {% for document in documents %}
                         <tr>
-                            <td><input type="checkbox" name="selected_documents" value="{{ document.invoice_number }}" data-in></td>
+                            <td><input type="checkbox" name="selected_documents" value="{{ document.id }}"></td>
                             <td>{{ document.invoice_number }}</td>
                             <td>{{ document.buyer_name }}</td>
                             <td>{{ document.seller_name }}</td>
                             <td>{{ document.invoice_date }}</td>
+                            <td>{{ document.relate_number }}</td>
                             <td>{{ document.tax_type }}</td>
                             <td>{{ document.total_amount }}</td>
                             <td>{{ document.payment_status }}</td>
@@ -267,14 +273,14 @@
                             </td>
                             <td>
                                 <!-- 發票作廢狀態下拉選單 -->
-                                <select name="void_status_{{ document.invoice_number }}" class="form-control">
+                                <select name="void_status_{{ document.id }}" class="form-control">
                                     <option value="未作廢" {% if document.void_status == "未作廢" %}selected{% endif %}>未作廢</option>
                                     <option value="已作廢" {% if document.void_status == "已作廢" %}selected{% endif %}>已作廢</option>
                                 </select>
                             </td>
                             <td>
-                                {% if document.invoice_number %}
-                                    <a href="{% url 'twa0101_detail' document.invoice_number %}" class="btn btn-primary btn-sm">查看詳情</a>
+                                {% if document.id %}
+                                    <a href="{% url 'twa0101_detail' document.id %}" class="btn btn-primary btn-sm">查看詳情</a>
                                 {% else %}
                                     <span class="text-muted">無可用資料</span>
                                 {% endif %}
@@ -289,6 +295,23 @@
                     </tbody>
                 </table>
             </div>
+            <div class="pagination text-end">
+                <span class="step-links">
+                    {% if documents.has_previous %}
+                        <a href="?page=1&display_limit={{ display_limit }}">&laquo; 第一頁</a>
+                        <a href="?page={{ documents.previous_page_number }}&display_limit={{ display_limit }}">上一頁</a>
+                    {% endif %}
+            
+                    <span class="current">
+                        頁碼 {{ documents.number }} 共 {{ documents.paginator.num_pages }} 頁
+                    </span>
+            
+                    {% if documents.has_next %}
+                        <a href="?page={{ documents.next_page_number }}&display_limit={{ display_limit }}">下一頁</a>
+                        <a href="?page={{ documents.paginator.num_pages }}&display_limit={{ display_limit }}">最後一頁 &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
         </form>
     </div>
 </div>
@@ -296,64 +319,26 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // 全選/取消全選功能
-    document.getElementById('select_all').addEventListener('change', function() {
+    document.getElementById('selectAll').addEventListener('change', function() {
         const checkboxes = document.querySelectorAll('input[name="selected_documents"]');
         checkboxes.forEach(checkbox => {
             checkbox.checked = this.checked;
         });
     });
 
-    document.getElementById("exportExcel").addEventListener("click", function(event) {
-        event.preventDefault(); // Prevent form submission
-        let selected = [];
-        document.querySelectorAll("input[name='selected_documents']:checked").forEach((checkbox) => {
-            selected.push(checkbox.getAttribute("data-invoice-number")); // Use invoice_number
-        });
-        if (selected.length === 0) {
-            alert("Please select at least one item to export.");
-            return;
-        }
-        let url = `/export-invoices/?ids=` + selected.join(",");
-        window.location.href = url;
-    });
-</script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const checkboxes = document.querySelectorAll("input[name='selected_documents']");
-    const selectedInvoicesInput = document.getElementById("selectedInvoices");
-    const selectAllCheckbox = document.getElementById("selectAll");
-
-    function updateSelectedInvoices() {
-        let selected = [];
-        checkboxes.forEach((checkbox) => {
-            if (checkbox.checked) {
-                selected.push(checkbox.value); // 抓取發票號碼
-            }
-        });
-        selectedInvoicesInput.value = selected.join(","); // 將選取的發票號碼存入 hidden input
-    }
-
-    // 監聽每個 checkbox 的變化
-    checkboxes.forEach((checkbox) => {
-        checkbox.addEventListener("change", updateSelectedInvoices);
-    });
-
-    // 監聽全選 checkbox
-    selectAllCheckbox.addEventListener("change", function () {
-        checkboxes.forEach((checkbox) => {
-            checkbox.checked = selectAllCheckbox.checked;
-        });
-        updateSelectedInvoices();
-    });
-
-    // 在點擊「傳送發票」時檢查是否有選取發票
-    document.getElementById("invoiceForm").addEventListener("submit", function (event) {
-        if (selectedInvoicesInput.value === "") {
-            event.preventDefault();
-            alert("請選擇至少一張發票再傳送！");
-        }
-    });
-});
+    //document.getElementById("exportExcel").addEventListener("click", function(event) {
+    //    event.preventDefault(); // Prevent form submission
+    //    let selected = [];
+    //    document.querySelectorAll("input[name='selected_documents']:checked").forEach((checkbox) => {
+    //        selected.push(checkbox.getAttribute("data-invoice-number")); // Use invoice_number
+    //    });
+    //    if (selected.length === 0) {
+    //        alert("Please select at least one item to export.");
+    //        return;
+    //    }
+    //    let url = `/export-invoices/?ids=` + selected.join(",");
+    //    window.location.href = url;
+    //});
 </script>
 <script>
     document.getElementById('logoutLink').addEventListener('click', function () {
@@ -404,5 +389,139 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 </script>
+<!-- <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const checkboxes = document.querySelectorAll("input[name='selected_documents']");
+        const selectedInvoicesInput = document.getElementById("selectedInvoices");
+        const selectAllCheckbox = document.getElementById("selectAll");
+
+        function updateSelectedInvoices() {
+            let selected = [];
+            checkboxes.forEach((checkbox) => {
+                if (checkbox.checked) {
+                    selected.push(checkbox.value); // 抓取發票號碼
+                }
+            });
+            selectedInvoicesInput.value = selected.join(","); // 將選取的發票號碼存入 hidden input
+        }
+
+        // 監聽每個 checkbox 的變化
+        checkboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", updateSelectedInvoices);
+        });
+
+        // 監聽全選 checkbox
+        selectAllCheckbox.addEventListener("change", function () {
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateSelectedInvoices();
+        });
+
+        // 在點擊「傳送發票」時檢查是否有選取發票
+        document.getElementById("submitButton").addEventListener("submit", function (event) {
+            if (selectedInvoicesInput.value === "") {
+                event.preventDefault();
+                alert("請選擇至少一張發票再傳送！");
+            }
+        });
+    });
+</script> -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const checkboxes = document.querySelectorAll("input[name='selected_documents']");
+        const selectedInvoicesInput = document.getElementById("selectedInvoicesExport");
+        const selectAllCheckbox = document.getElementById("selectAll");
+
+        function updateSelectedInvoices() {
+            let selected = [];
+            checkboxes.forEach((checkbox) => {
+                if (checkbox.checked) {
+                    selected.push(checkbox.value); // 抓取發票號碼
+                }
+            });
+            
+            selectedInvoicesInput.value = selected.join(","); // 將選取的發票號碼存入 hidden input
+        }
+
+
+
+        // 監聽每個 checkbox 的變化
+        checkboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", updateSelectedInvoices);
+        });
+
+        // 監聽全選 checkbox
+        selectAllCheckbox.addEventListener("change", function () {
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateSelectedInvoices();
+        });
+
+        // 在點擊「傳送發票」時檢查是否有選取發票
+        document.getElementById("exportExcel").addEventListener("submit", function (event) {
+            if (selectedInvoicesInput.value === "") {
+                event.preventDefault();
+                alert("請選擇至少一張發票再傳送！");
+                return;
+            }
+            // 確認 hidden input 的值是否正確設置
+            console.log("Selected Invoice IDs:", selectedInvoicesInput.value);
+
+            // 提交表單
+            document.querySelector("form").submit();
+
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const startInput = document.getElementById("start_date");
+        const endInput = document.getElementById("end_date");
+        const form = document.getElementById("invoice_filter_form");
+    
+        function isOver60Days(startDate, endDate) {
+            const diffTime = Math.abs(endDate - startDate);
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            return diffDays > 60;
+        }
+    
+        function limitDateRange() {
+            const start = new Date(startInput.value);
+            const maxEnd = new Date(start);
+            maxEnd.setDate(start.getDate() + 60);
+    
+            const yyyy = maxEnd.getFullYear();
+            const mm = String(maxEnd.getMonth() + 1).padStart(2, '0');
+            const dd = String(maxEnd.getDate()).padStart(2, '0');
+            const maxEndStr = `${yyyy}-${mm}-${dd}`;
+    
+            endInput.min = startInput.value;
+            endInput.max = maxEndStr;
+        }
+    
+        form.addEventListener("submit", function (event) {
+            const startDate = new Date(startInput.value);
+            const endDate = new Date(endInput.value);
+    
+            // 若開始日期 > 結束日期
+            if (startDate > endDate) {
+                event.preventDefault();
+                alert("開始日期不可大於結束日期！");
+                return;
+            }
+    
+            if (isOver60Days(startDate, endDate)) {
+                event.preventDefault();
+                alert("請選擇 60 天以內的時間區間！");
+                return;
+            }
+        });
+    
+        limitDateRange();
+        startInput.addEventListener("change", limitDateRange);
+    });
+</script>    
 </body>
 </html>

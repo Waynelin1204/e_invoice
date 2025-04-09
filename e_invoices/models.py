@@ -111,19 +111,42 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"Invoice {self.document_id} - {self.status}"
-
+# 僅限英數字
+alphanumeric_validator = RegexValidator(r'^[a-zA-Z0-9]{1,10}$')
+# 僅限數字
+digit_validator = RegexValidator(r'^[0-9]+$')
 class Company(models.Model):
+    company_id = models.CharField(
+        max_length=10,
+        validators=[alphanumeric_validator],
+        error_messages={'invalid': '請輸入10碼以內字元，僅限英文大小寫或數字'}
+    )
+    company_identifier = models.CharField(
+        max_length=8,
+        validators=[RegexValidator(r'^\d{8}$')],
+        error_messages={'invalid': '請輸入8碼數字'}
+    )
     company_register_name = models.CharField(max_length=255)
-    company_identifier = models.CharField(max_length=255)
-    head_company_identifer = models.CharField(max_length=100, blank=True, null=True)
     company_name = models.CharField(max_length=255)
     company_address = models.CharField(max_length=255)
-    company_type = models.CharField(max_length=255)
-    tax_identifer = models.CharField(max_length=255)
+    head_company_identifer = models.CharField(max_length=100, blank=True, null=True)
+    company_type = models.IntegerField(
+        choices=[(0, 'Headquarter'), (1, 'Branch')],
+        default=0  # 預設為 Headquarter
+    )
+    is_foreign_ecomm = models.IntegerField(
+        choices=[(0, '否'), (1, '是')],
+        default=0  # 預設為否
+    )
+    tax_identifer = models.CharField(
+        max_length=9,
+        validators=[RegexValidator(r'^\d{9}$')],
+        error_messages={'invalid': '請輸入9碼數字'}
+    )
     apply_eGUI = models.CharField(max_length=255)
     
     def __str__(self):
-        return self.company_name
+        return f"{self.company_name} - {self.company_identifier} - {self.apply_eGUI}"
 
 # class Company(models.Model):
     # name = models.CharField(max_length=255)
@@ -296,8 +319,8 @@ class Myinvoiceportal(models.Model):
 class Twa0101(models.Model):
     data_type = models.CharField(max_length=4) # Consistent H1 
     job_type = models.CharField(max_length=4) # H or G
-    corporate_id =  models.CharField(max_length=8)
-    invoice_number = models.CharField(max_length=20, unique=True, primary_key=True)  # 發票號碼
+    corporate_id =  models.CharField(max_length=8) #統一編號
+    invoice_number = models.CharField(max_length=20, blank=True, null=True)  # 後來才有
     invoice_date = models.DateField()  # 發票日期
     invoice_time = models.TimeField()  # 發票時間
     seller_name = models.CharField(max_length=225)  # 賣方
@@ -315,20 +338,20 @@ class Twa0101(models.Model):
     reserved2 = models.CharField(max_length=100, blank=True, null=True)  # 保留欄位2
     #invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
     description = models.CharField(max_length=500)  # 品名
-    quantity = models.DecimalField(max_digits=20, decimal_places=7)  # 數量
+    quantity = models.DecimalField(max_digits=20, decimal_places=7, blank=True, null=True) # 數量
     unit = models.CharField(max_length=6, blank=True, null=True)  # 單位
-    unit_price = models.DecimalField(max_digits=20, decimal_places=7)  # 單價
-    tax_type = models.CharField(max_length=50)  # 課稅別
-    amount = models.DecimalField(max_digits=20, decimal_places=7)  # 金額
-    sequence_number = models.CharField(max_length=4)  # 明細排列序號
+    unit_price = models.DecimalField(max_digits=20, decimal_places=7,blank=True, null=True)  # 單價
+    tax_type = models.CharField(max_length=50, blank=True, null=True)  # 課稅別
+    amount = models.DecimalField(max_digits=20, decimal_places=7, blank=True, null=True)  # 金額
+    sequence_number = models.CharField(max_length=4,blank=True, null=True)  # 明細排列序號
     remark = models.CharField(max_length=120, blank=True, null=True)  # 單一欄位備註
     relate_number = models.CharField(max_length=50, blank=True, null=True)  # 相關號碼
     #invoice = models.OneToOneField(Invoice, on_delete=models.CASCADE, related_name="amount_details")
-    sales_amount = models.DecimalField(max_digits=20, decimal_places=0)  # 銷售額合計
-    tax_type = models.CharField(max_length=50)  # 課稅別
-    tax_rate = models.CharField(max_length=50)  # 稅率
+    sales_amount = models.DecimalField(max_digits=20, decimal_places=0,blank=True, null=True)  # 銷售額合計
+    tax_type = models.CharField(max_length=50,blank=True, null=True)  # 課稅別
+    tax_rate = models.CharField(max_length=50,blank=True, null=True)  # 稅率
     tax_amount = models.DecimalField(max_digits=20, decimal_places=0)  # 營業稅額
-    total_amount = models.DecimalField(max_digits=20, decimal_places=0)  # 總計
+    total_amount = models.DecimalField(max_digits=20, decimal_places=0,blank=True, null=True)  # 總計
     discount_amount = models.DecimalField(max_digits=20, decimal_places=0, blank=True, null=True)  # 扣抵金額
     original_currency_amount = models.DecimalField(max_digits=20, decimal_places=7, blank=True, null=True)  # 原幣金額
     exchange_rate = models.DecimalField(max_digits=13, decimal_places=5, blank=True, null=True)  # 匯率
@@ -340,7 +363,7 @@ class Twa0101(models.Model):
     void_status = models.CharField(max_length=10, blank=True, null=True)
     
     def __str__(self):
-        return f"{self.invoice_number} - {self.buyer_name}"
+        return f"{self.relate_number} - {self.buyer_name}"
     
 class Twa0101Item(models.Model):
     twa0101 = models.ForeignKey(Twa0101, related_name='items', on_delete=models.CASCADE)  # 關聯 Twa0101

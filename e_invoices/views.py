@@ -38,6 +38,16 @@ from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
 import json
 import os
+from io import BytesIO
+from django.conf import settings
+from openpyxl import load_workbook
+import logging
+from datetime import datetime, timedelta
+from django.db.models import Q
+from django.core.paginator import Paginator
+from django.contrib import messages
+
+logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = "/home/pi/OCR/Samples"
 @csrf_exempt
@@ -175,65 +185,97 @@ def update_permissions(request, user_id):
     return JsonResponse({"status": "error", "message": "無效的請求"}, status=400)
 
     
-
-# @login_required
-# def twa0101(request):
-    
-    # user = request.user
-    # documents = Twa0101.objects.none()  # 預設不回傳任何資料
-
-    # # 建立查詢條件
-    # filter_conditions = Q()
-
-    # if user.groups.filter(name="South").exists():
-        # filter_conditions |= Q(buyer_name__icontains="UAS")  # South 群組可以看到 "UAS"
-
-    # if user.groups.filter(name="North").exists():  # ✅ 修正 "Nouth" → "North"
-        # filter_conditions |= Q(buyer_name__icontains="KKK")  # North 群組可以看到 "KKK"
-
-    # # 如果 user 屬於 South 或 North，則執行查詢
-    # if filter_conditions:
-        # documents = Twa0101.objects.filter(filter_conditions)
-
-    # context = {
-        # 'documents': documents,
-    # }
-
-    # return render(request, 'test.html', context)
-
-
 def export_invoices(request):
-    """Export all columns of selected invoices to an Excel file."""
-    selected_invoice_numbers = request.GET.get("ids", "").split(",")
+    if request.method == 'POST':
 
-    # Fetch all records from the database for the selected IDs
-    invoices = Twa0101.objects.filter(invoice_number__in=selected_invoice_numbers).values()  # Get all fields
+        raw_ids = request.POST.get("selected_documents", "")
+        selected_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
 
-    if not invoices:
-        return HttpResponse("No records found.", status=400)
+        if not selected_ids:
+            return HttpResponse("No invoice IDs provided", status=400)
+        print(f"Selected invoice IDs: {selected_ids}")
 
-    # Convert QuerySet to DataFrame (includes all DB columns)
-    df = pd.DataFrame(list(invoices))  
+        # ✅ 先更新發票狀態
+        updated_count = Twa0101.objects.filter(id__in=selected_ids).update(invoice_status='已開立')
+        print(f"更新了 {updated_count} 筆發票")
+        
 
-    # Ensure all columns are included, even if some values are empty
-    df.fillna("", inplace=True)
+        # ✅ 查詢發票與明細資料
+        invoices = Twa0101.objects.filter(id__in=selected_ids).prefetch_related('items')
+        if not invoices.exists():
+            return HttpResponse("No invoices found", status=404)
 
-    # Create Excel file in memory
-    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    response["Content-Disposition"] = 'attachment; filename="exported_invoices.xlsx"'
+        # ✅ 載入 Excel 樣板
+        template_path = os.path.join(settings.BASE_DIR, 'export', 'A0401_Export.xlsx')
+        workbook = load_workbook(template_path)
+        sheet = workbook.active
 
-    with pd.ExcelWriter(response, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False)  # Write all DB columns to Excel
-    
-    return response
+        row = 2  # 從第 2 列開始填資料
+        for invoice in invoices:
+            for item in invoice.items.all():
+                sheet.cell(row=row, column=1, value=invoice.invoice_number)
+                sheet.cell(row=row, column=2, value=f"{invoice.invoice_date} {invoice.invoice_time}")
+                sheet.cell(row=row, column=3, value=invoice.corporate_id)
+                sheet.cell(row=row, column=4, value=invoice.buyer_name)
+                sheet.cell(row=row, column=6, value=invoice.main_remark)
+                sheet.cell(row=row, column=7, value=invoice.customs_clearance_mark)
+                sheet.cell(row=row, column=8, value=invoice.relate_number)
+                sheet.cell(row=row, column=9, value=invoice.sales_amount)
+                sheet.cell(row=row, column=10, value=invoice.tax_type)
+                sheet.cell(row=row, column=11, value=invoice.tax_rate)
+                sheet.cell(row=row, column=12, value=invoice.tax_amount)
+                sheet.cell(row=row, column=13, value=invoice.total_amount)
+                sheet.cell(row=row, column=14, value=item.product_name)
+                sheet.cell(row=row, column=15, value=item.quantity)
+                sheet.cell(row=row, column=16, value=item.unit)
+                sheet.cell(row=row, column=17, value=float(item.unit_price))
+                sheet.cell(row=row, column=18, value=float(item.amount))
+                sheet.cell(row=row, column=19, value=item.remark)
+                sheet.cell(row=row, column=20, value=invoice.relate_number)
+                row += 1
+
+        # ✅ 匯出為 Excel 並回傳下載
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="invoices.xlsx"'
+        return response
+
+
 
 def company_detail(request):
-    company = Company.objects.all()
+    companies = Company.objects.all()
+    return render(request, 'company_detail.html', {'companies': companies})    
+
+# 營業人管理-檢視
+def company_detail_sub(request, company_id):
+    """顯示公司詳細資訊"""
+    print("Received company_id:", company_id)
+    company = get_object_or_404(Company, company_id=company_id)
+
+    if request.method == 'POST':
+        # 如果是POST請求，則將修改資料保存
+        company.company_register_name = request.POST['company_register_name']
+        company.company_identifier = request.POST['company_identifier']
+        company.company_name = request.POST['company_name']
+        company.company_address = request.POST['company_address']
+        company.head_company_identifer = request.POST.get('head_company_identifer', '')
+        company.company_type = int(request.POST['company_type'])
+        company.is_foreign_ecomm = int(request.POST['is_foreign_ecomm'])
+        company.tax_identifer = request.POST['tax_identifer']
+        company.apply_eGUI = request.POST['apply_eGUI']
+        
+        company.save()
+        
+        # 重新導向到該公司詳細頁面
+        return redirect('company_detail_sub', company_id=company_id)    
     
-    context = {
-        'company': company,
-    }
-    return render(request, 'company_detail.html', context)
+    return render(request, 'company_detail_sub.html', {'company': company})
     
 
     
@@ -407,86 +449,154 @@ def generate_pdf(request, document_id):
 
     return response
 
-def invoice_filter(request):
-        display_limit = int(request.GET.get("display_limit", 25))
-        invoice_status_filter = request.GET.get("invoice_status")
-        void_status_filter = request.GET.get("void_status")
-        tax_type_filter = request.GET.get("tax_type")
-	# 獲取當前用戶的可查看公司名稱列表
-        user_profile = request.user.profile
-        viewable_company_names = user_profile.viewable_companies.values_list('company_name', flat=True)
-        viewable_company_names_str = ', '.join([f"'{name}'" for name in viewable_company_names])
-        query = """
-		SELECT
-			s.invoice_number,
-			s.buyer_name,
-			s.seller_name,
-			s.invoice_date,
-			s.tax_type,
-			s.total_amount,
-			s.payment_status,
-			s.invoice_status,
-			s.void_status
+# def invoice_filter(request):
+#         display_limit = int(request.GET.get("display_limit", 25))
+#         invoice_status_filter = request.GET.get("invoice_status")
+#         void_status_filter = request.GET.get("void_status")
+#         tax_type_filter = request.GET.get("tax_type")
+# 	# 獲取當前用戶的可查看公司名稱列表
+#         user_profile = request.user.profile
+#         viewable_company_names = user_profile.viewable_companies.values_list('company_name', flat=True)
+#         viewable_company_names_str = ', '.join([f"'{name}'" for name in viewable_company_names])
+#         query = """
+# 		SELECT
+# 			s.invoice_number,
+# 			s.buyer_name,
+# 			s.seller_name,
+# 			s.invoice_date,
+# 			s.tax_type,
+# 			s.total_amount,
+# 			s.payment_status,
+# 			s.invoice_status,
+# 			s.void_status
 
-		FROM e_invoices_twa0101 s
-	"""
+# 		FROM e_invoices_twa0101 s
+# 	"""
 	
-        filters = []
-        if invoice_status_filter:
-                filters.append(f"s.invoice_status = '{invoice_status_filter}'")
-        if void_status_filter:
-                filters.append(f"s.void_status = '{void_status_filter}'")
-        if tax_type_filter:
-                filters.append(f"s.tax_type = '{tax_type_filter}'")
-	#if document_number_filter:
-	#	document_number_filter = document_number_filter.strip()
-	#	filters.append(f"CAST(s.document_number AS TEXT) LIKE '%{document_number_filter}%'")
+#         filters = []
+#         if invoice_status_filter:
+#                 filters.append(f"s.invoice_status = '{invoice_status_filter}'")
+#         if void_status_filter:
+#                 filters.append(f"s.void_status = '{void_status_filter}'")
+#         if tax_type_filter:
+#                 filters.append(f"s.tax_type = '{tax_type_filter}'")
+# 	#if document_number_filter:
+# 	#	document_number_filter = document_number_filter.strip()
+# 	#	filters.append(f"CAST(s.document_number AS TEXT) LIKE '%{document_number_filter}%'")
 		
-        if viewable_company_names_str:
-            filters.append(f"s.seller_name IN ({viewable_company_names_str})")
+#         if viewable_company_names_str:
+#             filters.append(f"s.seller_name IN ({viewable_company_names_str})")
 	    
-        if filters:
-                query += " WHERE " + " AND ".join(filters)
+#         if filters:
+#                 query += " WHERE " + " AND ".join(filters)
 		
-        query += " ORDER BY s.invoice_date DESC"
-        query += f" LIMIT {display_limit}"
+#         query += " ORDER BY s.invoice_date DESC"
+#         query += f" LIMIT {display_limit}"
 
 
-        with connection.cursor() as cursor:
-                cursor.execute(query)
-                merged_data = [
-                        {
-				"invoice_number": row[0],
-				"buyer_name": row[1],
-				"seller_name":row[2],
-				"invoice_date": row[3],
-				"tax_type":row[4],
-				"total_amount":row[5],
-				"payment_status":row[6],
-				"invoice_status":row[7],
-				"void_status":row[8]
-			}
-			for row in cursor.fetchall()
-		]
+#         with connection.cursor() as cursor:
+#                 cursor.execute(query)
+#                 merged_data = [
+#                         {
+# 				"invoice_number": row[0],
+# 				"buyer_name": row[1],
+# 				"seller_name":row[2],
+# 				"invoice_date": row[3],
+# 				"tax_type":row[4],
+# 				"total_amount":row[5],
+# 				"payment_status":row[6],
+# 				"invoice_status":row[7],
+# 				"void_status":row[8]
+# 			}
+# 			for row in cursor.fetchall()
+# 		]
 	
-                cursor.execute('SELECT DISTINCT "invoice_status" FROM e_invoices_twa0101')
-                invoice_status = [row[0] for row in cursor.fetchall()]
+#                 cursor.execute('SELECT DISTINCT "invoice_status" FROM e_invoices_twa0101')
+#                 invoice_status = [row[0] for row in cursor.fetchall()]
 		
-                cursor.execute('SELECT DISTINCT "void_status" FROM e_invoices_twa0101')
-                void_status = [row[0] for row in cursor.fetchall()]
+#                 cursor.execute('SELECT DISTINCT "void_status" FROM e_invoices_twa0101')
+#                 void_status = [row[0] for row in cursor.fetchall()]
 		
-                cursor.execute('SELECT DISTINCT "tax_type" FROM e_invoices_twa0101')
-                tax_type = [row[0] for row in cursor.fetchall()]		
+#                 cursor.execute('SELECT DISTINCT "tax_type" FROM e_invoices_twa0101')
+#                 tax_type = [row[0] for row in cursor.fetchall()]		
 
 	
-        return render(request, "test.html", {
-		"invoice_status":invoice_status,
-		"void_status":void_status,
-		"tax_type":tax_type,
-		"display_limit":display_limit,
-		"documents":merged_data,
-	})	
+#         return render(request, "test.html", {
+# 		"invoice_status":invoice_status,
+# 		"void_status":void_status,
+# 		"tax_type":tax_type,
+# 		"display_limit":display_limit,
+# 		"documents":merged_data,
+# 	})	
 
+def invoice_filter(request):
+    # 預設顯示筆數
+    display_limit = int(request.GET.get("display_limit", 20))  # 默認為20筆資料
+
+    # 其他篩選條件
+    invoice_status_filter = request.GET.get("invoice_status")
+    void_status_filter = request.GET.get("void_status")
+    tax_type_filter = request.GET.get("tax_type")
+
+    # 計算兩個月前的日期
+    two_months_ago = datetime.today() - timedelta(days=60)
+
+    # 取得時間範圍的過濾條件（默認從兩個月前開始）
+    start_date = request.GET.get("start_date", two_months_ago.strftime('%Y-%m-%d'))
+    end_date = request.GET.get("end_date", datetime.today().strftime('%Y-%m-%d'))
+
+    # 轉換成 datetime 格式
+    try:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    except ValueError:
+        start_date = two_months_ago  # 如果格式錯誤，使用預設的兩個月前日期
+
+    try:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    except ValueError:
+        end_date = datetime.today()  # 如果格式錯誤，使用今天的日期
+
+    if (end_date - start_date).days > 60:
+        messages.error(request, "查詢區間不得超過 60 天")
+        return redirect('test')
+    if start_date > end_date:
+        messages.error(request, "開始日期不能大於結束日期")
+        return redirect('test')
+    
+    # 查詢條件構建
+    filters = Q()
+    if invoice_status_filter:
+        filters &= Q(invoice_status=invoice_status_filter)
+    if void_status_filter:
+        filters &= Q(void_status=void_status_filter)
+    if tax_type_filter:
+        filters &= Q(tax_type=tax_type_filter)
+
+    # 限制在兩個月前到今天的時間範圍內
+    filters &= Q(invoice_date__range=[start_date, end_date])
+
+    # 查詢所有符合條件的發票資料
+    invoices_list = Twa0101.objects.filter(filters).order_by('-invoice_date')
+
+    # 分頁
+    paginator = Paginator(invoices_list, display_limit)  # 每頁顯示的資料筆數
+    page_number = request.GET.get('page')  # 獲取當前頁碼
+    page_obj = paginator.get_page(page_number)  # 根據頁碼獲取相應的頁面資料
+
+    # 獲取篩選條件的選項
+    invoice_status = Twa0101.objects.values_list('invoice_status', flat=True).distinct()
+    void_status = Twa0101.objects.values_list('void_status', flat=True).distinct()
+    tax_type = Twa0101.objects.values_list('tax_type', flat=True).distinct()
+
+    return render(request, "test.html", {
+        "invoice_status": invoice_status,
+        "void_status": void_status,
+        "tax_type": tax_type,
+        "display_limit": display_limit,  # 傳遞選擇的筆數
+        "documents": page_obj,  # 傳遞分頁結果
+        "start_date": start_date.strftime('%Y-%m-%d'),  # 顯示篩選的開始日期
+        "end_date": end_date.strftime('%Y-%m-%d'),  # 顯示篩選的結束日期
+    })
 
 @login_required(login_url="Login")
 def reconcil(request):
@@ -614,20 +724,35 @@ def invoice_detail(request, invoice_id):
 
 @login_required
 def twa0101(request):
-    """ 只顯示該使用者有權限查看的發票 """
-    user_profile = request.user.profile  # 取得登入使用者的 UserProfile
-    viewable_company_names = user_profile.viewable_companies.values_list('company_name', flat=True)  # 取得該使用者可查看的公司名稱列表
-    filter_conditions = Q(seller_name__in=viewable_company_names)
-    documents = Twa0101.objects.filter(seller_name__in=viewable_company_names).prefetch_related('items') # 過濾 seller_namename__in=viewable_company_names)  # 過濾 seller_name
+    # 取得登入使用者的 UserProfile
+    user_profile = request.user.profile
     
+    # 取得該使用者可查看的公司名稱列表
+    viewable_company_names = user_profile.viewable_companies.values_list('company_name', flat=True)
+    
+    # 計算從今天開始往前推的60天的日期
+    sixty_days_ago = datetime.today() - timedelta(days=60)
+    
+    # 篩選條件：只顯示最近60天的發票
+    filter_conditions = Q(seller_name__in=viewable_company_names) & Q(invoice_date__gte=sixty_days_ago)
+
+    # 查詢符合條件的資料，並使用 prefetch_related 來查詢發票明細
+    documents = Twa0101.objects.filter(filter_conditions).prefetch_related('items').order_by('-invoice_date')
+
+    # 分頁：每頁顯示25筆資料
+    paginator = Paginator(documents, 25)  # 每頁顯示25筆資料
+    page_number = request.GET.get('page')  # 取得當前頁數
+    page_obj = paginator.get_page(page_number)  # 根據頁數取得對應的資料
+
+    # 傳遞資料給模板
     context = {
-        'documents': documents,
+        'documents': page_obj,  # 傳遞分頁後的資料
     }
 
     return render(request, 'test.html', context)
     
-def twa0101_detail(request, invoice_number):
-    document = get_object_or_404(Twa0101, invoice_number=invoice_number)
+def twa0101_detail(request, id):
+    document = get_object_or_404(Twa0101, id=id)
     items = document.items.all()  # 確保有正確查詢
     return render(request, 'document/twa0101_detail.html', {'document': document, 'items': items})
 
@@ -638,20 +763,47 @@ def main(request):
     return render(request, 'main.html')
 
 
+
 def update_invoice_status(request):
     if request.method == 'POST':
-        selected_invoice_numbers = request.POST.getlist('selected_documents')
-        print(selected_invoice_numbers)
-        if selected_invoice_numbers:
-            Twa0101.objects.filter(invoice_number__in=selected_invoice_numbers).update(invoice_status='已開立')
+        selected_id = request.POST.get("selected_documents", "").split(",")
+
+        # 確保發票號碼有效
+        selected_id = [num.strip() for num in selected_id if num.strip()]
+        
+        if selected_id:
+            updated_count = Twa0101.objects.filter(id__in=selected_id).update(invoice_status='已開立')
+            print(f"更新了 {updated_count} 筆發票")
         else:
             print("沒有選中的發票")
+
     return redirect('test')  # 替換為您的發票列表頁面名稱
     
-def company_detail(request):
-    return render(request, 'company_detail.html')
 
+def update_void_status(request):
+    if request.method == 'POST':
+        # 獲取所有選擇的發票 id
+        selected_invoices = request.POST.getlist('selected_documents')  # ['id1', 'id2', ...]
 
+        void_statuses = {}  # 儲存發票 id 和對應的作廢狀態
+
+        # 從表單中獲取每張發票的作廢狀態
+        for invoice_id in selected_invoices:
+            void_status = request.POST.get(f'void_status_{invoice_id}')
+            void_statuses[invoice_id] = void_status
+
+        # 根據 id 更新每張發票的作廢狀態
+        for invoice_id, void_status in void_statuses.items():
+            try:
+                invoice = Invoice.objects.get(id=invoice_id)
+                invoice.void_status = void_status
+                invoice.save()
+            except Invoice.DoesNotExist:
+                # 處理找不到發票的情況
+                pass
+
+        # 完成後可以重定向回發票列表頁面
+        return redirect('test')  # 假設更新後重定向回發票列表頁
 
 
 
