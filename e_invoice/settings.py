@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'e_invoices'
+    'e_invoices',
+    'widget_tweaks',  # For custom form widgets
 ]
 
 MIDDLEWARE = [

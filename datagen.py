@@ -1,8 +1,8 @@
 from decimal import Decimal
 from django.utils import timezone
-from e_invoices.models import Twa0101, Twa0101Item
+from e_invoices.models import Twa0101, Twa0101Item, Company
 import random
-
+company = ["公司A", "公司B", "公司C", "公司D"]
 seller_names = ["公司A", "公司B", "公司C", "公司D"]
 buyer_names = ["公司E", "公司F", "公司G", "公司D"]
 product_names = ["商品X", "商品Y", "商品Z", "商品W", "商品V", "商品U"]
@@ -24,6 +24,7 @@ for i in range(100):  # 修改為 100 筆
         zero_tax_rate_reason = None
     
     relate_number = F"INV{str(i+1).zfill(5)}"
+    company = Company.objects.get(company_name=seller_names)
 
     invoice = Twa0101(
         data_type=random.choice(["H1", "H2", "H3"]),
@@ -31,6 +32,7 @@ for i in range(100):  # 修改為 100 筆
         corporate_id=f"{random.randint(10000000, 99999999)}",
         invoice_number="",
         invoice_date=timezone.now().date(),
+        company=company,
         invoice_time=timezone.now().time(),
         seller_name=random.choice(seller_names),
         buyer_name=random.choice(buyer_names),

@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>側邊導航 + 懸浮效果</title>
+    <title>發票列表</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         /* 外層容器，包含導航欄與內容 */
         .content-wrapper {
@@ -70,8 +71,21 @@
         }
         
         .table {
+            
             width: 100%;
             margin: 0;
+            border-collapse: collapse;
+        }
+
+
+        .table td, .table th {
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+
+        .table thead th {
+            text-align: center;
+            vertical-align: middle;
         }
 
         /* 背景漸層效果 */
@@ -98,13 +112,13 @@
     </style>
 </head>
 <body>
-{% if messages %}
+<!-- {% if messages %}
     {% for message in messages %}
         <div class="alert alert-{{ message.tags }} mt-2" role="alert">
             {{ message }}
         </div>
     {% endfor %}
-{% endif %}
+{% endif %} -->
 <div class="content-wrapper">
     <!-- 側邊導航欄 -->
     <nav class="sidebar">
@@ -127,7 +141,15 @@
                         <li><a class="nav-link" href="#">零稅率發票</a></li>
                         <li><a class="nav-link" href="#">折讓與作廢發票</a></li>
                     </ul>
-                </div>
+                </div> -->
+                <!-- <div class="collapse" id="invoiceMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'invoice_filter' %}?invoice_status=已開立">已傳送發票</a></li>
+                        <li><a class="nav-link" href="{% url 'invoice_filter' %}?invoice_status=未開立">未傳送發票</a></li>
+                        <li><a class="nav-link" href="#">零稅率發票</a></li>
+                        <li><a class="nav-link" href="#">折讓與作廢發票</a></li>
+                    </ul>
+                </div> -->
             </li>
 <!--
             <li class="nav-item">
@@ -166,10 +188,10 @@
             </div>
         </form>
         <form method="GET" action="{% url 'invoice_filter' %}" id="invoice_filter_form">
-            <label for="start_date">開始日期：</label>
+            <label for="start_date" style="color: black;">開始日期：</label>
             <input type="date" id="start_date" name="start_date" value="{{ start_date }}">
             
-            <label for="end_date">結束日期：</label>
+            <label for="end_date" style="color: black;">結束日期：</label>
             <input type="date" id="end_date" name="end_date" value="{{ end_date }}">
             <!-- <select name="company_name" id="company_name">
                 <option value="">--請選擇公司名稱--</option>
@@ -222,18 +244,20 @@
                 </div>
             </form>
             <!-- 傳送發票按鈕，移至上方 -->
-            <!-- <form method="post" action="{% url 'update_invoice_status' %}">
+
+            <form id="deleteForm" method="post" action="{% url 'delete_selected_invoices' %}">
                 {% csrf_token %}
-                <input type="hidden" name="selected_documents" id="selectedInvoices">
-                <div class="d-flex justify-content-start gap-1 mb-3">
-                    <button type="submit" class="btn btn-secondary btn-spacing" id="submitButton">傳送發票</button>
+                <input type="hidden" name="selected_documents" id="selectedInvoicesDelete">
+                <div class="d-flex justify-content-start gap-1 mb-10">
+                    <button type= "submit" class="btn btn-danger btn-spacing" id="deleteButton">刪除發票</button>
                 </div>
-            </form> -->
-            <!-- <form method="post" action="{% url 'update_invoice_status' %}">
+            </form>
+            <form method="post" action="{% url 'update_void_status' %}">
                 <div class="d-flex justify-content-start gap-1 mb-3">
                     <button type="submit" class="btn btn-warning" id="updateButton">更新作廢狀態</button>
                 </div>
-            </form> -->
+            </form>
+
         </div>
         
 
@@ -244,41 +268,42 @@
                     <thead>
                         <tr>
                             <th><input type="checkbox" id="selectAll"></th>
-                            <th>號碼</th>
+                            <th>相關號碼</th>
                             <th>買方</th>
                             <th>賣方</th>
                             <th>發票日期</th>
-                            <th>相關號碼</th>
-                            <th>稅種</th>
+                            <th>發票號碼</th>
+                            <th>稅別</th>
                             <th>總計</th>
                             <th>付款狀態</th>
                             <th>發票開立狀態</th>
                             <th>發票作廢狀態</th>
+                            <th>發票詳情</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for document in documents %}
                         <tr>
-                            <td><input type="checkbox" name="selected_documents" value="{{ document.id }}"></td>
-                            <td>{{ document.invoice_number }}</td>
-                            <td>{{ document.buyer_name }}</td>
-                            <td>{{ document.seller_name }}</td>
-                            <td>{{ document.invoice_date }}</td>
-                            <td>{{ document.relate_number }}</td>
-                            <td>{{ document.tax_type }}</td>
-                            <td>{{ document.total_amount }}</td>
-                            <td>{{ document.payment_status }}</td>
-                            <td style="background-color: {% if document.invoice_status == '已開立' %}#28a745{% else %}transparent{% endif %}; color: {% if document.invoice_status == '已開立' %}white{% else %}black{% endif %};">
+                            <td class="text-center" ><input type="checkbox" name="selected_documents" value="{{ document.id }}"></td>
+                            <td class="text-center" >{{ document.relate_number }}</td>
+                            <td class="text-left" >{{ document.buyer_name }}</td>
+                            <td class="text-left" >{{ document.company }}</td>
+                            <td class="text-center">{{ document.invoice_date }}</td>
+                            <td class="text-center">{{ document.invoice_number }}</td>
+                            <td class="text-center">{{ document.tax_type }}</td>
+                            <td class="text-center">{{ document.total_amount }}</td>
+                            <td class="text-center">{{ document.payment_status }}</td>
+                            <td class="text-center" style="background-color: {% if document.invoice_status == '已開立' %}#28a745{% else %}transparent{% endif %}; color: {% if document.invoice_status == '已開立' %}white{% else %}black{% endif %};">
                                 {{ document.invoice_status }}
                             </td>
-                            <td>
+                            <td class="text-center" >
                                 <!-- 發票作廢狀態下拉選單 -->
                                 <select name="void_status_{{ document.id }}" class="form-control">
                                     <option value="未作廢" {% if document.void_status == "未作廢" %}selected{% endif %}>未作廢</option>
                                     <option value="已作廢" {% if document.void_status == "已作廢" %}selected{% endif %}>已作廢</option>
                                 </select>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 {% if document.id %}
                                     <a href="{% url 'twa0101_detail' document.id %}" class="btn btn-primary btn-sm">查看詳情</a>
                                 {% else %}
@@ -315,7 +340,7 @@
         </form>
     </div>
 </div>
-
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // 全選/取消全選功能
@@ -433,6 +458,7 @@
         const selectedInvoicesInput = document.getElementById("selectedInvoicesExport");
         const selectAllCheckbox = document.getElementById("selectAll");
 
+        // 更新選取的發票清單
         function updateSelectedInvoices() {
             let selected = [];
             checkboxes.forEach((checkbox) => {
@@ -440,11 +466,8 @@
                     selected.push(checkbox.value); // 抓取發票號碼
                 }
             });
-            
             selectedInvoicesInput.value = selected.join(","); // 將選取的發票號碼存入 hidden input
         }
-
-
 
         // 監聽每個 checkbox 的變化
         checkboxes.forEach((checkbox) => {
@@ -459,22 +482,28 @@
             updateSelectedInvoices();
         });
 
-        // 在點擊「傳送發票」時檢查是否有選取發票
+        // 在點擊「傳送發票」時檢查是否有選取發票，並顯示確認視窗
         document.getElementById("exportExcel").addEventListener("submit", function (event) {
             if (selectedInvoicesInput.value === "") {
                 event.preventDefault();
                 alert("請選擇至少一張發票再傳送！");
                 return;
             }
-            // 確認 hidden input 的值是否正確設置
-            console.log("Selected Invoice IDs:", selectedInvoicesInput.value);
+
+            // 顯示確認視窗，讓使用者確認是否要匯出 Excel
+            const confirmed = confirm("確定要產出 Excel 並更新發票狀態？此動作將無法復原。");
+            if (!confirmed) {
+                event.preventDefault(); // 如果使用者選擇取消，則阻止表單提交
+                return;
+            }
 
             // 提交表單
+            console.log("Selected Invoice IDs:", selectedInvoicesInput.value);
             document.querySelector("form").submit();
-
         });
     });
 </script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const startInput = document.getElementById("start_date");
@@ -522,6 +551,76 @@
         limitDateRange();
         startInput.addEventListener("change", limitDateRange);
     });
-</script>    
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const checkboxes = document.querySelectorAll("input[name='selected_documents']");
+    const selectedInvoicesInput = document.getElementById("selectedInvoicesDelete");
+    const selectAllCheckbox = document.getElementById("selectAll");
+    const form = document.getElementById("deleteForm");
+    const confirmDeleteModal = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
+    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+
+    function updateSelectedInvoices() {
+        let selected = [];
+        checkboxes.forEach((checkbox) => {
+            if (checkbox.checked) {
+                selected.push(checkbox.value);
+            }
+        });
+        selectedInvoicesInput.value = selected.join(",");
+    }
+
+    checkboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", updateSelectedInvoices);
+    });
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener("change", function () {
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateSelectedInvoices();
+        });
+    }
+
+    form.addEventListener("submit", function (event) {
+        updateSelectedInvoices(); // 更新勾選值
+        event.preventDefault();   // 暫停預設提交行為
+
+        // 確保選擇了至少一張發票
+        if (selectedInvoicesInput.value === "") {
+            alert("請選擇至少一張發票再刪除！");
+        } else {
+            console.log("Displaying Modal...");
+            confirmDeleteModal.show(); // 顯示 Bootstrap Modal
+        }
+    });
+
+    // 使用者按下 modal 的「確定刪除」按鈕後才送出表單
+    confirmDeleteBtn.addEventListener("click", function () {
+        console.log("Submitting the form now...");
+        form.submit(); // 正式送出表單
+    });
+});
+</script> 
+<!-- 刪除確認 Modal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">確認刪除</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-dark">
+                您確定要刪除所選的發票嗎？此操作無法復原。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmDeleteBtn">確定刪除</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
