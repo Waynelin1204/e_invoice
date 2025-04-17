@@ -136,20 +136,14 @@
                 </a>
                 <div class="collapse" id="invoiceMenu">
                     <ul class="nav flex-column text-end">
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?b2b_b2c=B2B">銷項發票B2B</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?b2b_b2c=B2C">銷項發票B2C</a></li>
-                        <li><a class="nav-link" href="#">零稅率發票</a></li>
-                        <li><a class="nav-link" href="#">折讓與作廢發票</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">折讓發票B2B</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">折讓發票B2B</a></li>
+                        <li><a class="nav-link" href="#">作廢發票</a></li>
                     </ul>
                 </div>
-                <!-- <div class="collapse" id="invoiceMenu">
-                    <ul class="nav flex-column text-end">
-                        <li><a class="nav-link" href="{% url 'invoice_filter' %}?invoice_status=已開立">已傳送發票</a></li>
-                        <li><a class="nav-link" href="{% url 'invoice_filter' %}?invoice_status=未開立">未傳送發票</a></li>
-                        <li><a class="nav-link" href="#">零稅率發票</a></li>
-                        <li><a class="nav-link" href="#">折讓與作廢發票</a></li>
-                    </ul>
-                </div> -->
+
             </li>
 
             <li class="nav-item">
@@ -180,7 +174,7 @@
         <!-- 搜尋表單 -->
         <form method="get" class="mb-3">
             <div class="input-group">
-                <input type="text" name="search" placeholder="Search by Source Description" class="form-control" />
+                <input type="text" name="search" placeholder="搜尋系統單號" class="form-control" />
                 <button type="submit" class="btn btn-primary">Search</button>
             </div>
         </form>
@@ -245,7 +239,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="selected_documents" id="selectedInvoicesExport">
                 <div class="d-flex justify-content-start gap-1 mb-10">
-                    <button type= "submit" class="btn btn-secondary btn-spacing" id="exportExcel">匯出檔案</button>
+                    <button type= "submit" class="btn btn-secondary btn-spacing" id="exportExcel">開立發票</button>
                 </div>
             </form>
             <!-- 傳送發票按鈕，移至上方 -->
@@ -300,7 +294,7 @@
                             <td class="text-left" >{{ document.buyer_identifier }}</td>
                             <td class="text-center">{{ document.invoice_date_time|default:"" }}</td>
                             <td class="text-center">{{ document.invoice_number }}</td>
-                            <td class="text-center">{{ document.tax_type }}</td>
+                            <td class="text-center">{{ document.get_tax_type_display }}</td>
                             <td class="text-center">{{ document.total_amount }}</td>
                             <td class="text-center">{{ document.payment_status|default:"" }}</td>
                             <td class="text-center" style="background-color: {% if document.invoice_status == '已開立' %}#28a745{% else %}transparent{% endif %}; color: {% if document.invoice_status == '已開立' %}white{% else %}black{% endif %};">

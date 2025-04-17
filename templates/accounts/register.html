@@ -65,13 +65,13 @@
 </head>
 <body>
     <div class="register-container">
-        <h1>Register</h1>
+        <h1>使用者註冊</h1>
         <form method="POST">
             {% csrf_token %}
             
             <!-- Username field -->
             <div class="form-group">
-                <label for="id_username">Username</label>
+                <label for="id_username">使用者名稱</label>
                 {{ form.username }}  <!-- Render the username field -->
                 {% if form.username.errors %}
                     <div class="error">
@@ -84,7 +84,7 @@
 
             <!-- Email field -->
             <div class="form-group">
-                <label for="id_email">Email</label>
+                <label for="id_email">電子郵件信箱</label>
                 {{ form.email }}  <!-- Render the email field -->
                 {% if form.email.errors %}
                     <div class="error">
@@ -97,7 +97,7 @@
 
             <!-- Password field -->
             <div class="form-group">
-                <label for="id_password1">Password</label>
+                <label for="id_password1">請輸入密碼</label>
                 {{ form.password1 }}  <!-- Render the password1 field -->
                 {% if form.password1.errors %}
                     <div class="error">
@@ -110,7 +110,7 @@
 
             <!-- Confirm Password field -->
             <div class="form-group">
-                <label for="id_password2">Confirm Password</label>
+                <label for="id_password2">請再次輸入密碼</label>
                 {{ form.password2 }}  <!-- Render the password2 field -->
                 {% if form.password2.errors %}
                     <div class="error">
@@ -122,7 +122,7 @@
             </div>
 
             <!-- Submit button -->
-            <button type="submit" class="btn-submit">Register</button>
+            <button type="submit" class="btn-submit">完成註冊</button>
         </form>
     </div>
 </body>

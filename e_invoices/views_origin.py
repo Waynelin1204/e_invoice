@@ -63,7 +63,17 @@ def main(request):
     return render(request, 'main.html')
 
 def upload_test(request):
-    return render(request, 'upload_test.html')
+    user_profile = request.user.profile
+    
+    # 取得該使用者可查看的公司名稱列表
+    
+    # 查詢符合條件的資料，並使用 prefetch_related 來查詢發票明細
+    company_options = user_profile.viewable_companies.all()
+    context = {
+        "company_options": company_options,
+    }
+
+    return render(request, 'upload_test.html',context)
 
 UPLOAD_DIR = "/home/pi/OCR/Samples"
 @csrf_exempt
@@ -684,15 +694,14 @@ def twb2bmainitem_export_invoices(request):
 
             # 寫入 Excel
             for item in invoice.items.all():
-                #sheet.cell(row=row, column=1, value=invoice.company.company_name)
-                sheet.cell(row=row, column=1, value=invoice.invoice_number)
-                sheet.cell(row=row, column=2, value=invoice.invoice_date)
-                sheet.cell(row=row, column=3, value=invoice.invoice_time)
+                sheet.cell(row=row, column=1, value=invoice.company.company_id)
+                sheet.cell(row=row, column=2, value=invoice.invoice_number)
+                sheet.cell(row=row, column=3, value=invoice.invoice_date)
+                sheet.cell(row=row, column=4, value=invoice.invoice_time)
                 #sheet.cell(row=row, column=5, value=invoice.company.company_name)
-                sheet.cell(row=row, column=4, value=invoice.invoice_type)
-                sheet.cell(row=row, column=5, value=invoice.company.company_identifier)
-                sheet.cell(row=row, column=6, value=invoice.seller_bp_id)
-                sheet.cell(row=row, column=7, value=invoice.buyer_tax_id)
+                sheet.cell(row=row, column=5, value=invoice.invoice_type)
+                sheet.cell(row=row, column=6, value=invoice.company.company_identifier)
+                sheet.cell(row=row, column=7, value=invoice.buyer_identifier)
                 sheet.cell(row=row, column=8, value=invoice.buyer_name)
                 sheet.cell(row=row, column=9, value=invoice.buyer_bp_id)
                 sheet.cell(row=row, column=10, value=invoice.buyer_remark)
@@ -774,7 +783,7 @@ def twb2bmainitem_update_void_status(request):
         return HttpResponse("No invoices found", status=404)
 
     # 5️⃣ 載入 Excel 樣板
-    template_path = os.path.join(settings.BASE_DIR, 'export', 'A0401_Export.xlsx')
+    template_path = os.path.join(settings.BASE_DIR, 'export', 'A0401_Void.xlsx')
     workbook = load_workbook(template_path)
     sheet = workbook.active
 
@@ -836,7 +845,7 @@ def twb2bmainitem_update_void_status(request):
         output,
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename="void.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="Void.xlsx"'
     return response
 
 # def update_void_status(request):

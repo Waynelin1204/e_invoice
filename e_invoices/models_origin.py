@@ -122,6 +122,7 @@ class Company(models.Model):
     company_id = models.CharField(
         max_length=10,
         validators=[alphanumeric_validator],
+        unique=True,
         error_messages={'invalid': '請輸入10碼以內字元，僅限英文大小寫或數字'}
     )
 
@@ -485,7 +486,7 @@ class TWB2BMainItem(models.Model):
     freetax_sales_amount = models.DecimalField(max_digits=13, decimal_places=7,blank=True, null=True)
     zerotax_sales_amount = models.DecimalField(max_digits=13, decimal_places=7,blank=True, null=True)
     tax_type = models.CharField(
-        choices=[(1, '應稅'), (2, '零稅率'), (3, '免稅')], max_length=1, blank=True, null=True) #課稅別(1：應稅；2：零稅率；3：免稅)
+        choices=[('1', '應稅'), ('2', '零稅率'), ('3', '免稅')], max_length=1, blank=True, null=True) #課稅別(1：應稅；2：零稅率；3：免稅)
     tax_rate = models.DecimalField(max_digits=4, decimal_places=2,blank=True, null=True)
     total_tax_amount = models.DecimalField(max_digits=20, decimal_places=0,blank=True, null=True)
     
