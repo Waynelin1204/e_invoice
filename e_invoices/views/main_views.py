@@ -44,4 +44,5 @@ from e_invoices.forms import NumberDistributionForm
 
 @login_required		
 def main(request):
+    print("1")
     return render(request, 'main.html')
