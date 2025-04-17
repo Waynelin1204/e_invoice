@@ -26,54 +26,86 @@ from e_invoices.views import front4
 from e_invoices.views import twa0101
 from e_invoices.views import export_invoices
 from e_invoices.views import invoice_list, invoice_detail, upload_file, run_script, twa0101_detail
-from e_invoices.views import main, invoice_filter, company_detail, company_detail_sub, update_void_status
+from e_invoices.views import main, invoice_filter, company_detail, company_detail_sub
 from e_invoices.views import manage_user_permissions, update_permissions, get_user_permissions, delete_selected_invoices, create_number_distribution
 from e_invoices.views import number_distribution, twb2bmainitem, twb2blineitem, twb2bmainitem_filter
-from e_invoices.views import twb2bmainitem_export_invoices, twb2bmainitem_delete_selected_invoices , upload_file_tw, upload_test
+from e_invoices.views import twb2bmainitem_export_invoices, twb2bmainitem_delete_selected_invoices , upload_file_tw, upload_test, company_add, run_script_tw
+from e_invoices.views import twb2bmainitem_update_void_status
 
 from django.contrib.auth import views as auth_views
 
 
 
 urlpatterns = [
+
     path('admin/', admin.site.urls),
+
+#-------------------for login/register-------------------
+
     path('accounts/register/', register, name='register'),
     path('login/',sign_in, name='login'),
-    path('front4/', front4, name = 'front4'),
-    path('test/', twa0101, name='test'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='/login/'), name='logout'),
+
+#-------------------for 主頁面-------------------
+
+    path('main/',main, name='main'),
+
+#-------------------for 儀錶板------------------- 
+
+    path('front4/', front4, name = 'front4'), 
+   
+#-------------------for 使用者權限-------------------
+
+    path('update-permissions/<int:user_id>/', update_permissions, name='update_permissions'),
+    path('permissions/', manage_user_permissions, name='manage_permissions'),
+    path('get-user-permissions/<int:user_id>/', get_user_permissions, name='get_user_permissions'),
+
+#-------------------for 營業人-------------------
+
+    path('company_detail/', company_detail, name='company_detail'),  # 營業人列表
+    path('company_detail/<str:company_id>/', company_detail_sub, name='company_detail_sub'),  # 營業人詳細頁面
+    path('company/add/', company_add, name='company_add'),  # 營業人新增頁面
+
+#-------------------for B2B 發票-------------------
+
     path('twb2bmainitem/', twb2bmainitem, name='twb2bmainitem'),
     path('twb2bmainitem_filter/', twb2bmainitem_filter, name = 'twb2bmainitem_filter'),
+    path("twb2bmainitem_export_invoices/", twb2bmainitem_export_invoices, name="twb2bmainitem_export_invoices"),
+    path('twb2bmainitem_delete_selected_invoices/', twb2bmainitem_delete_selected_invoices, name='twb2bmainitem_delete_selected_invoices'),
+    path('document/<int:id>/', twb2blineitem, name='twb2blineitem'),
+    path('twb2bmainitem_update_void_status/', twb2bmainitem_update_void_status, name='twb2bmainitem_update_void_status'),
+
+#-------------------for 發票字軌-------------------
+
+    path('number_distribution/', number_distribution, name='number_distribution'),
+    path('create_number_distribution/', create_number_distribution, name='create_number_distribution'),
+
+#-------------------for 資料匯入-------------------
+
+    path('upload_test/',upload_test, name='upload_test'),
+    path('upload_file_tw/', upload_file_tw, name='upload_file_tw'),
+    path("run_script_tw/", run_script_tw, name="run_script_tw"),
+
+#-------------------for OCR-------------------
+
+    path('', invoice_list, name='invoice_list'),
+    path('invoices/invoice_list/', invoice_list, name='invoice_list'),  
+    path('invoices/<int:invoice_id>/', invoice_detail, name='invoice_detail'),
+    path("run_script/", run_script, name="run_script"),
+    path('upload/', upload_file, name='upload_file'),  # Ensure this exists
+
+#------------------- protype -------------------
     #path('loguot/', logout, name = 'logout'),
     path('edocument/',document_list, name='document_list'),
     path('reconcil/',reconcil, name = 'reconcil'),
     path('generate_pdf/<str:document_id>/', generate_pdf, name='generate_pdf'),
-    path("export_invoices/", export_invoices, name="export_invoices"),
-    path("twb2bmainitem_export_invoices/", twb2bmainitem_export_invoices, name="twb2bmainitem_export_invoices"),
-    path('invoices/invoice_list/', invoice_list, name='invoice_list'),  
-    path('invoices/<int:invoice_id>/', invoice_detail, name='invoice_detail'),
     #path('document/<int:id>/', twa0101_detail, name='twa0101_detail'),
-    path('document/<int:id>/', twb2blineitem, name='twb2blineitem'),
-    path('upload/', upload_file, name='upload_file'),  # Ensure this exists
-    path('', invoice_list, name='invoice_list'),
-    path("run_script/", run_script, name="run_script"),
-    path("run_script_tw/", run_script, name="run_script_tw"),
-    path('main/',main, name='main'),
     # path('update_invoice_status/', update_invoice_status, name = 'update_invoice_status'),
+    path('test/', twa0101, name='test'),
     path('invoice_filter/', invoice_filter, name = 'invoice_filter'),
-    path('company_detail/', company_detail, name='company_detail'),  # 營業人列表
-    path('company_detail/<str:company_id>/', company_detail_sub, name='company_detail_sub'),  # 營業人詳細頁面
-    path('update-permissions/<int:user_id>/', update_permissions, name='update_permissions'),
-    path('permissions/', manage_user_permissions, name='manage_permissions'),
-    path('get-user-permissions/<int:user_id>/', get_user_permissions, name='get_user_permissions'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='/login/'), name='logout'),
     path('delete_selected_invoices/', delete_selected_invoices, name='delete_selected_invoices'),
-    path('twb2bmainitem_delete_selected_invoices/', twb2bmainitem_delete_selected_invoices, name='twb2bmainitem_delete_selected_invoices'),
-    path('update_void_status/', update_void_status, name='update_void_status'),
-    path('number_distribution/', number_distribution, name='number_distribution'),
-    path('create_number_distribution/', create_number_distribution, name='create_number_distribution'),
-    path('upload_test/',upload_test, name='upload_test'),
-    path('upload_file_tw/', upload_file_tw, name='upload_file_tw'),
-
+    path("export_invoices/", export_invoices, name="export_invoices"),
+    # path('update_void_status/', update_void_status, name='update_void_status'),
 
 ]
 

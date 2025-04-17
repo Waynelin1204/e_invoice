@@ -95,99 +95,104 @@
         .collapse.show {
             visibility: visible;
         }
-
     </style>
 </head>
 <body>
-<div class="content-wrapper">
-    <!-- 側邊導航欄 -->
-    <nav class="sidebar">
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'main' %}">首頁</a>
-            </li>
-            <!-- 點擊展開 -->
-            <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
-                    設定
-                </a>
-                <div class="collapse" id="settingMenu">
-                    <ul class="nav flex-column text-end">
-                        <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
-                        <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
-                    </ul>
-                </div>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="javascript:void(0);" id="logoutLink">登出</a>
-            </li>
-        </ul>
-    </nav>
-    
-    <div class="content">
-
-        <!-- 主要內容 -->
-        <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
-
-        <div class="mb-3"></div>
-        <!-- 測試用的假資料 -->
-        <!--<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition">
-                <h2 class="text-xl font-semibold text-gray-800">台灣科技公司</h2>
-                <p class="text-gray-600 mt-2"><strong>統一編號:</strong> 12345678</p>
-                <p class="text-gray-500"><strong>類型:</strong> 科技業</p>
-            </div>
-            
-            <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition">
-                <h2 class="text-xl font-semibold text-gray-800">亞洲食品有限公司</h2>
-                <p class="text-gray-600 mt-2"><strong>統一編號:</strong> 87654321</p>
-                <p class="text-gray-500"><strong>類型:</strong> 食品業</p>
-            </div>
-    
-            <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition">
-                <h2 class="text-xl font-semibold text-gray-800">全球物流股份有限公司</h2>
-                <p class="text-gray-600 mt-2"><strong>統一編號:</strong> 11223344</p>
-                <p class="text-gray-500"><strong>類型:</strong> 物流業</p>
-            </div>
-        </div>-->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {% for company in companies %}
-                <a href="{% url 'company_detail_sub' company.company_id %}" class="no-underline">
-                    <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition cursor-pointer">
-                        <h2 class="text-xl font-semibold text-gray-800">{{ company.company_register_name }}</h2>
-                        <p class="text-gray-600 mt-2"><strong>統一編號:</strong> {{ company.company_identifier }}</p>
-                        <p class="text-gray-500"><strong>類型:</strong> 
-                            {% if company.company_type == 0 %}
-                                Headquarter
-                            {% else %}
-                                Branch
-                            {% endif %}
-                        </p>
+    <div class="content-wrapper">
+        <!-- 側邊導航欄 -->
+        <nav class="sidebar">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'main' %}">首頁</a>
+                </li>
+                <!-- 點擊展開 -->
+                <li class="nav-item">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                        設定
+                    </a>
+                    <div class="collapse" id="settingMenu">
+                        <ul class="nav flex-column text-end">
+                            <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
+                            <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
+                        </ul>
                     </div>
-                </a>
-            {% endfor %}
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="javascript:void(0);" id="logoutLink">登出</a>
+                </li>
+            </ul>
+        </nav>
+        
+        <div class="content">
+            {% if messages %}
+                <div class="mt-4">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="flex justify-end items-center gap-2 mb-4">
+                <a href="{% url 'company_add' %}" class="btn btn-primary">新增</a>
+                <input type="text" id="searchInput" placeholder="search" class="form-control w-64" style="text-align: left">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {% for company in companies %}
+                    <a href="{% url 'company_detail_sub' company.company_id %}" class="no-underline">
+                        <div class="company-card bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition cursor-pointer">
+                            <h2 class="text-xl font-semibold text-gray-800">{{ company.company_register_name }}</h2>
+                            <p class="text-gray-600 mt-2"><strong>統一編號:</strong> {{ company.company_identifier }}</p>
+                            <p class="text-gray-500"><strong>類型:</strong> 
+                                {% if company.company_type == 0 %}
+                                    總機構
+                                {% else %}
+                                    分支機構
+                                {% endif %}
+                            </p>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
         </div>
     </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.getElementById('logoutLink').addEventListener('click', function () {
-        fetch("{% url 'logout' %}", {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': "{{ csrf_token }}",
-            },
-            credentials: 'same-origin',  // 保證 CSRF Token 會隨請求一起發送
-        }).then(response => {
-            if (response.ok) {
-                alert("登出成功！");
-                window.location.href = '/login/';  // 重定向到登入頁
-            }
-        }).catch(error => {
-            console.error('登出失敗:', error);
+
+    <script>
+        document.getElementById('logoutLink').addEventListener('click', function () {
+            fetch("{% url 'logout' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': "{{ csrf_token }}",
+                },
+                credentials: 'same-origin',  // 保證 CSRF Token 會隨請求一起發送
+            }).then(response => {
+                if (response.ok) {
+                    alert("登出成功！");
+                    window.location.href = '/login/';  // 重定向到登入頁
+                }
+            }).catch(error => {
+                console.error('登出失敗:', error);
+            });
         });
-    });
-</script>
+
+        // 搜尋功能
+        document.getElementById('searchInput').addEventListener('input', function () {
+            const keyword = this.value.toLowerCase();
+            const cards = document.querySelectorAll('.company-card');
+
+            cards.forEach(card => {
+                const name = card.querySelector('h2').textContent.toLowerCase();
+                const id = card.querySelector('p:nth-of-type(1)').textContent.toLowerCase();
+                const type = card.querySelector('p:nth-of-type(2)').textContent.toLowerCase();
+
+                if (name.includes(keyword) || id.includes(keyword) || type.includes(keyword)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 </html>

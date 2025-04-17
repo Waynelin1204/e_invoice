@@ -190,18 +190,21 @@
             
             <label for="end_date" style="color: black;">結束日期：</label>
             <input type="date" id="end_date" name="end_date" value="{{ end_date }}">
-            <!-- <select name="company_name" id="company_name">
-                <option value="">--請選擇公司名稱--</option>
-                {% for company in companies %}
-                    <option value="{{ company.company_name }}">{{ company.company_name }}</option>
-                {% endfor %}
-            </select> -->
             <select name="company_id" id="company_id">
+                <option value="">--請選擇公司</option>
+                {% for company in company_options %}
+                    <option value="{{ company.id }}" {% if form_data.company_id == company.id|stringformat:"s" %}selected{% endif %}>
+                        {{ company.company_id }} - {{ company.company_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <!-- <select name="company_id" id="company_id">
                 <option value="">--請選擇公司</option>
                 {% for company in company_options %}
                     <option value="{{ company.id }}" {% if company.id == company_id_filter %}selected{% endif %}>{{ company.company_id }} - {{ company.company_name }}</option>
                 {% endfor %}
-            </select>
+            </select> -->
+
             <select name="invoice_status" id="invoice_status">
                 <option value="">--請選擇發票狀態</option>
                 <option value="未開立">未開立</option>
@@ -254,12 +257,13 @@
                     <button type= "submit" class="btn btn-danger btn-spacing" id="deleteButton">刪除發票</button>
                 </div>
             </form>
-            <form method="post" action="{% url 'update_void_status' %}">
-                <div class="d-flex justify-content-start gap-1 mb-3">
-                    <button type="submit" class="btn btn-warning" id="updateButton">作廢發票</button>
+            <form method="post" action="{% url 'twb2bmainitem_update_void_status' %}">
+                {% csrf_token %}
+                <input type="hidden" name="selected_documents" id="selectedInvoicesVoid">
+                <div class="d-flex justify-content-start gap-1 mb-10">
+                    <button type="submit" class="btn btn-warning" id="voidButton">作廢發票</button>
                 </div>
             </form>
-
         </div>
         
 
@@ -609,21 +613,72 @@ document.addEventListener("DOMContentLoaded", function () {
         form.submit(); // 正式送出表單
     });
 });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const checkboxes = document.querySelectorAll("input[name='selected_documents']");
+        const selectedInvoicesInput = document.getElementById("selectedInvoicesVoid");
+        const selectAllCheckbox = document.getElementById("selectAll");
+
+        // 更新選取的發票清單
+        function updateSelectedInvoices() {
+            let selected = [];
+            checkboxes.forEach((checkbox) => {
+                if (checkbox.checked) {
+                    selected.push(checkbox.value); // 抓取發票號碼
+                }
+            });
+            selectedInvoicesInput.value = selected.join(","); // 將選取的發票號碼存入 hidden input
+        }
+
+        // 監聽每個 checkbox 的變化
+        checkboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", updateSelectedInvoices);
+        });
+
+        // 監聽全選 checkbox
+        selectAllCheckbox.addEventListener("change", function () {
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateSelectedInvoices();
+        });
+
+        // 在點擊「傳送發票」時檢查是否有選取發票，並顯示確認視窗
+        document.getElementById("voidButton").addEventListener("submit", function (event) {
+            if (selectedInvoicesInput.value === "") {
+                event.preventDefault();
+                alert("請選擇至少一張發票再作廢！");
+                return;
+            }
+
+            // 顯示確認視窗，讓使用者確認是否要匯出 Excel
+            const confirmed = confirm("確定要作廢發票？此動作將無法復原。");
+            if (!confirmed) {
+                event.preventDefault(); // 如果使用者選擇取消，則阻止表單提交
+                return;
+            }
+
+            // 提交表單
+            console.log("Selected Invoice IDs:", selectedInvoicesInput.value);
+            document.querySelector("form").submit();
+        });
+    });
 </script> 
 <!-- 刪除確認 Modal -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="confirmDeleteModalLabel">確認刪除</h5>
+                <h5 class="modal-title" id="confirmDeleteModalLabel">確認作廢</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-dark">
-                您確定要刪除所選的發票嗎？此操作無法復原。
+                您確定要作廢所選的發票嗎？此操作無法復原。
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" id="confirmDeleteBtn">確定刪除</button>
+                <button type="button" class="btn btn-primary" id="confirmDeleteBtn">確定作廢</button>
             </div>
         </div>
     </div>

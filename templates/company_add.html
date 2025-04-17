@@ -139,132 +139,163 @@
                     {% endfor %}
                 </div>
             {% endif %}
-        
-            <form method="post" action="{% url 'company_detail_sub' company.company_id %}">
+            <form method="post" action="{% url 'company_add' %}">
                 {% csrf_token %}
                 <div class="d-flex justify-content-between mb-3">
-                    <a href="{% url 'company_detail' %}" class="btn btn-secondary back-button">← 返回上一頁</a>
-                    <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+                    <a href="{% url 'company_detail' %}" class="btn btn-secondary">← 返回上一頁</a>
                 </div>
-        
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 營業人代碼 -->
                     <div class="mb-4">
                         <label for="company_id" class="block text-sm font-medium text-gray-700">
-                            <span class="text-danger">*</span>營業人代碼 (不可修改)
+                            <span class="text-danger">*</span>營業人代碼
                         </label>
-                        <input type="text" name="company_id" id="company_id" value="{{ company.company_id|default:'' }}" class="mt-1 block w-full border border-gray-300 rounded-md" readonly disabled>
+                        <input type="text" maxlength="10" name="company_id" id="company_id"
+                            class="mt-1 block w-full border border-gray-300 rounded-md"
+                            value="{{ form_data.company_id|default_if_none:'' }}" required>
+                        <div id="error_company_id" class="text-danger text-sm mt-1">
+                            {% if errors.company_id %}{{ errors.company_id }}{% endif %}
+                        </div>
                     </div>
-        
+
+                    <!-- 統一編號 -->
                     <div class="mb-4">
                         <label for="company_identifier" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>統一編號
                         </label>
-                        <input type="text" maxlength="8" name="company_identifier" id="company_identifier" value="{{ company.company_identifier }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
+                        <input type="text" maxlength="8" name="company_identifier" id="company_identifier"
+                            class="mt-1 block w-full border border-gray-300 rounded-md"
+                            value="{{ form_data.company_identifier|default_if_none:'' }}" required>
                         <div id="error_company_identifier" class="text-danger text-sm mt-1">
                             {% if errors.company_identifier %}{{ errors.company_identifier }}{% endif %}
                         </div>
                     </div>
-        
+
+                    <!-- 營業人註冊名稱 -->
                     <div class="mb-4">
                         <label for="company_register_name" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>營業人註冊名稱
                         </label>
-                        <input type="text" maxlength="100" name="company_register_name" id="company_register_name" value="{{ company.company_register_name }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
+                        <input type="text" maxlength="100" name="company_register_name" id="company_register_name"
+                            class="mt-1 block w-full border border-gray-300 rounded-md"
+                            value="{{ form_data.company_register_name|default_if_none:'' }}" required>
                         <div id="error_company_register_name" class="text-danger text-sm mt-1">
                             {% if errors.company_register_name %}{{ errors.company_register_name }}{% endif %}
                         </div>
                     </div>
-        
+
+                    <!-- 營業人簡稱 -->
                     <div class="mb-4">
                         <label for="company_name" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>營業人簡稱
                         </label>
-                        <input type="text" maxlength="100" name="company_name" id="company_name" value="{{ company.company_name }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
+                        <input type="text" maxlength="100" name="company_name" id="company_name"
+                            class="mt-1 block w-full border border-gray-300 rounded-md"
+                            value="{{ form_data.company_name|default_if_none:'' }}" required>
                         <div id="error_company_name" class="text-danger text-sm mt-1">
                             {% if errors.company_name %}{{ errors.company_name }}{% endif %}
                         </div>
                     </div>
                 </div>
-        
+                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 營業人地址 -->
                     <div class="mb-4">
                         <label for="company_address" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>營業人地址
                         </label>
-                        <input type="text" maxlength="255" name="company_address" id="company_address" value="{{ company.company_address }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
+                        <input type="text" maxlength="255" name="company_address" id="company_address"
+                            class="mt-1 block w-full border border-gray-300 rounded-md"
+                            value="{{ form_data.company_address|default_if_none:'' }}" required>
                         <div id="error_company_address" class="text-danger text-sm mt-1">
                             {% if errors.company_address %}{{ errors.company_address }}{% endif %}
                         </div>
                     </div>
-        
+
+                    <!-- 總機構 -->
                     <div class="mb-4">
                         <label for="head_company_identifer" class="block text-sm font-medium text-gray-700">總機構</label>
-                        <select name="head_company_identifer" id="head_company_identifer" class="mt-1 block w-full border border-gray-300 rounded-md" disabled>
+                        <select name="head_company_identifer" id="head_company_identifer"
+                                class="mt-1 block w-full border border-gray-300 rounded-md">
                             <option value="">-- 請選擇 --</option>
                             {% for office in head_offices %}
-                                <option value="{{ office.id }}" {% if company.head_company_identifer and company.head_company_identifer.id == office.id %}selected{% endif %}>
+                                <option value="{{ office.id }}"
+                                    {% if form_data.head_company_identifer == office.id|stringformat:"s" %}selected{% endif %}>
                                     {{ office.company_id }} - {{ office.company_name }}
                                 </option>
                             {% endfor %}
                         </select>
                     </div>
-        
+
+                    <!-- 營業人類型 -->
                     <div class="mb-4">
                         <label for="company_type" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>營業人類型
                         </label>
-                        <select name="company_type" id="company_type" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
-                            <option value="0" {% if company.company_type == 0 %}selected{% endif %}>總機構</option>
-                            <option value="1" {% if company.company_type == 1 %}selected{% endif %}>分支機構</option>
+                        <select name="company_type" id="company_type"
+                                class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                            <option value="0" {% if form_data.company_type == "0" %}selected{% endif %}>總機構</option>
+                            <option value="1" {% if form_data.company_type == "1" %}selected{% endif %}>分支機構</option>
                         </select>
                     </div>
-        
+
+                    <!-- 是否為境外電商 -->
                     <div class="mb-4">
                         <label for="is_foreign_ecomm" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>是否為境外電商
                         </label>
-                        <select name="is_foreign_ecomm" id="is_foreign_ecomm" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
-                            <option value="0" {% if company.is_foreign_ecomm == 0 %}selected{% endif %}>否</option>
-                            <option value="1" {% if company.is_foreign_ecomm == 1 %}selected{% endif %}>是</option>
+                        <select name="is_foreign_ecomm" id="is_foreign_ecomm"
+                                class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                            <option value="0" {% if form_data.is_foreign_ecomm == "0" %}selected{% endif %}>否</option>
+                            <option value="1" {% if form_data.is_foreign_ecomm == "1" %}selected{% endif %}>是</option>
                         </select>
                     </div>
-        
+
+                    <!-- 稅籍編號 -->
                     <div class="mb-4">
                         <label for="tax_identifer" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>稅籍編號
                         </label>
-                        <input type="text" maxlength="9" name="tax_identifer" id="tax_identifer" value="{{ company.tax_identifer }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
+                        <input type="text" maxlength="9" name="tax_identifer" id="tax_identifer"
+                            class="mt-1 block w-full border border-gray-300 rounded-md"
+                            value="{{ form_data.tax_identifer|default_if_none:'' }}" required>
                         <div id="error_tax_identifer" class="text-danger text-sm mt-1">
                             {% if errors.tax_identifer %}{{ errors.tax_identifer }}{% endif %}
                         </div>
                     </div>
-        
+
+                    <!-- Email -->
                     <div class="mb-4">
                         <label for="email" class="block text-sm font-medium text-gray-700">電子郵件地址</label>
-                        <input type="text" maxlength="100" name="email" id="email" value="{{ company.email }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
+                        <input type="text" maxlength="100" name="email" id="email"
+                            class="mt-1 block w-full border border-gray-300 rounded-md"
+                            value="{{ form_data.email|default_if_none:'' }}">
                         <div id="error_email" class="text-danger text-sm mt-1">
                             {% if errors.email %}{{ errors.email }}{% endif %}
                         </div>
                     </div>
-        
+
+                    <!-- 申報期別 -->
                     <div class="mb-4">
                         <label for="reporting_period" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>申報期別
                         </label>
-                        <select name="reporting_period" id="reporting_period" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
-                            <option value="1" {% if company.reporting_period == 1 %}selected{% endif %}>單月</option>
-                            <option value="2" {% if company.reporting_period == 2 %}selected{% endif %}>雙月</option>
+                        <select name="reporting_period" id="reporting_period"
+                                class="mt-1 block w-full border border-gray-300 rounded-md" required>
+                            <option value="1" {% if form_data.reporting_period == "1" %}selected{% endif %}>單月</option>
+                            <option value="2" {% if form_data.reporting_period == "2" %}selected{% endif %}>雙月</option>
                         </select>
                     </div>
                 </div>
-        
+
                 <div class="text-center mt-4" id="action_buttons">
                     <button type="submit" id="save_button" class="btn btn-success">儲存</button>
                 </div>
             </form>
         </div>
-    </div>   
-    
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const fieldConfigs = {
@@ -357,24 +388,6 @@
                     });
                 });
             }
-    
-            // 修改按鈕解鎖欄位
-            document.getElementById('edit_button').addEventListener('click', function () {
-                // 隱藏上方 messages 區塊
-                const alertBoxes = document.querySelectorAll('.alert');
-                alertBoxes.forEach(box => box.remove());
-
-                const editableFields = [
-                    "company_register_name", "company_identifier", "company_name",
-                    "company_address", "head_company_identifer", "company_type",
-                    "is_foreign_ecomm", "tax_identifer", "email", "reporting_period"
-                ];
-                
-                editableFields.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.disabled = false;
-                });
-            });
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

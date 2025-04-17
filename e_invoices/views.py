@@ -129,9 +129,6 @@ def upload_file_tw(request):
 
     return JsonResponse({"success": False, "error": "無效的請求"}, status=400)
 
-
-UPLOAD_DIR_TW = "C:/Users/waylin/mydjango/e_invoice/upload"
-
 @csrf_exempt
 def run_script_tw(request):
     """Execute the parse.py script which handles Excel to DB import."""
@@ -251,37 +248,157 @@ def update_permissions(request, user_id):
     return JsonResponse({"status": "error", "message": "無效的請求"}, status=400)
 
 
+# 營業人管理
 def company_detail(request):
     companies = Company.objects.all()
     return render(request, 'company_detail.html', {'companies': companies})    
 
-# 營業人管理-檢視
+# 營業人管理-檢視+修改
 def company_detail_sub(request, company_id):
-    """顯示公司詳細資訊"""
     print("Received company_id:", company_id)
     company = get_object_or_404(Company, company_id=company_id)
+    head_offices = Company.objects.filter(company_type=0).exclude(id=company.id)
 
-# 營業人管理-修改
     if request.method == 'POST':
-        # 如果是POST請求，則將修改資料保存
-        company.company_register_name = request.POST['company_register_name']
-        company.company_identifier = request.POST['company_identifier']
-        company.company_name = request.POST['company_name']
-        company.company_address = request.POST['company_address']
-        company.head_company_identifer = request.POST.get('head_company_identifer', '')
-        company.company_type = int(request.POST['company_type'])
-        company.is_foreign_ecomm = int(request.POST['is_foreign_ecomm'])
-        company.tax_identifer = request.POST['tax_identifer']
-        company.apply_eGUI = request.POST['apply_eGUI']
-        
-        company.save()
-        
-        # 重新導向到該公司詳細頁面
-        return redirect('company_detail_sub', company_id=company_id)    
-    
-    return render(request, 'company_detail_sub.html', {'company': company})
-    
+        # 抓取表單值
+        company_register_name = request.POST.get('company_register_name', '').strip()
+        company_identifier = request.POST.get('company_identifier', '').strip()
+        company_name = request.POST.get('company_name', '').strip()
+        company_address = request.POST.get('company_address', '').strip()
+        company_type = request.POST.get('company_type')
+        is_foreign_ecomm = request.POST.get('is_foreign_ecomm')
+        tax_identifer = request.POST.get('tax_identifer', '').strip()
+        email = request.POST.get('email', '').strip()
+        reporting_period = request.POST.get('reporting_period')
+        head_id = request.POST.get('head_company_identifer')
 
+        errors = {}
+        # 後端驗證
+        if not re.fullmatch(r'^\d{8}$', company_identifier):
+            errors['company_identifier'] = '請輸入8碼數字'
+        
+        if len(company_register_name) > 100:
+            errors['company_register_name'] = '請輸入100碼以內字元'
+
+        if len(company_name) > 100:
+            errors['company_name'] = '請輸入100碼以內字元'
+
+        if len(company_address) > 255:
+            errors['company_address'] = '請輸入255碼以內字元'
+
+        if not re.fullmatch(r'^\d{9}$', tax_identifer):
+            errors['tax_identifer'] = '請輸入9碼數字'
+
+        if email and not re.fullmatch(r'^.+@.+$', email):
+            errors['email'] = '請輸入100碼以內含有「@」符號的電子郵件地址'
+
+        if errors:
+            head_offices = Company.objects.filter(company_type=0)
+            form_data = request.POST.dict()
+            return render(request, 'company_detail_sub.html', {
+                'head_offices': head_offices,
+                'errors': errors,
+                'form_data': form_data
+            })
+        
+        # 通過驗證才儲存
+        company.company_register_name = company_register_name
+        company.company_identifier = company_identifier
+        company.company_name = company_name
+        company.company_address = company_address
+        company.company_type = int(company_type)
+        company.is_foreign_ecomm = int(is_foreign_ecomm)
+        company.tax_identifer = tax_identifer
+        company.email = email
+        company.reporting_period = reporting_period
+
+        if head_id:
+            company.head_company_identifer = Company.objects.get(id=head_id)
+        else:
+            company.head_company_identifer = None
+
+        company.save()
+
+        messages.success(request, '營業人資料儲存成功！')
+        return redirect('company_detail_sub', company_id=company_id)
+
+    return render(request, 'company_detail_sub.html', {
+        'company': company,
+        'head_offices': head_offices,
+    })
+
+# 營業人管理 - 新增
+def company_add(request):
+    if request.method == 'POST':
+        company_id = request.POST.get('company_id', '').strip()
+        company_identifier = request.POST.get('company_identifier', '').strip()
+        company_register_name = request.POST.get('company_register_name', '').strip()
+        company_name = request.POST.get('company_name', '').strip()
+        company_address = request.POST.get('company_address', '').strip()
+        head_company_identifer_id = request.POST.get('head_company_identifer') or None
+        company_type = request.POST.get('company_type')
+        is_foreign_ecomm = request.POST.get('is_foreign_ecomm')
+        tax_identifer = request.POST.get('tax_identifer', '').strip()
+        email = request.POST.get('email', '').strip()
+        reporting_period = request.POST.get('reporting_period')
+
+        errors = {}
+        # 後端驗證
+        if not re.fullmatch(r'^[a-zA-Z0-9]{1,10}$', company_id):
+            errors['company_id'] = '請輸入10碼以內字元，僅限英文大小寫或數字'
+        elif Company.objects.filter(company_id=company_id).exists():
+            errors['company_id'] = '營業人代碼已存在，請重新輸入'
+
+        if not re.fullmatch(r'^\d{8}$', company_identifier):
+            errors['company_identifier'] = '請輸入8碼數字'
+        
+        if len(company_register_name) > 100:
+            errors['company_register_name'] = '請輸入100碼以內字元'
+
+        if len(company_name) > 100:
+            errors['company_name'] = '請輸入100碼以內字元'
+
+        if len(company_address) > 255:
+            errors['company_address'] = '請輸入255碼以內字元'
+
+        if not re.fullmatch(r'^\d{9}$', tax_identifer):
+            errors['tax_identifer'] = '請輸入9碼數字'
+
+        if email and not re.fullmatch(r'^.+@.+$', email):
+            errors['email'] = '請輸入100碼以內含有「@」符號的電子郵件地址'
+
+        if errors:
+            head_offices = Company.objects.filter(company_type=0)
+            form_data = request.POST.dict()
+            return render(request, 'company_add.html', {
+                'head_offices': head_offices,
+                'errors': errors,
+                'form_data': form_data
+            })
+
+        # 若驗證通過，建立資料
+        Company.objects.create(
+            company_id=company_id,
+            company_identifier=company_identifier,
+            company_register_name=company_register_name,
+            company_name=company_name,
+            company_address=company_address,
+            head_company_identifer_id=head_company_identifer_id,
+            company_type=company_type,
+            is_foreign_ecomm=is_foreign_ecomm,
+            tax_identifer=tax_identifer,
+            email=email,
+            reporting_period=reporting_period,
+        )
+        messages.success(request, '營業人資料儲存成功！')
+        return redirect('company_detail')
+
+    head_offices = Company.objects.filter(company_type=0)
+    return render(request, 'company_add.html', {
+        'head_offices': head_offices,
+        'form_data': {},
+        'errors': {}
+    })
     
 def register(request):
 
@@ -340,6 +457,8 @@ def twb2bmainitem(request):
 
     # 查詢符合條件的資料，並使用 prefetch_related 來查詢發票明細
     documents = TWB2BMainItem.objects.filter(filter_conditions).prefetch_related('items').order_by('-erp_date')
+    company_options = user_profile.viewable_companies.all()
+
 
     # 分頁：每頁顯示25筆資料
     paginator = Paginator(documents, 25)  # 每頁顯示25筆資料
@@ -349,6 +468,7 @@ def twb2bmainitem(request):
     # 傳遞資料給模板
     context = {
         'documents': page_obj,  # 傳遞分頁後的資料
+        "company_options": company_options,
     }
     print("🔍 可查看的公司 company_id：", list(viewable_company_codes))
     print("✅ 撈到的發票數：", TWB2BMainItem.objects.filter(filter_conditions).count())
@@ -639,31 +759,110 @@ def twb2bmainitem_delete_selected_invoices(request):
     else:
         return redirect('twb2bmainitem')
         
+@csrf_exempt
+def twb2bmainitem_update_void_status(request):
+    if request.method != 'POST':
+        return HttpResponse("Only POST allowed", status=405)
 
-def update_void_status(request):
-    if request.method == 'POST':
-        # 獲取所有選擇的發票 id
-        selected_invoices = request.POST.getlist('selected_documents')  # ['id1', 'id2', ...]
+    raw_ids = request.POST.get("selected_documents", "")
+    selected_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
+    if not selected_ids:
+        return HttpResponse("No invoice IDs provided", status=400)
 
-        void_statuses = {}  # 儲存發票 id 和對應的作廢狀態
+    invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items')
+    if not invoices.exists():
+        return HttpResponse("No invoices found", status=404)
 
-        # 從表單中獲取每張發票的作廢狀態
-        for invoice_id in selected_invoices:
-            void_status = request.POST.get(f'void_status_{invoice_id}')
-            void_statuses[invoice_id] = void_status
+    # 5️⃣ 載入 Excel 樣板
+    template_path = os.path.join(settings.BASE_DIR, 'export', 'A0401_Export.xlsx')
+    workbook = load_workbook(template_path)
+    sheet = workbook.active
 
-        # 根據 id 更新每張發票的作廢狀態
-        for invoice_id, void_status in void_statuses.items():
-            try:
-                invoice = Invoice.objects.get(id=invoice_id)
-                invoice.void_status = void_status
-                invoice.save()
-            except Invoice.DoesNotExist:
-                # 處理找不到發票的情況
-                pass
+    row = 2  # Excel 開始列
 
-        # 完成後可以重定向回發票列表頁面
-        return redirect('test')  # 假設更新後重定向回發票列表頁
+    # 6️⃣ 開始配號與寫入 Excel
+    with transaction.atomic():
+        for invoice in invoices:
+
+            # 寫入 Excel
+            for item in invoice.items.all():
+                #sheet.cell(row=row, column=1, value=invoice.company.company_name)
+                sheet.cell(row=row, column=1, value=invoice.invoice_number)
+                sheet.cell(row=row, column=2, value=invoice.invoice_date)
+                sheet.cell(row=row, column=3, value=invoice.invoice_time)
+                #sheet.cell(row=row, column=5, value=invoice.company.company_name)
+                sheet.cell(row=row, column=4, value=invoice.invoice_type)
+                sheet.cell(row=row, column=5, value=invoice.company.company_identifier)
+                sheet.cell(row=row, column=6, value=invoice.seller_bp_id)
+                sheet.cell(row=row, column=7, value=invoice.buyer_tax_id)
+                sheet.cell(row=row, column=8, value=invoice.buyer_name)
+                sheet.cell(row=row, column=9, value=invoice.buyer_bp_id)
+                sheet.cell(row=row, column=10, value=invoice.buyer_remark)
+                sheet.cell(row=row, column=11, value=invoice.main_remark)
+                sheet.cell(row=row, column=12, value=invoice.customs_clearance_mark)
+                sheet.cell(row=row, column=13, value=invoice.category)
+                sheet.cell(row=row, column=14, value=invoice.relate_number)
+                sheet.cell(row=row, column=15, value=invoice.bonded_area_confirm)
+                sheet.cell(row=row, column=16, value=invoice.zero_tax_rate_reason)
+                sheet.cell(row=row, column=17, value=invoice.reserved1)
+                sheet.cell(row=row, column=18, value=invoice.reserved2)
+                sheet.cell(row=row, column=19, value=invoice.sales_amount)
+                sheet.cell(row=row, column=20, value=invoice.freetax_sales_amount)
+                sheet.cell(row=row, column=21, value=invoice.zerotax_sales_amount)
+                sheet.cell(row=row, column=22, value=invoice.tax_type)
+                sheet.cell(row=row, column=23, value=invoice.tax_rate)
+                sheet.cell(row=row, column=24, value=float(invoice.total_tax_amount))
+                sheet.cell(row=row, column=25, value=float(invoice.total_amount))
+                sheet.cell(row=row, column=26, value=invoice.original_currency_amount)
+                sheet.cell(row=row, column=27, value=invoice.exchange_rate)
+                sheet.cell(row=row, column=28, value=invoice.currency)
+                sheet.cell(row=row, column=29, value=item.line_description)
+                sheet.cell(row=row, column=30, value=item.line_quantity)
+                sheet.cell(row=row, column=31, value=item.line_unit)
+                sheet.cell(row=row, column=32, value=float(item.line_unit_price))
+                sheet.cell(row=row, column=33, value=item.line_tax_type)
+                sheet.cell(row=row, column=34, value=float(item.line_amount))
+                sheet.cell(row=row, column=35, value=item.line_sequence_number)
+                sheet.cell(row=row, column=36, value=item.line_remark)
+                sheet.cell(row=row, column=37, value=item.line_relate_number)
+                row += 1
+
+    # 匯出 Excel
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="void.xlsx"'
+    return response
+
+# def update_void_status(request):
+#     if request.method == 'POST':
+#         # 獲取所有選擇的發票 id
+#         selected_invoices = request.POST.getlist('selected_documents')  # ['id1', 'id2', ...]
+
+#         void_statuses = {}  # 儲存發票 id 和對應的作廢狀態
+
+#         # 從表單中獲取每張發票的作廢狀態
+#         for invoice_id in selected_invoices:
+#             void_status = request.POST.get(f'void_status_{invoice_id}')
+#             void_statuses[invoice_id] = void_status
+
+#         # 根據 id 更新每張發票的作廢狀態
+#         for invoice_id, void_status in void_statuses.items():
+#             try:
+#                 invoice = Invoice.objects.get(id=invoice_id)
+#                 invoice.void_status = void_status
+#                 invoice.save()
+#             except Invoice.DoesNotExist:
+#                 # 處理找不到發票的情況
+#                 pass
+
+#         # 完成後可以重定向回發票列表頁面
+#         return redirect('test')  # 假設更新後重定向回發票列表頁
     
 def number_distribution(request):
     # 取得所有發票號碼的狀態
