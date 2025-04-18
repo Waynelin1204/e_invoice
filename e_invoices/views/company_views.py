@@ -1,5 +1,6 @@
 # ====== Python 標準函式庫 ======
 import os
+import re
 import json
 import logging
 import subprocess
@@ -69,8 +70,8 @@ def company_detail_sub(request, company_id):
 
         errors = {}
         # 後端驗證
-        if not re.fullmatch(r'^\d{8}$', company_identifier):
-            errors['company_identifier'] = '請輸入8碼數字'
+        if not validateUniformNumberTW(company_identifier):
+            errors['company_identifier'] = '請輸入有效的統一編號'
         
         if len(company_register_name) > 100:
             errors['company_register_name'] = '請輸入100碼以內字元'
@@ -144,8 +145,8 @@ def company_add(request):
         elif Company.objects.filter(company_id=company_id).exists():
             errors['company_id'] = '營業人代碼已存在，請重新輸入'
 
-        if not re.fullmatch(r'^\d{8}$', company_identifier):
-            errors['company_identifier'] = '請輸入8碼數字'
+        if not validateUniformNumberTW(company_identifier):
+            errors['company_identifier'] = '請輸入有效的統一編號'
         
         if len(company_register_name) > 100:
             errors['company_register_name'] = '請輸入100碼以內字元'
@@ -194,4 +195,22 @@ def company_add(request):
         'form_data': {},
         'errors': {}
     })
+
+# 統一編號檢查碼邏輯
+def validateUniformNumberTW(value: str) -> bool:
+    if not re.fullmatch(r'^\d{8}$', value):
+        return False
+
+    multipliers = [1, 2, 1, 2, 1, 2, 4, 1]
+    total = 0
+
+    for i in range(8):
+        product = int(value[i]) * multipliers[i]
+        total += product // 10 + product % 10
+
+    # 特例：第7碼是7且 total+1 可被5整除
+    if value[6] == '7' and (total + 1) % 5 == 0:
+        return True
+
+    return total % 5 == 0
     
