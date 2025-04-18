@@ -1,9 +1,0 @@
-__pycahe__/
-*.pyc
-*.pyo
-
-*.sqlite3
-db.sqlite3
-*.log
-
-.env
