@@ -297,7 +297,23 @@
                             <td class="text-center">{{ document.get_tax_type_display }}</td>
                             <td class="text-center">{{ document.total_amount }}</td>
                             <td class="text-center">{{ document.payment_status|default:"" }}</td>
-                            <td class="text-center" style="background-color: {% if document.invoice_status == '已開立' %}#28a745{% else %}transparent{% endif %}; color: {% if document.invoice_status == '已開立' %}white{% else %}black{% endif %};">
+
+                            <td class="text-center" style="background-color: 
+                                {% if document.invoice_status == '已開立' %}
+                                    #28a745;
+                                {% elif document.invoice_status == '已作廢' %}
+                                    #dc3545;  <!-- 紅色 -->
+                                {% else %}
+                                    transparent;
+                                {% endif %}; 
+                                color: 
+                                {% if document.invoice_status == '已開立' %}
+                                    white;
+                                {% elif document.invoice_status == '已作廢' %}
+                                    white;  <!-- 白色字 -->
+                                {% else %}
+                                    black;
+                                {% endif %};">
                                 {{ document.invoice_status }}
                             </td>
                             <!-- <td class="text-center" >
