@@ -29,17 +29,17 @@ class TWB2BMainItem(models.Model):
     erp_date = models.DateField(max_length=8)
     erp_reference = models.CharField(max_length=60, blank=True, null=True) # ERP備註資訊
     
-    company_identifier = models.CharField(max_length=60, blank=True, null=True) 
+    company_identifier = models.CharField(max_length=60, blank=True, null=True) #統一編號
     seller_bp_id = models.CharField(max_length=20, blank=True, null=True)
-    tax_identifier = models.CharField(max_length=10, blank=True, null=True) 
+    tax_identifier = models.CharField(max_length=10, blank=True, null=True) #稅編
     seller_name = models.CharField(max_length=60,blank=True, null=True)
-    buyer_identifier = models.CharField(max_length=10,blank=True, null=True)
+    buyer_identifier = models.CharField(max_length=10,blank=True, null=True) #買方統編
     buyer_name = models.CharField(max_length=60,blank=True, null=True)
     buyer_bp_id = models.CharField(max_length=20, blank=True, null=True)
     buyer_remark = models.CharField(max_length=1, blank=True, null=True)
     main_remark = models.CharField(max_length=200, blank=True, null=True)
     group_mark = models.CharField(max_length=1, blank=True, null=True)  # 彙開註記
-    donate_mark = models.CharField(max_length=10)  # 捐贈註記
+    donate_mark = models.CharField(max_length=10,blank=True, null=True)  # 捐贈註記
 
 
     customs_clearance_mark = models.CharField(max_length=1, blank=True, null=True)
@@ -69,7 +69,6 @@ class TWB2BMainItem(models.Model):
     remark = models.CharField(max_length=120, blank=True, null=True)
     discount_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)
     payment_status = models.CharField(max_length=10, blank=True, null=True)
-    invoice_status = models.CharField(max_length=10, blank=True, null=True)
     void_status = models.CharField(max_length=10, blank=True, null=True)
     mof_date = models.DateField(blank=True, null=True)     #    稅局回應日
     mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
@@ -98,10 +97,9 @@ class TWB2BLineItem(models.Model):
     line_quantity = models.CharField(max_length=50,blank=True, null=True)  # 數量 (可支援 '3C商品' 這類非數值)
     line_unit = models.CharField(max_length=6, blank=True, null=True)  # 單位
     line_unit_price = models.DecimalField(max_digits=20, decimal_places=7,blank=True, null=True)  # 單價
-    line_amount = models.DecimalField(max_digits=20, decimal_places=7,blank=True, null=True)  # 金額
+    line_amount = models.DecimalField(max_digits=20, decimal_places=7,blank=True, null=True)  # 未稅金額
     line_remark = models.CharField(max_length=200, blank=True, null=True)  # 備註
     line_sequence_number = models.CharField(max_length=4,blank=True, null=True)  # 明細排列序號
     line_relate_number = models.CharField(max_length=4,blank=True, null=True)  # 明細排列序號
-    line_tax_amount = models.DecimalField(max_digits=20, decimal_places=7,blank=True, null=True)
-    line_sales_amount = models.DecimalField(max_digits=20, decimal_places=7,blank=True, null=True)
+    line_tax_amount = models.DecimalField(max_digits=20, decimal_places=7,blank=True, null=True) #稅金
     line_tax_type = models.CharField(max_length=1,blank=True, null=True)

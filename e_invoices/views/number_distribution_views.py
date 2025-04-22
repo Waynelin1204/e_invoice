@@ -34,6 +34,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 
+
 # ====== 專案內部（Model 與 Form） ======
 from e_invoices.models import (
     RegisterForm, LoginForm,
@@ -50,6 +51,7 @@ def number_distribution(request):
 def create_number_distribution(request):
     if request.method == 'POST':
         form = NumberDistributionForm(request.POST)
+        form.fields['company'].queryset = Company.objects.all()  # <-- 必加在 POST 裡也加
         if form.is_valid():
             form.save()
             return redirect('create_number_distribution')  # 或導向你要的成功頁面

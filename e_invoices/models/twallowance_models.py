@@ -9,6 +9,7 @@ from django.db import models
 
 class TWAllowance(models.Model):
     company = models.ForeignKey("e_invoices.Company", on_delete=models.CASCADE, related_name="twallowance")  # 公司代碼
+    company_code = models.CharField(max_length=10, blank=True, null=True)  # 公司代碼
     # 發票來源
     b2b_b2c = models.CharField(max_length=3, choices=[('B2B','B2B'), ('B2C','B2C')])   # 折讓單發票類型B2B 或 B2C
     sys_number = models.CharField(max_length=20)    # 平台文件號碼
@@ -23,13 +24,47 @@ class TWAllowance(models.Model):
     erp_reference = models.CharField(max_length=60, blank=True, null=True)   # ERP備註資訊
   
     seller_bp_id = models.CharField(max_length=20, blank=True, null=True)     # 賣方客戶編號
-    buyer_Identifier = models.CharField(max_length=10)   # 買方統一編號
+    buyer_identifier = models.CharField(max_length=10)   # 買方統一編號
     buyer_name = models.CharField(max_length=60, blank=True, null=True)   # 買方名稱
     buyer_bp_id = models.CharField(max_length=20, blank=True, null=True)    # 買方客戶編號
 
+    allowance_amount = models.DecimalField(max_digits=13, decimal_places=7)     # 未稅總計
+    allowance_tax = models.DecimalField(max_digits=20, decimal_places=0)     # 營業稅額總計
+    allowance_status = models.CharField(max_length=6, default='未開立')     # 折讓單開立狀態：未開立/已開立/已作廢
+    mof_date = models.DateField(blank=True, null=True)     #    稅局回應日
+    mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
+    mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
+    creator = models.CharField(max_length=10, blank=True, null=True)       # 建立者
+    creator_remark = models.CharField(max_length=200, blank=True, null=True)     # 平台備註
+    allowance_cancel_date = models.DateField(blank=True, null=True)   # 作廢折讓單日期 (產出轉換8碼)
+    allowance_cancel_time = models.TimeField(blank=True, null=True)   # 作廢折讓單時間
+    allowance_cancel_reason = models.CharField(max_length=20, blank=True, null=True)     # 作廢折讓單原因
+    allowance_cancel_remark = models.CharField(max_length=200, blank=True, null=True)     # 作廢折讓單備註
+    cancel_mof_date = models.DateField(blank=True, null=True)     # 稅局回應日
+    cancel_mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
+    cancel_mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
+   
+    def __str__(self):
+        return f"{self.allowance_number}"
+    
+    def is_within_original_invoice_amount(self):
+        total_invoice_amount = 0
+        for item in self.items.all():
+            invoice = item.linked_invoice  # 對應的發票
+            if invoice:
+                total_invoice_amount += (
+                    (invoice.sales_amount or 0)
+                    + (invoice.zerotax_sales_amount or 0)
+                    + (invoice.freetax_sales_amount or 0)
+                )
+        return self.allowance_amount <= total_invoice_amount
+    
+class TWAllowanceLineItem(models.Model):
+    twallowance = models.ForeignKey(TWAllowance, related_name='items', on_delete=models.CASCADE)  # TWB2BMainItem
     line_sequence_number = models.CharField(max_length=4)     # 明細排列序號
     line_original_invoice_date = models.DateField(blank=True, null=True)    # 發票日期 (產出轉換8碼)
-    line_original_invoice_number = models.CharField(max_length=10, blank=True, null=True)     #  發票號碼  
+    line_original_invoice_number = models.CharField(max_length=10, blank=True, null=True)     #  發票號碼 
+    linked_invoice = models.ForeignKey('TWB2BMainItem',null=True,blank=True,on_delete=models.SET_NULL) 
     line_description = models.CharField(max_length=500)     # 品名
     line_quantity = models.DecimalField(max_digits=13, decimal_places=7)     # 數量
     line_unit = models.CharField(max_length=6, blank=True, null=True)     # 單位
@@ -42,24 +77,3 @@ class TWAllowance(models.Model):
     line_tax_type = models.CharField(max_length=1, choices=LINE_TAX_TYPE_CHOICES)     # 課稅別 (1：應稅；2：零稅率；3：免稅)
     line_allowance_amount = models.DecimalField(max_digits=13, decimal_places=7)     # 金額 (未稅)
     line_allowance_tax = models.DecimalField(max_digits=20, decimal_places=0)     # 營業稅額
-
-    allowance_amount = models.DecimalField(max_digits=13, decimal_places=7)     # 未稅總計
-    allowance_tax = models.DecimalField(max_digits=20, decimal_places=0)     # 營業稅額總計
-
-    allowance_status = models.CharField(max_length=6, default='未開立')     # 折讓單開立狀態：未開立/已開立/已作廢
-    mof_date = models.DateField(blank=True, null=True)     #    稅局回應日
-    mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
-    mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
-    creator = models.CharField(max_length=10, blank=True, null=True)       # 建立者
-    creator_remark = models.CharField(max_length=200, blank=True, null=True)     # 平台備註
- 
-    allowance_cancel_date = models.DateField(blank=True, null=True)   # 作廢折讓單日期 (產出轉換8碼)
-    allowance_cancel_time = models.TimeField(blank=True, null=True)   # 作廢折讓單時間
-    allowance_cancel_reason = models.CharField(max_length=20, blank=True, null=True)     # 作廢折讓單原因
-    allowance_cancel_remark = models.CharField(max_length=200, blank=True, null=True)     # 作廢折讓單備註
-    cancel_mof_date = models.DateField(blank=True, null=True)     # 稅局回應日
-    cancel_mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
-    cancel_mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
-   
-    def __str__(self):
-        return f"{self.allowance_number}"

@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 
+
 from django.db import models
 class NumberDistribution(models.Model):
     company = models.ForeignKey("e_invoices.Company", on_delete=models.CASCADE, related_name='number_distributions')

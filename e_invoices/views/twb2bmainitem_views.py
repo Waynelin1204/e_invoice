@@ -7,6 +7,7 @@ from io import BytesIO
 from datetime import datetime, timedelta
 from collections import defaultdict
 import xml.etree.ElementTree as ET
+from django.utils.timezone import localtime
 
 # ====== 第三方套件 ======
 import pandas as pd
@@ -197,9 +198,23 @@ def twb2bmainitem_export_invoices(request):
     if not selected_ids:
         return HttpResponse("No invoice IDs provided", status=400)
 
-    invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items')
+    #invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items')
+    invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items').exclude(invoice_status='已開立')
+
     if not invoices.exists():
         return HttpResponse("No invoices found", status=404)
+
+    # 先找出所有選取的發票
+    all_selected_invoices = TWB2BMainItem.objects.filter(id__in=selected_ids)
+    # 計算「已開立」的數量
+    excluded_count = all_selected_invoices.filter(invoice_status='已開立').count()
+
+    # 篩選出尚未開立的發票
+    invoices = all_selected_invoices.exclude(invoice_status='已開立').prefetch_related('items')
+
+    # 如果有被排除的，就提示使用者
+    if excluded_count > 0:
+        messages.warning(request, f"{excluded_count} 筆已開立的發票已排除，未匯出。")
 
     # 1️⃣ 統計各公司所需發票數
     invoice_count_by_company_code = defaultdict(int)
@@ -209,6 +224,7 @@ def twb2bmainitem_export_invoices(request):
     # 2️⃣ 建立公司代碼對應的 Company 資料（查主鍵）
     company_map = {
         company.company_id: company for company in Company.objects.filter(company_id__in=invoice_count_by_company_code.keys())
+        
     }
 
     # 3️⃣ 驗證每間公司是否有足夠的號碼可以使用
@@ -242,7 +258,7 @@ def twb2bmainitem_export_invoices(request):
         number_pool[dist.company.id].append(dist)
 
     # 5️⃣ 載入 Excel 樣板
-    template_path = os.path.join(settings.BASE_DIR, 'export', 'A0401_Export.xlsx')
+    template_path = os.path.join(settings.BASE_DIR, 'export', 'A0101.xlsx')
     workbook = load_workbook(template_path)
     sheet = workbook.active
 
@@ -271,7 +287,7 @@ def twb2bmainitem_export_invoices(request):
                     invoice_number = f"{dist.initial_char}{str(current).zfill(len(dist.start_number))}"
                     invoice.invoice_number = invoice_number
                     invoice.invoice_status = '已開立'
-                    invoice.invoice_date = timezone.now()
+                    invoice.invoice_date = localtime(timezone.now()).replace(tzinfo=None).date()
                     invoice.save()
 
                     dist.current_number = str(current + 1).zfill(len(dist.start_number))
@@ -346,9 +362,11 @@ def twb2bmainitem_delete_selected_invoices(request):
 
         if not selected_ids:
             messages.error(request, "刪除失敗：未選擇任何發票。")
-            return redirect('test')
+            return redirect('twb2bmain')
 
-        deleted_count, _ = Twa0101.objects.filter(id__in=selected_ids).delete()
+        # 只刪除 invoice_status 為「未開立」的發票
+        invoices_to_delete = TWB2BMainItem.objects.filter(id__in=selected_ids, invoice_status="未開立")
+        deleted_count, _ = invoices_to_delete.delete()
 
         if deleted_count > 0:
             messages.success(request, f"成功刪除 {deleted_count} 筆發票。")
@@ -374,7 +392,7 @@ def twb2bmainitem_update_void_status(request):
         return HttpResponse("No invoices found", status=404)
 
     # 載入 Excel 樣板
-    template_path = os.path.join(settings.BASE_DIR, 'export', 'A0401_Void.xlsx')
+    template_path = os.path.join(settings.BASE_DIR, 'export', 'A0201.xlsx')
     workbook = load_workbook(template_path)
     sheet = workbook.active
 
@@ -384,25 +402,25 @@ def twb2bmainitem_update_void_status(request):
         for invoice in invoices:
             # 更新作廢狀態與時間
             invoice.invoice_status = '已作廢'
-            invoice.cancel_date = timezone.now()
-            invoice.cancel_time = timezone.now()
+            invoice.cancel_date = localtime(timezone.now()).replace(tzinfo=None).date()
+            invoice.cancel_time = localtime(timezone.now()).replace(tzinfo=None).time()
             invoice.original_invoice_date = invoice.invoice_date
             invoice.original_invoice_number = invoice.invoice_number
             invoice.save()
 
-            for item in invoice.items.all():
-                sheet.cell(row=row, column=1, value=invoice.company.company_identifier)
-                sheet.cell(row=row, column=2, value=invoice.buyer_identifier)
-                sheet.cell(row=row, column=3, value=invoice.invoice_date)
-                sheet.cell(row=row, column=4, value=invoice.invoice_number)
-                sheet.cell(row=row, column=5, value=invoice.invoice_period)
-                sheet.cell(row=row, column=6, value=invoice.cancel_date)
-                sheet.cell(row=row, column=7, value=invoice.cancel_time)
-                sheet.cell(row=row, column=8, value=invoice.cancel_period)
-                sheet.cell(row=row, column=9, value=invoice.cancel_reason)
-                sheet.cell(row=row, column=10, value=invoice.returntax_document_number)
-                sheet.cell(row=row, column=11, value=invoice.cancel_remark)
-                row += 1
+
+            sheet.cell(row=row, column=1, value=invoice.company.company_identifier)
+            sheet.cell(row=row, column=2, value=invoice.buyer_identifier)
+            sheet.cell(row=row, column=3, value=invoice.invoice_date)
+            sheet.cell(row=row, column=4, value=invoice.invoice_number)
+            sheet.cell(row=row, column=5, value=invoice.invoice_period)
+            sheet.cell(row=row, column=6, value=invoice.cancel_date)
+            sheet.cell(row=row, column=7, value=invoice.cancel_time)
+            sheet.cell(row=row, column=8, value=invoice.cancel_period)
+            sheet.cell(row=row, column=9, value=invoice.cancel_reason)
+            sheet.cell(row=row, column=10, value=invoice.returntax_document_number)
+            sheet.cell(row=row, column=11, value=invoice.cancel_remark)
+            row += 1
 
     # 匯出 Excel
     output = BytesIO()

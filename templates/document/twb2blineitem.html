@@ -56,7 +56,15 @@
                 <td>{{ item.line_description }}</td>
                 <td>{{ item.line_quantity }}</td>
                 <td>{{ item.line_unit_price }}</td>
-                <td>{{ item.line_tax_type }}</td>
+                <td>
+                    {% if item.line_tax_type == 1 %}
+                        應稅
+                    {% elif item.line_tax_type == 2 %}
+                        零稅率
+                    {% else %}
+                        免稅
+                    {% endif %}
+                </td>
                 <td>{{ item.tax_rate }}</td>
                 <td>{{ item.line_tax_amount }}</td>
                 <td>{{ item.line_sales_amount }}</td>
@@ -70,7 +78,7 @@
         </tbody>
     </table>
 
-    <a href="{% url 'twb2bmainitem' %}" class="btn btn-secondary">返回列表</a>
+    <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
 </div>
 
 </body>

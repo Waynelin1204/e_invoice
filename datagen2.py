@@ -53,7 +53,9 @@ for i in range(100):
     sales_amount = Decimal("0")
     total_tax_amount = Decimal("0")
     total_amount = Decimal("0")
-
+    zerotax_sales_amount = Decimal("0")
+    freetax_sales_amount = Decimal("0")
+    
     invoice = TWB2BMainItem.objects.create(
         company=company,
         company_code=company_code,
@@ -82,6 +84,8 @@ for i in range(100):
         reserved1="",
         reserved2="",
         sales_amount=0,
+        zerotax_sales_amount=0,
+        freetax_sales_amount=0,
         total_tax_amount=0,
         total_amount=0,
         invoice_status="未開立",
@@ -94,12 +98,17 @@ for i in range(100):
 
         # 稅額計算
         line_tax_amount = (line_amount * tax_rate).quantize(Decimal(".001"))
-        line_sales_amount = (line_amount * (1 - tax_rate)).quantize(Decimal(".001")) if tax_type == "1" else line_amount
 
         # 累加發票總額
-        sales_amount += line_sales_amount
+        if tax_type == "1" :
+            sales_amount += line_amount
+        elif tax_type == "2" :
+            zerotax_sales_amount += line_amount
+        else :
+            freetax_sales_amount += line_amount
+
         total_tax_amount += line_tax_amount
-        total_amount += line_amount
+        total_amount = sales_amount + zerotax_sales_amount + freetax_sales_amount + total_tax_amount
 
         line_items.append(TWB2BLineItem(
             twb2bmainitem=invoice,
@@ -110,13 +119,14 @@ for i in range(100):
             line_amount=line_amount,
             line_tax_type=tax_type,
             line_tax_amount=line_tax_amount,
-            line_sales_amount=line_sales_amount,
             line_remark="商品備註" if random.random() > 0.5 else "",
             line_sequence_number=f"{j+1:04d}"
         ))
 
     # 更新主檔欄位
     invoice.sales_amount = sales_amount
+    invoice.zerotax_sales_amount = zerotax_sales_amount
+    invoice.freetax_sales_amount = freetax_sales_amount
     invoice.total_tax_amount = total_tax_amount
     invoice.total_amount = total_amount
     invoice.tax_type = tax_type

@@ -1,4 +1,5 @@
 from django import forms
+import re
 from e_invoices.models import NumberDistribution
 
 class NumberDistributionForm(forms.ModelForm):
@@ -12,6 +13,13 @@ class NumberDistributionForm(forms.ModelForm):
             'start_number': forms.TextInput(attrs={'class': 'form-control'}),
             'end_number': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+    def clean_initial_char(self):
+        initial_char = self.cleaned_data.get('initial_char')
+        if not re.match(r'^[A-Z]{2}$', initial_char):
+            raise forms.ValidationError("開頭字母應為兩位大寫英文字母。")
+        return initial_char
+
 
     def clean_period(self):
         period = self.cleaned_data.get('period')

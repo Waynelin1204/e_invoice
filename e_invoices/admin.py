@@ -11,6 +11,9 @@ from e_invoices.models import UserProfile
 from e_invoices.models import NumberDistribution
 from e_invoices.models import TWB2BMainItem
 from e_invoices.models import TWB2BLineItem
+from e_invoices.models import TWAllowance
+from e_invoices.models import TWAllowanceLineItem
+
 from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
 
 
@@ -51,6 +54,8 @@ admin.site.register(Twa0101Item)
 admin.site.register(NumberDistribution)
 admin.site.register(TWB2BMainItem)
 admin.site.register(TWB2BLineItem)
+admin.site.register(TWAllowance)
+admin.site.register(TWAllowanceLineItem)
 
 
 # Register your models here.

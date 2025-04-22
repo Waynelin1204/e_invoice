@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>發票列表</title>
+    <title>折讓單列表</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <style>
@@ -176,7 +176,7 @@
         <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
         <!-- 發票列表 -->
         <div class="title-section mt-3">
-            <h3>發票列表</h3>
+            <h3>折讓單列表</h3>
         </div>
         <!-- 搜尋表單 -->
         <form method="get" class="mb-3">
@@ -185,7 +185,7 @@
                 <button type="submit" class="btn btn-primary">Search</button>
             </div>
         </form>
-        <form method="GET" action="{% url 'twb2bmainitem_filter' %}" id="invoice_filter_form">
+        <form method="GET" action="{% url 'twallowance_filter' %}" id="invoice_filter_form">
             <label for="start_date" style="color: black;">開始日期：</label>
             <input type="date" id="start_date" name="start_date" value="{{ start_date }}">
             
@@ -206,13 +206,13 @@
                 {% endfor %}
             </select> -->
 
-            <select name="invoice_status" id="invoice_status">
-                <option value="">--請選擇發票狀態</option>
+            <select name="allowance_status" id="allowance_status">
+                <option value="">--請選擇折讓單狀態</option>
                 <option value="未開立">未開立</option>
                 <option value="已開立">已開立</option>
                 <option value="已作廢">已作廢</option>
             </select>
-            <select name="tax_type" id="tax_type">
+            <select name="line_tax_type" id="line_tax_type">
                 <option value="">--請選擇稅種</option>
                 <option value="1">應稅</option>
                 <option value="2">零稅</option>
@@ -230,7 +230,7 @@
                 <option value="100" {% if display_limit == 100 %}selected{% endif %}>100</option>
             </select>
             
-            <button type="submit">篩選發票</button>
+            <button type="submit">篩選折讓單</button>
         </form>        
         <div class="mb-3"></div>
         <!-- 匯出表單與傳送發票按鈕並排 -->
@@ -242,28 +242,28 @@
                     <button class="btn btn-secondary btn-spacing" id="pdfButton">預覽發票</button>
                 </div>
             </form> -->
-            <form id="exportForm" method="post" action="{% url 'twb2bmainitem_export_invoices' %}">
+            <form id="exportForm" method="post" action="{% url 'twallowance_export_invoices' %}">
                 {% csrf_token %}
                 <input type="hidden" name="selected_documents" id="selectedInvoicesExport">
                 <div class="d-flex justify-content-start gap-1 mb-10">
-                    <button type="submit" class="btn btn-secondary btn-spacing" id="exportExcelBtn">開立發票</button>
+                    <button type="submit" class="btn btn-secondary btn-spacing" id="exportExcelBtn">開立折讓單</button>
                 </div>
             </form> 
                        
             <!-- 傳送發票按鈕，移至上方 -->
 
-            <form id="deleteForm" method="post" action="{% url 'twb2bmainitem_delete_selected_invoices' %}">
+            <form id="deleteForm" method="post" action="{% url 'twallowance_delete_selected_invoices' %}">
                 {% csrf_token %}
                 <input type="hidden" name="selected_documents" id="selectedInvoicesDelete">
                 <div class="d-flex justify-content-start gap-1 mb-10">
-                    <button type= "submit" class="btn btn-danger btn-spacing" id="deleteButton">刪除發票</button>
+                    <button type= "submit" class="btn btn-danger btn-spacing" id="deleteButton">刪除折讓單</button>
                 </div>
             </form>
-            <form id="voidForm" method="post" action="{% url 'twb2bmainitem_update_void_status' %}"  id="voidForm">
+            <form id="voidForm" method="post" action="{% url 'twallowance_update_void_status' %}"  id="voidForm">
                 {% csrf_token %}
                 <input type="hidden" name="selected_documents" id="selectedInvoicesVoid">
                 <div class="d-flex justify-content-start gap-1 mb-10">
-                    <button type="submit" class="btn btn-warning" id="voidButton">作廢發票</button>
+                    <button type="submit" class="btn btn-warning" id="voidButton">作廢折讓單</button>
                 </div>
             </form>
         </div>
@@ -281,51 +281,48 @@
                             <th>營業人</th>
                             <th>買方</th>
                             <th>買方統編</th>
-                            <th>發票日期</th>
-                            <th>發票號碼</th>
-                            <th>稅別</th>
-                            <th>總計</th>
-                            <th>付款狀態</th>
-                            <th>發票開立狀態</th>
+                            <th>折讓單號碼</th>
+                            <th>折讓開立日期</th>
+                            <th>折讓總計</th>
+                            <th>折讓單開立狀態</th>
                             <!-- <th>發票作廢狀態</th> -->
-                            <th>發票詳情</th>
+                            <th>折讓單詳情</th>
+                            <th>金額檢查</th>
+
                         </tr>
                     </thead>
                     <tbody>
-                        {% for document in documents %}
+                        {% for allowance in allowances %}
                         <tr>
                             <td class="text-center">
-                                <input type="checkbox" name="selected_documents" value="{{ document.id }}" 
-                                    {% if document.invoice_status == '已作廢' %} disabled {% endif %}>
+                                <input type="checkbox" name="selected_documents" value="{{ allowance.id }}" 
+                                    {% if document.allowance_status == '已作廢' %} disabled {% endif %}>
                             </td>
-                            <td class="text-center" >{{ document.erp_number }}</td>
-                            <td class="text-center" >{{ document.erp_date }}</td>
-                            <td class="text-left" >{{ document.company }}</td>
-                            <td class="text-center" >{{ document.buyer_name }}</td>
-                            <td class="text-left" >{{ document.buyer_identifier }}</td>
-                            <td class="text-center">{{ document.invoice_date_time|default:"" }}</td>
-                            <td class="text-center">{{ document.invoice_number }}</td>
-                            <td class="text-center">{{ document.get_tax_type_display }}</td>
-                            <td class="text-center">{{ document.total_amount }}</td>
-                            <td class="text-center">{{ document.payment_status|default:"" }}</td>
-
+                            <td class="text-center" >{{ allowance.erp_number }}</td>
+                            <td class="text-center" >{{ allowance.erp_date }}</td>
+                            <td class="text-left" >{{ allowance.company }}</td>
+                            <td class="text-center" >{{ allowance.buyer_name }}</td>
+                            <td class="text-left" >{{ allowance.buyer_identifier }}</td>
+                            <td class="text-center">{{ allowance.allowance_number }}</td>
+                            <td class="text-center">{{ allowance.allowance_date|default:"" }}</td>
+                            <td class="text-center">{{ allowance.allowance_amount }}</td>
                             <td class="text-center" style="background-color: 
-                                {% if document.invoice_status == '已開立' %}
+                                {% if allowance.allowance_status == '已開立' %}
                                     #28a745;
-                                {% elif document.invoice_status == '已作廢' %}
+                                {% elif allowance.allowance_status == '已作廢' %}
                                     #dc3545;  <!-- 紅色 -->
                                 {% else %}
                                     transparent;
                                 {% endif %}; 
                                 color: 
-                                {% if document.invoice_status == '已開立' %}
+                                {% if allowance.allowance_status == '已開立' %}
                                     white;
-                                {% elif document.invoice_status == '已作廢' %}
+                                {% elif allowance.allowance_status == '已作廢' %}
                                     white;  <!-- 白色字 -->
                                 {% else %}
                                     black;
                                 {% endif %};">
-                                {{ document.invoice_status }}
+                                {{ allowance.allowance_status }}
                             </td>
                             <!-- <td class="text-center" >
                                 發票作廢狀態下拉選單
@@ -335,17 +332,23 @@
                                 </select>
                             </td> -->
                             <td class="text-center">
-                                {% if document.id %}
-                                    <a href="{% url 'twb2blineitem' document.id %}" class="btn btn-primary btn-sm">查看詳情</a>
+                                {% if allowance.id %}
+                                    <a href="{% url 'twallowance_detail' allowance.id %}" class="btn btn-primary btn-sm">查看詳情</a>
                                 {% else %}
                                     <span class="text-muted">無可用資料</span>
                                 {% endif %}
                             </td>
-
+                            <td>
+                                {% if allowance.is_within_original_invoice_amount %}
+                                    ✅ 合法
+                                {% else %}
+                                    ❌ 超過原始發票金額
+                                {% endif %}
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center">沒有發票記錄</td>
+                            <td colspan="9" class="text-center">沒有發票記錄</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -353,18 +356,18 @@
             </div>
             <div class="pagination text-end">
                 <span class="step-links">
-                    {% if documents.has_previous %}
+                    {% if allowances.has_previous %}
                         <a href="?page=1&display_limit={{ display_limit }}">&laquo; 第一頁</a>
-                        <a href="?page={{ documents.previous_page_number }}&display_limit={{ display_limit }}">上一頁</a>
+                        <a href="?page={{ allowances.previous_page_number }}&display_limit={{ display_limit }}">上一頁</a>
                     {% endif %}
             
                     <span class="current">
-                        頁碼 {{ documents.number }} 共 {{ documents.paginator.num_pages }} 頁
+                        頁碼 {{ allowances.number }} 共 {{ allowances.paginator.num_pages }} 頁
                     </span>
             
-                    {% if documents.has_next %}
-                        <a href="?page={{ documents.next_page_number }}&display_limit={{ display_limit }}">下一頁</a>
-                        <a href="?page={{ documents.paginator.num_pages }}&display_limit={{ display_limit }}">最後一頁 &raquo;</a>
+                    {% if allowances.has_next %}
+                        <a href="?page={{ allowances.next_page_number }}&display_limit={{ display_limit }}">下一頁</a>
+                        <a href="?page={{ allowances.paginator.num_pages }}&display_limit={{ display_limit }}">最後一頁 &raquo;</a>
                     {% endif %}
                 </span>
             </div>

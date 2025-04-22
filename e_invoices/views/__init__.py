@@ -7,3 +7,4 @@ from .OCR_views import *
 from .register_sign_in_logout_views import *
 from .twb2bmainitem_views import *
 from .upload_views import *
+from .twallowance_views import *

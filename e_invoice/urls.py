@@ -32,9 +32,13 @@ from e_invoices.views import number_distribution, create_number_distribution
 
 from e_invoices.views import number_distribution, twb2bmainitem, twb2blineitem, twb2bmainitem_filter, twb2bmainitem_delete_selected_invoices,twb2bmainitem_export_invoices, twb2bmainitem_update_void_status
 
+from e_invoices.views import twallowance, twallowance_filter, twallowance_delete_selected_invoices, twallowance_export_invoices, twallowance_update_void_status, twallowance_detail
+
 from e_invoices.views import upload_file_tw, upload_test, run_script_tw
 
 from e_invoices.views import upload_file, upload_test, run_script, invoice_list, invoice_detail, update_invoice_status
+
+
 # from e_invoices.views import document_list
 # from e_invoices.views import generate_pdf
 # from e_invoices.views import reconcil
@@ -84,6 +88,17 @@ urlpatterns = [
     path('twb2bmainitem_delete_selected_invoices/', twb2bmainitem_delete_selected_invoices, name='twb2bmainitem_delete_selected_invoices'),
     path('document/<int:id>/', twb2blineitem, name='twb2blineitem'),
     path('twb2bmainitem_update_void_status/', twb2bmainitem_update_void_status, name='twb2bmainitem_update_void_status'),
+
+#-------------------for 折讓單-------------------
+
+    path('twallowance/', twallowance, name='twallowance'),
+    path('twallowance_filter/', twallowance_filter, name = 'twallowance_filter'),
+    path("twallowance_export_invoices/", twallowance_export_invoices, name="twallowance_export_invoices"),
+    path('twallowance_delete_selected_invoices/', twallowance_delete_selected_invoices, name='twallowance_delete_selected_invoices'),
+    path('twallowance_update_void_status/', twallowance_update_void_status, name='twallowance_update_void_status'),
+    path('allowance/<int:id>/', twallowance_detail, name='twallowance_detail'),
+
+
 
 #-------------------for 發票字軌-------------------
 
