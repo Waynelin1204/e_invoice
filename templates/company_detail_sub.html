@@ -239,12 +239,12 @@
         
                     <!-- 稅籍編號 -->
                     <div class="mb-4">
-                        <label for="tax_identifer" class="block text-sm font-medium text-gray-700">
+                        <label for="tax_identifier" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>稅籍編號
                         </label>
-                        <input type="text" maxlength="9" name="tax_identifer" id="tax_identifer" value="{{ company.tax_identifer }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
-                        <div id="error_tax_identifer" class="text-danger text-sm mt-1">
-                            {% if errors.tax_identifer %}{{ errors.tax_identifer }}{% endif %}
+                        <input type="text" maxlength="9" name="tax_identifier" id="tax_identifier" value="{{ company.tax_identifier }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
+                        <div id="error_tax_identifier" class="text-danger text-sm mt-1">
+                            {% if errors.tax_identifier %}{{ errors.tax_identifier }}{% endif %}
                         </div>
                     </div>
         
@@ -290,7 +290,7 @@
                     allowEmpty: false,
                     customValidate: validateUniformNumberTW
                 },
-                tax_identifer: {
+                tax_identifier: {
                     regex: /^\d{9}$/,
                     msg: '請輸入9碼數字',
                     allowEmpty: false
@@ -385,7 +385,7 @@
                 const editableFields = [
                     "company_register_name", "company_identifier", "company_name",
                     "company_address", "head_company_identifer", "company_type",
-                    "is_foreign_ecomm", "tax_identifer", "email", "reporting_period"
+                    "is_foreign_ecomm", "tax_identifier", "email", "reporting_period"
                 ];
                 
                 editableFields.forEach(id => {

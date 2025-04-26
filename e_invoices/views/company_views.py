@@ -63,7 +63,7 @@ def company_detail_sub(request, company_id):
         company_address = request.POST.get('company_address', '').strip()
         company_type = request.POST.get('company_type')
         is_foreign_ecomm = request.POST.get('is_foreign_ecomm')
-        tax_identifer = request.POST.get('tax_identifer', '').strip()
+        tax_identifier = request.POST.get('tax_identifier', '').strip()
         email = request.POST.get('email', '').strip()
         reporting_period = request.POST.get('reporting_period')
         head_id = request.POST.get('head_company_identifer')
@@ -82,8 +82,8 @@ def company_detail_sub(request, company_id):
         if len(company_address) > 255:
             errors['company_address'] = '請輸入255碼以內字元'
 
-        if not re.fullmatch(r'^\d{9}$', tax_identifer):
-            errors['tax_identifer'] = '請輸入9碼數字'
+        if not re.fullmatch(r'^\d{9}$', tax_identifier):
+            errors['tax_identifier'] = '請輸入9碼數字'
 
         if email and not re.fullmatch(r'^.+@.+$', email):
             errors['email'] = '請輸入100碼以內含有「@」符號的電子郵件地址'
@@ -104,7 +104,7 @@ def company_detail_sub(request, company_id):
         company.company_address = company_address
         company.company_type = int(company_type)
         company.is_foreign_ecomm = int(is_foreign_ecomm)
-        company.tax_identifer = tax_identifer
+        company.tax_identifier = tax_identifier
         company.email = email
         company.reporting_period = reporting_period
 
@@ -134,7 +134,7 @@ def company_add(request):
         head_company_identifer_id = request.POST.get('head_company_identifer') or None
         company_type = request.POST.get('company_type')
         is_foreign_ecomm = request.POST.get('is_foreign_ecomm')
-        tax_identifer = request.POST.get('tax_identifer', '').strip()
+        tax_identifier = request.POST.get('tax_identifier', '').strip()
         email = request.POST.get('email', '').strip()
         reporting_period = request.POST.get('reporting_period')
 
@@ -157,8 +157,8 @@ def company_add(request):
         if len(company_address) > 255:
             errors['company_address'] = '請輸入255碼以內字元'
 
-        if not re.fullmatch(r'^\d{9}$', tax_identifer):
-            errors['tax_identifer'] = '請輸入9碼數字'
+        if not re.fullmatch(r'^\d{9}$', tax_identifier):
+            errors['tax_identifier'] = '請輸入9碼數字'
 
         if email and not re.fullmatch(r'^.+@.+$', email):
             errors['email'] = '請輸入100碼以內含有「@」符號的電子郵件地址'
@@ -182,7 +182,7 @@ def company_add(request):
             head_company_identifer_id=head_company_identifer_id,
             company_type=company_type,
             is_foreign_ecomm=is_foreign_ecomm,
-            tax_identifer=tax_identifer,
+            tax_identifier=tax_identifier,
             email=email,
             reporting_period=reporting_period,
         )
