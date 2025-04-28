@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import xml.etree.ElementTree as ET
 from django.utils.timezone import localtime
+from decimal import Decimal, InvalidOperation
 
 # ====== 第三方套件 ======
 import pandas as pd
@@ -49,7 +50,9 @@ def twb2bmainitem(request):
     user_profile = request.user.profile
     
     # 取得該使用者可查看的公司名稱列表
-    viewable_company_codes = user_profile.viewable_companies.values_list('id', flat=True)
+    #viewable_company_codes = user_profile.viewable_companies.values_list('id', flat=True)
+    viewable_company_codes = user_profile.viewable_companies.values_list('company_id', flat=True)
+
     
     # 計算從今天開始往前推的60天的日期
     sixty_days_ago = datetime.today() - timedelta(days=60)
@@ -76,8 +79,9 @@ def twb2bmainitem(request):
     print("✅ 撈到的發票數：", TWB2BMainItem.objects.filter(filter_conditions).count())
     print("🟡 viewable_company_ids:", list(viewable_company_codes))
     print("🟡 篩選時間從:", sixty_days_ago)
-    print("🟡 所有發票的公司代碼：", TWB2BMainItem.objects.values_list("company_code", flat=True).distinct())
-    print("🟡 最近60天的發票：", TWB2BMainItem.objects.filter(erp_date__gte=sixty_days_ago).values_list("company_code", flat=True))
+    #print("🟡 所有發票的公司代碼：", TWB2BMainItem.objects.values_list("company_code", flat=True).distinct())
+    print("🟡 所有發票的公司代碼：", TWB2BMainItem.objects.values_list("company_id", flat=True).distinct())    
+    print("🟡 最近60天的發票：", TWB2BMainItem.objects.filter(erp_date__gte=sixty_days_ago).values_list("company_id", flat=True))
     print("🟡 完整符合條件的發票數：", TWB2BMainItem.objects.filter(filter_conditions).count())
 
     return render(request, 'twb2bmainitem.html', context)
@@ -89,6 +93,67 @@ def twb2blineitem(request, id):
     items = document.items.all()  # 確保有正確查詢
     return render(request, 'document/twb2blineitem.html', {'document': document, 'items': items})
 
+def twb2blineitem_update(request, id):
+    document = get_object_or_404(TWB2BMainItem, id=id)
+    if request.method == 'POST':
+        # 處理主項目資料
+        invoice_period = request.POST.get('invoice_period', '').strip()
+        erp_reference = request.POST.get('erp_reference', '').strip()
+        seller_bp_id = request.POST.get('seller_bp_id', '').strip()
+        buyer_bp_id = request.POST.get('buyer_bp_id', '').strip()
+        buyer_remark = request.POST.get('buyer_remark', '').strip()
+        main_remark = request.POST.get('main_remark', '').strip()
+        customs_clearance_mark = request.POST.get('customs_clearance_mark', '').strip()
+        category = request.POST.get('category', '').strip()
+        relate_number = request.POST.get('relate_number', '').strip()
+        bonded_area_confirm = request.POST.get('bonded_area_confirm', '').strip()
+        zero_tax_rate_reason = request.POST.get('zero_tax_rate_reason', '').strip()
+        reserved1 = request.POST.get('reserved1', '').strip()
+        reserved2 = request.POST.get('reserved2', '').strip()
+        try:
+            original_currency_amount = Decimal(request.POST.get('original_currency_amount', '').strip()) if request.POST.get('original_currency_amount', '').strip() else None
+        except InvalidOperation:
+            original_currency_amount = None
+        try:
+            exchange_rate = Decimal(request.POST.get('exchange_rate', '').strip()) if request.POST.get('exchange_rate', '').strip() else None
+        except InvalidOperation:
+            exchange_rate = None
+        currency = request.POST.get('currency', '').strip()
+
+        # 更新主項目資料
+        document.invoice_period = invoice_period
+        document.erp_reference = erp_reference
+        document.seller_bp_id = seller_bp_id
+        document.buyer_bp_id = buyer_bp_id
+        document.buyer_remark = buyer_remark
+        document.main_remark = main_remark
+        document.customs_clearance_mark = customs_clearance_mark
+        document.category = category
+        document.relate_number = relate_number
+        document.bonded_area_confirm = bonded_area_confirm
+        document.zero_tax_rate_reason = zero_tax_rate_reason
+        document.reserved1 = reserved1
+        document.reserved2 = reserved2
+        document.original_currency_amount = original_currency_amount
+        document.exchange_rate = exchange_rate
+        document.currency = currency
+
+        document.save()  # 保存主項目資料
+
+        # 更新明細項目資料
+        for item in document.items.all():
+            line_remark = request.POST.get(f'line_remark_{item.id}', '').strip()
+            line_relate_number = request.POST.get(f'line_relate_number_{item.id}', '').strip()
+
+            item.line_remark = line_remark
+            item.line_relate_number = line_relate_number
+            item.save()  # 保存明細項目資料
+
+        return redirect('twb2blineitem', id=document.id)  # 更新後重定向到發票詳情頁面
+
+    return render(request, 'document/twb2blineitem.html', {'document': document})
+
+
 #======================================================B2B發票篩選=======================================================
 
 def twb2bmainitem_filter(request):
@@ -97,7 +162,7 @@ def twb2bmainitem_filter(request):
 
     # 其他篩選條件
     invoice_status_filter = request.GET.get("invoice_status")
-    void_status_filter = request.GET.get("void_status")
+    #void_status_filter = request.GET.get("void_status")
     tax_type_filter = request.GET.get("tax_type")
     company_id_filter = request.GET.get("company_id")  # 新增公司篩選條件
 
@@ -107,7 +172,9 @@ def twb2bmainitem_filter(request):
 
     # 取得該使用者可查看的公司名稱列表
     company_options = user_profile.viewable_companies.all()
-    viewable_company_codes = user_profile.viewable_companies.values_list('id', flat=True)
+    #viewable_company_codes = user_profile.viewable_companies.values_list('id', flat=True)
+    viewable_company_codes = user_profile.viewable_companies.values_list('company_id', flat=True)
+
 
 
     # 計算兩個月前的日期
@@ -139,12 +206,13 @@ def twb2bmainitem_filter(request):
     filters = Q()
     if invoice_status_filter:
         filters &= Q(invoice_status=invoice_status_filter)
-    if void_status_filter:
-        filters &= Q(void_status=void_status_filter)
+    
+    #if void_status_filter:
+    #    filters &= Q(void_status=void_status_filter)
     if tax_type_filter:
         filters &= Q(tax_type=tax_type_filter)
     if company_id_filter:
-        filters &= Q(company__id=company_id_filter)
+        filters &= Q(company_id=company_id_filter)
 
     # 限制在兩個月前到今天的時間範圍內
     filters &= Q(erp_date__range=[start_date, end_date])
@@ -163,11 +231,11 @@ def twb2bmainitem_filter(request):
 
     # 獲取篩選條件的選項
     invoice_status = TWB2BMainItem.objects.values_list('invoice_status', flat=True).distinct()
-    void_status = TWB2BMainItem.objects.values_list('void_status', flat=True).distinct()
+    #void_status = TWB2BMainItem.objects.values_list('void_status', flat=True).distinct()
     tax_type = TWB2BMainItem.objects.values_list('tax_type', flat=True).distinct()
 
     # 檢查公司ID篩選是否有效
-    if company_id_filter and int(company_id_filter) not in viewable_company_codes:
+    if company_id_filter and company_id_filter not in viewable_company_codes:
         messages.error(request, "您無權限查看該公司資料")
         return redirect('twb2bmainitem')
 
@@ -178,7 +246,7 @@ def twb2bmainitem_filter(request):
         
         
         "invoice_status": invoice_status,
-        "void_status": void_status,
+        #"void_status": void_status,
         "tax_type": tax_type,
         "display_limit": display_limit,  # 傳遞選擇的筆數
         "documents": page_obj,  # 傳遞分頁結果
@@ -217,23 +285,31 @@ def twb2bmainitem_export_invoices(request):
         messages.warning(request, f"{excluded_count} 筆已開立的發票已排除，未匯出。")
 
     # 1️⃣ 統計各公司所需發票數
-    invoice_count_by_company_code = defaultdict(int)
+    #invoice_count_by_company_code = defaultdict(int)
+    invoice_count_by_company_id = defaultdict(int)
+
     for invoice in invoices:
         #invoice_count_by_company_code[invoice.company_id] += 1  # invoice.company_id 是字串
-        invoice_count_by_company_code[invoice.company.company_id] += 1
+        #invoice_count_by_company_code[invoice.company.company_id] += 1
+        invoice_count_by_company_id[invoice.company.company_id] += 1
+
     # 2️⃣ 建立公司代碼對應的 Company 資料（查主鍵）
     company_map = {
-        company.company_id: company for company in Company.objects.filter(company_id__in=invoice_count_by_company_code.keys())
-        
+        #company.company_id: company for company in Company.objects.filter(company_id__in=invoice_count_by_company_code.keys())
+        company.company_id: company for company in Company.objects.filter(company_id__in=invoice_count_by_company_id.keys())
+    
     }
 
     # 3️⃣ 驗證每間公司是否有足夠的號碼可以使用
     insufficient_companies = []
 
-    for company_code, count_needed in invoice_count_by_company_code.items():
-        company_obj = company_map.get(company_code)
+    #for company_code, count_needed in invoice_count_by_company_code.items():
+    for company_id, count_needed in invoice_count_by_company_id.items():
+        #company_obj = company_map.get(company_code)
+        company_obj = company_map.get(company_id)
         if not company_obj:
-            insufficient_companies.append(f"公司代碼 {company_code} 找不到對應公司資料")
+            #insufficient_companies.append(f"公司代碼 {company_code} 找不到對應公司資料")
+            insufficient_companies.append(f"公司代碼 {company_id} 找不到對應公司資料")
             continue
 
         distributions = NumberDistribution.objects.filter(
@@ -255,7 +331,8 @@ def twb2bmainitem_export_invoices(request):
     # 4️⃣ 準備號碼池（以 company.id 為 key）
     number_pool = defaultdict(list)
     for dist in NumberDistribution.objects.filter(status='available'):
-        number_pool[dist.company.id].append(dist)
+        #number_pool[dist.company.id].append(dist)
+        number_pool[dist.company.company_id].append(dist)
 
     # 5️⃣ 載入 Excel 樣板
     template_path = os.path.join(settings.BASE_DIR, 'export', 'A0101.xlsx')
@@ -275,7 +352,8 @@ def twb2bmainitem_export_invoices(request):
 
 
             distributions = sorted(
-                number_pool[company_obj.id],
+                #number_pool[company_obj.id],
+                number_pool[company_obj.company_id],
                 key=lambda d: int(d.current_number or d.start_number)
             )
 
@@ -288,6 +366,7 @@ def twb2bmainitem_export_invoices(request):
                     invoice.invoice_number = invoice_number
                     invoice.invoice_status = '已開立'
                     invoice.invoice_date = localtime(timezone.now()).replace(tzinfo=None).date()
+                    invoice.export_date = localtime(timezone.now()).replace(tzinfo=None).date()
                     invoice.save()
 
                     dist.current_number = str(current + 1).zfill(len(dist.start_number))

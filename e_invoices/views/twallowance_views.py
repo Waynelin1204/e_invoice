@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import xml.etree.ElementTree as ET
 from django.utils.timezone import localtime
+from decimal import Decimal, InvalidOperation
+
 
 # ====== 第三方套件 ======
 import pandas as pd
@@ -49,7 +51,7 @@ def twallowance(request):
     user_profile = request.user.profile
     
     # 取得該使用者可查看的公司名稱列表
-    viewable_company_codes = user_profile.viewable_companies.values_list('id', flat=True)
+    viewable_company_codes = user_profile.viewable_companies.values_list('company_id', flat=True)
 
     # 取得B2B或B2C列表
     b2b_b2c_filter =  request.GET.get("b2b_b2c")
@@ -79,8 +81,8 @@ def twallowance(request):
     print("✅ 撈到的發票數：", TWAllowance.objects.filter(filter_conditions).count())
     print("🟡 viewable_company_ids:", list(viewable_company_codes))
     print("🟡 篩選時間從:", sixty_days_ago)
-    print("🟡 所有發票的公司代碼：", TWAllowance.objects.values_list("company_code", flat=True).distinct())
-    print("🟡 最近60天的發票：", TWAllowance.objects.filter(erp_date__gte=sixty_days_ago).values_list("company_code", flat=True))
+    print("🟡 所有發票的公司代碼：", TWAllowance.objects.values_list("company_id", flat=True).distinct())
+    print("🟡 最近60天的發票：", TWAllowance.objects.filter(erp_date__gte=sixty_days_ago).values_list("company_id", flat=True))
     print("🟡 完整符合條件的發票數：", TWAllowance.objects.filter(filter_conditions).count())
 
     return render(request, 'twallowance.html', context)
@@ -103,7 +105,7 @@ def twallowance_filter(request):
 
     # 取得該使用者可查看的公司名稱列表
     company_options = user_profile.viewable_companies.all()
-    viewable_company_codes = user_profile.viewable_companies.values_list('id', flat=True)
+    viewable_company_codes = user_profile.viewable_companies.values_list('company_id', flat=True)
 
 
     # 計算兩個月前的日期
@@ -159,7 +161,6 @@ def twallowance_filter(request):
 
     # 獲取篩選條件的選項
     allowance_status = TWAllowance.objects.values_list('allowance_status', flat=True).distinct()
-    line_tax_type = TWAllowance.objects.values_list('line_tax_type', flat=True).distinct()
     b2b_b2c = TWAllowance.objects.values_list('b2b_b2c', flat=True).distinct()
 
     # 檢查公司ID篩選是否有效
@@ -173,7 +174,6 @@ def twallowance_filter(request):
         "company_options": company_options,
         "b2b_b2c": b2b_b2c,
         "invoice_status": allowance_status,
-        "line_tax_type": line_tax_type,
         "display_limit": display_limit,  # 傳遞選擇的筆數
         "start_date": start_date.strftime('%Y-%m-%d'),  # 顯示篩選的開始日期
         "end_date": end_date.strftime('%Y-%m-%d'),  # 顯示篩選的結束日期
@@ -218,6 +218,53 @@ def twallowance_detail(request, id):
         'items': items,
     })
 
+def twallowance_update(request, id):
+    allowance = get_object_or_404(TWAllowance, id=id)
+    if request.method == 'POST':
+        # 處理主項目資料
+        allowance_period = request.POST.get('invoice_period', '').strip()
+        erp_reference = request.POST.get('erp_reference', '').strip()
+        seller_bp_id = request.POST.get('seller_bp_id', '').strip()
+        buyer_bp_id = request.POST.get('buyer_bp_id', '').strip()
+        # try:
+        #     allowance_amount = Decimal(request.POST.get('allowance_amount', '').strip()) if request.POST.get('allowance_amount', '').strip() else None
+        # except InvalidOperation:
+        #     allowance_amount = None
+        
+        # try:
+        #     allowance_tax = Decimal(request.POST.get('allowance_tax', '').strip()) if request.POST.get('allowance_tax', '').strip() else None
+        # except InvalidOperation:
+        #     allowance_tax = None
+
+        # 更新主項目資料
+        allowance.allowance_period = allowance_period
+        allowance.erp_reference = erp_reference
+        allowance.seller_bp_id = seller_bp_id
+        allowance.buyer_bp_id = buyer_bp_id
+
+
+        #allowance.save()  # 保存主項目資料
+
+        # 更新明細項目資料
+        for item in allowance.items.all():
+            #line_quantity = request.POST.get(f'line_quantity_{item.id}', '').strip()
+            line_unit_price =  Decimal(request.POST.get(f'line_unit_price_{item.id}', '').strip())
+            # line_allowance_amount = request.POST.get(f'line_allowance_amount_{item.id}', '').strip()
+            line_allowance_tax = Decimal(request.POST.get(f'line_allowance_tax_{item.id}', '').strip())
+            line_allowance_amount = Decimal(request.POST.get(f'line_allowance_amount_{item.id}', '').strip())
+
+
+
+            #item.line_quantity = line_quantity 
+            item.line_unit_price = line_unit_price
+            item.line_allowance_amount = line_allowance_amount
+            item.line_allowance_tax = line_allowance_tax
+
+            item.save()  # 保存明細項目資料
+
+        return redirect('twallowance_detail', id=allowance.id)  # 更新後重定向到發票詳情頁面
+
+    return render(request, 'allowance/twallowance_detail.html', {'allowance': allowance})
 #======================================================B2B發票匯出=======================================================
 
 @csrf_exempt
@@ -321,8 +368,12 @@ def twallowance_export_invoices(request):
                 # if current <= int(dist.end_number):
                 # invoice_number = f"{dist.initial_char}{str(current).zfill(len(dist.start_number))}"
             allowance.allowance_status = '已開立'
-            allowance.allowance_date = localtime(timezone.now()).replace(tzinfo=None).date()
-            allowance.allowance_time = localtime(timezone.now()).replace(tzinfo=None).time()
+            #allowance.allowance_date = localtime(timezone.now()).replace(tzinfo=None).date()
+            #allowance.allowance_time = localtime(timezone.now()).replace(tzinfo=None).time()
+            now = localtime(timezone.now()).replace(tzinfo=None)
+            allowance.allowance_date= now.date() 
+            allowance.allowance_time = now 
+            allowance.export_date = now.date()
             allowance.save()
 
             for item in allowance.items.all():
@@ -394,39 +445,35 @@ def twallowance_update_void_status(request):
     if not selected_ids:
         return HttpResponse("No invoice IDs provided", status=400)
 
-    invoices = TWAllowance.objects.filter(id__in=selected_ids).prefetch_related('items')
-    if not invoices.exists():
+    allowances = TWAllowance.objects.filter(id__in=selected_ids).prefetch_related('items')
+    if not allowances.exists():
         return HttpResponse("No invoices found", status=404)
 
     # 載入 Excel 樣板
-    template_path = os.path.join(settings.BASE_DIR, 'export', 'A0401_Void.xlsx')
+    template_path = os.path.join(settings.BASE_DIR, 'export', 'B0201.xlsx')
     workbook = load_workbook(template_path)
     sheet = workbook.active
 
     row = 2  # Excel 開始列
 
     with transaction.atomic():
-        for invoice in invoices:
+        for allowance in allowances:
             # 更新作廢狀態與時間
-            invoice.invoice_status = '已作廢'
-            invoice.cancel_date = localtime(timezone.now()).replace(tzinfo=None).date()
-            invoice.cancel_time = localtime(timezone.now()).replace(tzinfo=None).time()
-            invoice.original_invoice_date = invoice.invoice_date
-            invoice.original_invoice_number = invoice.invoice_number
-            invoice.save()
+            allowance.allowance_status = '已作廢'
+            allowance.allowance_cancel_date = localtime(timezone.now()).replace(tzinfo=None).date()
+            allowance.allowance_cancel_time = localtime(timezone.now()).replace(tzinfo=None).time()
+            allowance.save()
 
 
-            sheet.cell(row=row, column=1, value=invoice.company.company_identifier)
-            sheet.cell(row=row, column=2, value=invoice.buyer_identifier)
-            sheet.cell(row=row, column=3, value=invoice.invoice_date)
-            sheet.cell(row=row, column=4, value=invoice.invoice_number)
-            sheet.cell(row=row, column=5, value=invoice.invoice_period)
-            sheet.cell(row=row, column=6, value=invoice.cancel_date)
-            sheet.cell(row=row, column=7, value=invoice.cancel_time)
-            sheet.cell(row=row, column=8, value=invoice.cancel_period)
-            sheet.cell(row=row, column=9, value=invoice.cancel_reason)
-            sheet.cell(row=row, column=10, value=invoice.returntax_document_number)
-            sheet.cell(row=row, column=11, value=invoice.cancel_remark)
+            sheet.cell(row=row, column=1, value=allowance.company.company_identifier)
+            sheet.cell(row=row, column=2, value=allowance.buyer_identifier)
+            sheet.cell(row=row, column=3, value=allowance.allowance_number)
+            sheet.cell(row=row, column=4, value=allowance.allowance_date)
+            sheet.cell(row=row, column=5, value=allowance.allowance_type)
+            sheet.cell(row=row, column=6, value=allowance.allowance_cancel_date)
+            sheet.cell(row=row, column=7, value=allowance.allowance_cancel_time)
+            sheet.cell(row=row, column=8, value=allowance.allowance_cancel_reason)
+            sheet.cell(row=row, column=9, value=allowance.allowance_cancel_remark)
             row += 1
 
     # 匯出 Excel
@@ -438,7 +485,7 @@ def twallowance_update_void_status(request):
         output,
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename="void.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="B0201.xlsx"'
     return response
 
 #======================================================驗證發票明細=======================================================

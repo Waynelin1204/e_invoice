@@ -9,20 +9,21 @@ from django.db import models
 
 class TWAllowance(models.Model):
     company = models.ForeignKey("e_invoices.Company", on_delete=models.CASCADE, related_name="twallowance")  # 公司代碼
-    company_code = models.CharField(max_length=10, blank=True, null=True)  # 公司代碼
     # 發票來源
     b2b_b2c = models.CharField(max_length=3, choices=[('B2B','B2B'), ('B2C','B2C')])   # 折讓單發票類型B2B 或 B2C
     sys_number = models.CharField(max_length=20)    # 平台文件號碼
     sys_date = models.DateTimeField(blank=True, null=True)    #  平台日期
+    export_date = models.DateTimeField(blank=True, null=True)    #  平台匯出日期
     allowance_number = models.CharField(max_length=16, blank=True, null=True)     #  折讓證明單號碼  
     allowance_date = models.DateField(blank=True, null=True)    # 折讓證明單日期 (產出轉換8碼)
+    allowance_time = models.DateTimeField(blank=True, null=True)    # 折讓證明單日期 (產出轉換8碼)
     allowance_period = models.CharField(max_length=5, blank=True, null=True)    # 折讓期別
     allowance_type = models.CharField(max_length=2, default='02', blank=True, null=True)     # 折讓類別，預設為2
 
     erp_number = models.CharField(max_length=20)    # ERP文件號碼
     erp_date = models.DateTimeField()   # ERP過帳日期
     erp_reference = models.CharField(max_length=60, blank=True, null=True)   # ERP備註資訊
-  
+
     seller_bp_id = models.CharField(max_length=20, blank=True, null=True)     # 賣方客戶編號
     buyer_identifier = models.CharField(max_length=10)   # 買方統一編號
     buyer_name = models.CharField(max_length=60, blank=True, null=True)   # 買方名稱
@@ -59,21 +60,32 @@ class TWAllowance(models.Model):
                 )
         return self.allowance_amount <= total_invoice_amount
     
+
+    def is_within_original_invoice_tax(self):
+        total_invoice_tax = 0
+        for item in self.items.all():
+            invoice = item.linked_invoice  # 對應的發票
+            if invoice:
+                total_invoice_tax += (
+                    (invoice.total_tax_amount or 0)
+                )
+        return self.allowance_tax <= total_invoice_tax
+
 class TWAllowanceLineItem(models.Model):
     twallowance = models.ForeignKey(TWAllowance, related_name='items', on_delete=models.CASCADE)  # TWB2BMainItem
-    line_sequence_number = models.CharField(max_length=4)     # 明細排列序號
+    line_sequence_number = models.CharField(max_length=4, blank=True, null=True)     # 明細排列序號
     line_original_invoice_date = models.DateField(blank=True, null=True)    # 發票日期 (產出轉換8碼)
     line_original_invoice_number = models.CharField(max_length=10, blank=True, null=True)     #  發票號碼 
     linked_invoice = models.ForeignKey('TWB2BMainItem',null=True,blank=True,on_delete=models.SET_NULL) 
-    line_description = models.CharField(max_length=500)     # 品名
-    line_quantity = models.DecimalField(max_digits=13, decimal_places=7)     # 數量
-    line_unit = models.CharField(max_length=6, blank=True, null=True)     # 單位
-    line_unit_price = models.DecimalField(max_digits=13, decimal_places=7)     # 單價
+    line_description = models.CharField(max_length=500,blank=True, null=True)     # 品名
+    line_quantity = models.CharField(max_length=10 ,blank=True, null=True)     # 數量
+    line_unit = models.CharField(max_length=4, blank=True, null=True)     # 單位
+    line_unit_price = models.DecimalField(max_digits=13, decimal_places=3, blank=True, null=True)     # 單價
     LINE_TAX_TYPE_CHOICES = [
         ('1', '應稅'),
         ('2', '零稅率'),
         ('3', '免稅')       
     ]    
-    line_tax_type = models.CharField(max_length=1, choices=LINE_TAX_TYPE_CHOICES)     # 課稅別 (1：應稅；2：零稅率；3：免稅)
-    line_allowance_amount = models.DecimalField(max_digits=13, decimal_places=7)     # 金額 (未稅)
-    line_allowance_tax = models.DecimalField(max_digits=20, decimal_places=0)     # 營業稅額
+    line_tax_type = models.CharField(max_length=1, choices=LINE_TAX_TYPE_CHOICES,blank=True, null=True)     # 課稅別 (1：應稅；2：零稅率；3：免稅)
+    line_allowance_amount = models.DecimalField(max_digits=13, decimal_places=3,blank=True, null=True)     # 金額 (未稅)
+    line_allowance_tax = models.DecimalField(max_digits=20, decimal_places=3,blank=True, null=True)     # 營業稅額

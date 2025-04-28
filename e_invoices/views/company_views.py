@@ -52,7 +52,7 @@ def company_detail(request):
 def company_detail_sub(request, company_id):
     print("Received company_id:", company_id)
     company = get_object_or_404(Company, company_id=company_id)
-    head_offices = Company.objects.filter(company_type=0).exclude(id=company.id)
+    head_offices = Company.objects.filter(company_type=0).exclude(company_id=company.company_id)
 
     if request.method == 'POST':
         # 抓取表單值

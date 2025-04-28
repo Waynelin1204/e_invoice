@@ -290,31 +290,31 @@
                 }
             };
     
-            const showError = (id, msg) => {
-                const el = document.getElementById(`error_${id}`);
+            const showError = (company_id, msg) => {
+                const el = document.getElementById(`error_${company_id}`);
                 if (el) el.innerText = msg;
             };
     
-            const clearError = (id) => {
-                const el = document.getElementById(`error_${id}`);
+            const clearError = (company_id) => {
+                const el = document.getElementById(`error_${company_id}`);
                 if (el) el.innerText = '';
             };
     
-            const validateField = (id) => {
-                const config = fieldConfigs[id];
-                const value = document.getElementById(id).value.trim();
+            const validateField = (company_id) => {
+                const config = fieldConfigs[company_id];
+                const value = document.getElementById(company_id).value.trim();
     
                 if (config.allowEmpty && value === '') {
-                    clearError(id);
+                    clearError(company_id);
                     return true;
                 }
     
                 if (!config.regex.test(value)) {
-                    showError(id, config.msg);
+                    showError(company_id, config.msg);
                     return false;
                 }
     
-                clearError(id);
+                clearError(company_id);
                 return true;
             };
     
@@ -323,10 +323,10 @@
             };
     
             // 即時驗證
-            Object.keys(fieldConfigs).forEach(id => {
-                const el = document.getElementById(id);
+            Object.keys(fieldConfigs).forEach(company_id => {
+                const el = document.getElementById(company_id);
                 if (el) {
-                    el.addEventListener('input', () => validateField(id));
+                    el.addEventListener('input', () => validateField(company_id));
                 }
             });
     
@@ -370,8 +370,8 @@
                     "is_foreign_ecomm", "tax_identifer", "email", "reporting_period"
                 ];
                 
-                editableFields.forEach(id => {
-                    const el = document.getElementById(id);
+                editableFields.forEach(company_id => {
+                    const el = document.getElementById(company_id);
                     if (el) el.disabled = false;
                 });
             });

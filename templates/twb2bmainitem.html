@@ -181,8 +181,8 @@
         <!-- 搜尋表單 -->
         <form method="get" class="mb-3">
             <div class="input-group">
-                <input type="text" name="search" placeholder="搜尋系統單號" class="form-control" />
-                <button type="submit" class="btn btn-primary">Search</button>
+                <input type="text" name="search" placeholder="搜尋" class="form-control" />
+                <!-- <button type="submit" class="btn btn-primary">Search</button> -->
             </div>
         </form>
         <form method="GET" action="{% url 'twb2bmainitem_filter' %}" id="invoice_filter_form">
@@ -194,7 +194,7 @@
             <select name="company_id" id="company_id">
                 <option value="">--請選擇公司</option>
                 {% for company in company_options %}
-                    <option value="{{ company.id }}" {% if form_data.company_id == company.id|stringformat:"s" %}selected{% endif %}>
+                    <option value="{{ company.company_id }}" {% if form_data.company_id == company.company_id|stringformat:"s" %}selected{% endif %}>
                         {{ company.company_id }} - {{ company.company_name }}
                     </option>
                 {% endfor %}
@@ -281,8 +281,10 @@
                             <th>營業人</th>
                             <th>買方</th>
                             <th>買方統編</th>
-                            <th>發票日期</th>
                             <th>發票號碼</th>
+                            <th>發票日期</th>
+                            <th>匯出日期</th>
+                            <th>期別</th>
                             <th>稅別</th>
                             <th>總計</th>
                             <th>付款狀態</th>
@@ -303,8 +305,10 @@
                             <td class="text-left" >{{ document.company }}</td>
                             <td class="text-center" >{{ document.buyer_name }}</td>
                             <td class="text-left" >{{ document.buyer_identifier }}</td>
-                            <td class="text-center">{{ document.invoice_date_time|default:"" }}</td>
                             <td class="text-center">{{ document.invoice_number }}</td>
+                            <td class="text-center">{{ document.invoice_date|default:"" }}</td>
+                            <td class="text-center">{{ document.export_date|default:"" }}</td>
+                            <td class="text-center">{{ document.invoice_period }}</td>
                             <td class="text-center">{{ document.get_tax_type_display }}</td>
                             <td class="text-center">{{ document.total_amount }}</td>
                             <td class="text-center">{{ document.payment_status|default:"" }}</td>
@@ -708,6 +712,33 @@ document.addEventListener("DOMContentLoaded", function () {
     
 });
 </script> 
+<script>
+    // 搜尋功能
+    document.querySelector('input[name="search"]').addEventListener('input', function () {
+        const keyword = this.value.toLowerCase();
+        const rows = document.querySelectorAll('table tbody tr');
+
+        rows.forEach(row => {
+            // 避免影響空的「沒有發票記錄」列
+            if (row.querySelectorAll('td').length === 1) return;
+
+            const erpNumber = row.children[1].textContent.toLowerCase();      // 系統單號
+            const invoiceNumber = row.children[7].textContent.toLowerCase();  // 發票號碼
+            const buyerIdentifier = row.children[5].textContent.toLowerCase(); // 買方統編
+
+            if (
+                erpNumber.includes(keyword) ||
+                invoiceNumber.includes(keyword) ||
+                buyerIdentifier.includes(keyword)
+            ) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>
+
 <!-- 刪除確認 Modal -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

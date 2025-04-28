@@ -30,9 +30,9 @@ from e_invoices.views import front4
 
 from e_invoices.views import number_distribution, create_number_distribution
 
-from e_invoices.views import number_distribution, twb2bmainitem, twb2blineitem, twb2bmainitem_filter, twb2bmainitem_delete_selected_invoices,twb2bmainitem_export_invoices, twb2bmainitem_update_void_status
+from e_invoices.views import number_distribution, twb2bmainitem, twb2blineitem, twb2bmainitem_filter, twb2bmainitem_delete_selected_invoices,twb2bmainitem_export_invoices, twb2bmainitem_update_void_status, twb2blineitem_update
 
-from e_invoices.views import twallowance, twallowance_filter, twallowance_delete_selected_invoices, twallowance_export_invoices, twallowance_update_void_status, twallowance_detail
+from e_invoices.views import twallowance, twallowance_filter, twallowance_delete_selected_invoices, twallowance_export_invoices, twallowance_update_void_status, twallowance_detail, twallowance_update
 
 from e_invoices.views import upload_file_tw, upload_test, run_script_tw
 
@@ -88,6 +88,7 @@ urlpatterns = [
     path('twb2bmainitem_delete_selected_invoices/', twb2bmainitem_delete_selected_invoices, name='twb2bmainitem_delete_selected_invoices'),
     path('document/<int:id>/', twb2blineitem, name='twb2blineitem'),
     path('twb2bmainitem_update_void_status/', twb2bmainitem_update_void_status, name='twb2bmainitem_update_void_status'),
+    path('document/<int:id>/update/', twb2blineitem_update, name='twb2blineitem_update'),
 
 #-------------------for 折讓單-------------------
 
@@ -97,6 +98,7 @@ urlpatterns = [
     path('twallowance_delete_selected_invoices/', twallowance_delete_selected_invoices, name='twallowance_delete_selected_invoices'),
     path('twallowance_update_void_status/', twallowance_update_void_status, name='twallowance_update_void_status'),
     path('allowance/<int:id>/', twallowance_detail, name='twallowance_detail'),
+    path('allowance/<int:id>/update/', twallowance_update, name='twallowance_update'),
 
 
 

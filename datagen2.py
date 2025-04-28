@@ -24,15 +24,12 @@ companies = list(Company.objects.all())
 
 for i in range(100):
     # ✅ 隨機選一個公司 instance
-    company = random.choice(companies)
-    company_code = company.company_id              # e.g., "D001"
-    company_identifier = company.company_identifier  # e.g., "55667788"
 
     buyer_name = random.choice(list(buyer_info.keys()))
     buyer_identifier = buyer_info[buyer_name]
-    b2b_b2c ="B2B"
+
     #invoice_type = B2BC_info[b2b_b2c]
-    sys_number = f"{company_code}2025SYS{str(i+1).zfill(5)}"
+    sys_number = f"2025SYS{str(i+1).zfill(5)}"
     ERP_number = f"INV{str(i+1).zfill(5)}"
 
     # 發票稅別 (整張發票同一種)
@@ -57,10 +54,7 @@ for i in range(100):
     freetax_sales_amount = Decimal("0")
     
     invoice = TWB2BMainItem.objects.create(
-        company=company,
-        company_code=company_code,
-        company_identifier = company_identifier,
-        b2b_b2c=b2b_b2c,
+        company = random.choice(companies),
         sys_number=sys_number,
         invoice_number="",
         invoice_date = None,
@@ -73,9 +67,6 @@ for i in range(100):
         buyer_name=buyer_name,
         buyer_identifier=buyer_identifier,
         buyer_remark="",
-        main_remark="",
-        group_mark="",
-        donate_mark="",
         customs_clearance_mark=customs_clearance_mark,
         category="",
         relate_number="",

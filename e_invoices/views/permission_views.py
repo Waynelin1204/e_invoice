@@ -49,7 +49,8 @@ def is_admin(user):
 @user_passes_test(is_admin)
 def manage_user_permissions(request):
     all_users = User.objects.all()
-    companies = {company.id: f"{company.company_id} - {company.company_name}" for company in Company.objects.all()}  
+    # companies = {company.id: f"{company.company_id} - {company.company_name}" for company in Company.objects.all()}  
+    companies = {company.company_id: f"{company.company_id} - {company.company_name}" for company in Company.objects.all()} 
     return render(request, "permissions.html", {"all_users": all_users, "companies": json.dumps(companies)})
 
 @login_required
@@ -62,7 +63,9 @@ def get_user_permissions(request, user_id):
         user_profile, _ = UserProfile.objects.get_or_create(user=user)
 
         # 取得該使用者已選取的公司
-        viewable_companies = list(user_profile.viewable_companies.values_list("id", flat=True))
+        # viewable_companies = list(user_profile.viewable_companies.values_list("id", flat=True))
+        viewable_companies = list(user_profile.viewable_companies.values_list("company_id", flat=True))
+
 
         return JsonResponse({"status": "exists", "viewable_companies": viewable_companies})
 
@@ -85,7 +88,8 @@ def update_permissions(request, user_id):
             selected_companies = data.get("viewable_companies", [])
 
             # 確保傳入的 ID 是有效的
-            valid_companies = Company.objects.filter(id__in=selected_companies)
+            # valid_companies = Company.objects.filter(id__in=selected_companies)
+            valid_companies = Company.objects.filter(company_id__in=selected_companies)
             
             # 更新使用者的 viewable_companies 權限
             user_profile.viewable_companies.set(valid_companies)

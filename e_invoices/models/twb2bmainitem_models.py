@@ -10,17 +10,12 @@ from django.db import models
 
 
 class TWB2BMainItem(models.Model):
-    company = models.ForeignKey("e_invoices.Company", on_delete=models.CASCADE, related_name="twb2bmainitem_invoices")  # 公司代碼
-    company_code = models.CharField(max_length=10, blank=True, null=True)  # 公司代碼
-    B2B_B2C_CHOICES = [
-        ('B2B', 'B2B'),
-        ('B2C', 'B2C')
-    ]
-    b2b_b2c = models.CharField(max_length=3, choices=B2B_B2C_CHOICES) # 電子發票類型B2B 或 B2C
-    sys_number = models.CharField(max_length=20) # 平台文件號碼
-    sys_date = models.DateTimeField(blank=True, null=True)    #  平台傳送日期
+    company= models.ForeignKey("e_invoices.Company", on_delete=models.PROTECT, related_name="twb2bmainitem_invoices",blank=True, null=True)  # 公司代碼
+    sys_number = models.CharField(max_length=20,blank=True, null=True) # 平台文件號碼
+    sys_date = models.DateTimeField(blank=True, null=True)    #  平台匯入日期
+    export_date = models.DateTimeField(blank=True, null=True)    #  平台匯出日期
     invoice_number = models.CharField(max_length=10, blank=True, null=True)     #  發票號碼  
-    invoice_date = models.DateField(max_length=8,blank=True, null=True) # 平台傳送日期
+    invoice_date = models.DateField(max_length=8,blank=True, null=True) # 發票日期
     invoice_time = models.CharField(max_length=8, blank=True, null=True) # 發票時間
     invoice_period = models.CharField(max_length=5,blank=True, null=True)  # 期別
     invoice_type = models.CharField(max_length=2,blank=True, null=True)  # 發票類別
@@ -31,27 +26,25 @@ class TWB2BMainItem(models.Model):
     
     company_identifier = models.CharField(max_length=60, blank=True, null=True) #統一編號
     seller_bp_id = models.CharField(max_length=20, blank=True, null=True)
-    tax_identifier = models.CharField(max_length=10, blank=True, null=True) #稅編
-    seller_name = models.CharField(max_length=60,blank=True, null=True)
+    #seller_name = models.CharField(max_length=60,blank=True, null=True)
     buyer_identifier = models.CharField(max_length=10,blank=True, null=True) #買方統編
     buyer_name = models.CharField(max_length=60,blank=True, null=True)
     buyer_bp_id = models.CharField(max_length=20, blank=True, null=True)
-    buyer_remark = models.CharField(max_length=1, blank=True, null=True)
+    buyer_remark = models.CharField(max_length=100, blank=True, null=True)
     main_remark = models.CharField(max_length=200, blank=True, null=True)
-    group_mark = models.CharField(max_length=1, blank=True, null=True)  # 彙開註記
-    donate_mark = models.CharField(max_length=10,blank=True, null=True)  # 捐贈註記
+    #group_mark = models.CharField(max_length=1, blank=True, null=True)  # 彙開註記
+    #donate_mark = models.CharField(max_length=10,blank=True, null=True)  # 捐贈註記
 
 
     customs_clearance_mark = models.CharField(max_length=1, blank=True, null=True)
     category = models.CharField(max_length=2, blank=True, null=True)
     relate_number = models.CharField(max_length=20, blank=True, null=True)
-    invoice_type = models.CharField(max_length=2,blank=True, null=True)
     bonded_area_confirm = models.CharField(max_length=1, blank=True, null=True)
     zero_tax_rate_reason = models.CharField(max_length=2, blank=True, null=True)
     reserved1 = models.CharField(max_length=20, blank=True, null=True)
     reserved2 = models.CharField(max_length=100, blank=True, null=True)
 
-    sales_amount = models.DecimalField(max_digits=13, decimal_places=7)
+    sales_amount = models.DecimalField(max_digits=13, decimal_places=7,blank=True, null=True)
     freetax_sales_amount = models.DecimalField(max_digits=13, decimal_places=7,blank=True, null=True)
     zerotax_sales_amount = models.DecimalField(max_digits=13, decimal_places=7,blank=True, null=True)
     tax_type = models.CharField(
@@ -65,17 +58,13 @@ class TWB2BMainItem(models.Model):
     currency = models.CharField(max_length=3, blank=True, null=True)
     invoice_status = models.CharField(max_length=10, blank=True, null=True, default='未開立')
 
-    description = models.CharField(max_length=255, blank=True, null=True)
-    remark = models.CharField(max_length=120, blank=True, null=True)
-    discount_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)
-    payment_status = models.CharField(max_length=10, blank=True, null=True)
-    void_status = models.CharField(max_length=10, blank=True, null=True)
+
     mof_date = models.DateField(blank=True, null=True)     #    稅局回應日
     mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
     mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
     creator = models.CharField(max_length=10, blank=True, null=True)       # 建立者
     creator_remark = models.CharField(max_length=200, blank=True, null=True)     # 平台備註
-    
+
     cancel_date = models.DateField(blank=True, null=True)   # 作廢發票日期 (產出轉換8碼)
     cancel_time = models.TimeField(blank=True, null=True)   # 作廢發票時間
     cancel_period = models.CharField(max_length=5, blank=True, null=True)    # 作廢發票期別
@@ -85,21 +74,27 @@ class TWB2BMainItem(models.Model):
     cancel_mof_date = models.DateField(blank=True, null=True)     #    稅局回應日
     cancel_mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
     cancel_mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
+    #discount_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)
+    #tax_identifier = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)
+    #description = models.CharField(max_length=255, blank=True, null=True)
+    #remark = models.CharField(max_length=120, blank=True, null=True)
+    #payment_status = models.CharField(max_length=10, blank=True, null=True)
+    #void_status = models.CharField(max_length=10, blank=True, null=True)
 
    # 稅局拒絕理由
     def __str__(self):
-        return f"{self.sys_number} - {self.company_code}"
+        return f"{self.sys_number}"
 
 class TWB2BLineItem(models.Model):
     twb2bmainitem = models.ForeignKey(TWB2BMainItem, related_name='items', on_delete=models.CASCADE)  # TWB2BMainItem
+    erp_number = models.CharField(max_length=20)    # ERP文件號碼(主表也有，自己用於快速查找)
+    line_sequence_number = models.CharField(max_length=4,blank=True, null=True)  # 明細排列序號
     line_description = models.CharField(max_length=500,blank=True, null=True)  # 品名
-    line_tax_type = models.CharField(choices=[(1, '應稅'), (2, '零稅率'), (3, '免稅')], max_length=1, blank=True, null=True)
     line_quantity = models.CharField(max_length=50,blank=True, null=True)  # 數量 (可支援 '3C商品' 這類非數值)
     line_unit = models.CharField(max_length=6, blank=True, null=True)  # 單位
     line_unit_price = models.DecimalField(max_digits=20, decimal_places=7,blank=True, null=True)  # 單價
+    line_tax_type = models.CharField(choices=[(1, '應稅'), (2, '零稅率'), (3, '免稅')], max_length=1, blank=True, null=True)
     line_amount = models.DecimalField(max_digits=20, decimal_places=7,blank=True, null=True)  # 未稅金額
     line_remark = models.CharField(max_length=200, blank=True, null=True)  # 備註
-    line_sequence_number = models.CharField(max_length=4,blank=True, null=True)  # 明細排列序號
     line_relate_number = models.CharField(max_length=4,blank=True, null=True)  # 明細排列序號
     line_tax_amount = models.DecimalField(max_digits=20, decimal_places=7,blank=True, null=True) #稅金
-    line_tax_type = models.CharField(max_length=1,blank=True, null=True)

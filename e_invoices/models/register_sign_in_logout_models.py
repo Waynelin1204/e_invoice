@@ -9,7 +9,7 @@ from django.db import models
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    company = models.ForeignKey("e_invoices.Company", on_delete=models.CASCADE, related_name="users")  # 所屬公司
+    company = models.ForeignKey("e_invoices.Company", on_delete=models.PROTECT, related_name="users")  # 所屬公司
     #company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True)  # or use `null=False` if mandatory
     viewable_companies = models.ManyToManyField("e_invoices.Company", related_name="viewable_by_users")  # 可查看的公司
 

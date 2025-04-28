@@ -16,8 +16,8 @@ class Company(models.Model):
     company_id = models.CharField(
         max_length=10,
         validators=[alphanumeric_validator],
-        unique=True,
-        error_messages={'invalid': '請輸入10碼以內字元，僅限英文大小寫或數字'}
+        error_messages={'invalid': '請輸入10碼以內字元，僅限英文大小寫或數字'},
+        primary_key=True
     )
 
     # 統一編號
@@ -73,4 +73,4 @@ class Company(models.Model):
     )
     
     def __str__(self):
-        return f"{self.company_id} - {self.company_name}"
+        return f"{self.company_id}"
