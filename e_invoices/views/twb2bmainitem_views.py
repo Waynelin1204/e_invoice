@@ -65,6 +65,20 @@ def twb2bmainitem(request):
     company_options = user_profile.viewable_companies.all()
 
 
+
+    for document in documents:
+        document.is_disabled = (
+            document.invoice_status == '已作廢' or
+            (
+                document.tax_type == '2' and (
+                    (document.zerotax_sales_amount or 0) <= 0 or
+                    not document.customs_clearance_mark or
+                    not document.bonded_area_confirm or
+                    not document.zero_tax_rate_reason
+                )
+            )
+        )
+
     # 分頁：每頁顯示25筆資料
     paginator = Paginator(documents, 25)  # 每頁顯示25筆資料
     page_number = request.GET.get('page')  # 取得當前頁數
@@ -222,10 +236,24 @@ def twb2bmainitem_filter(request):
     filters &= Q(company__in=viewable_company_codes)
 
     # 查詢所有符合條件的發票資料
-    invoices_list = TWB2BMainItem.objects.filter(filters).order_by('-erp_date')
+    documents = TWB2BMainItem.objects.filter(filters).order_by('-erp_date')
+
+    for document in documents:
+        document.is_disabled = (
+            document.invoice_status == '已作廢' or
+            (
+                document.tax_type == '2' and (
+                    (document.zerotax_sales_amount or 0) <= 0 or
+                    not document.customs_clearance_mark or
+                    not document.bonded_area_confirm or
+                    not document.zero_tax_rate_reason
+                )
+            )
+        )
+
 
     # 分頁
-    paginator = Paginator(invoices_list, display_limit)  # 每頁顯示的資料筆數
+    paginator = Paginator(documents, display_limit)  # 每頁顯示的資料筆數
     page_number = request.GET.get('page')  # 獲取當前頁碼
     page_obj = paginator.get_page(page_number)  # 根據頁碼獲取相應的頁面資料
 
@@ -238,18 +266,16 @@ def twb2bmainitem_filter(request):
     if company_id_filter and company_id_filter not in viewable_company_codes:
         messages.error(request, "您無權限查看該公司資料")
         return redirect('twb2bmainitem')
+    
 
-    return render(request, "twb2bmainitem.html", {
+    return render(request, "twb2bmainitem_filter.html", {
         "company_id_filter": company_id_filter,
         "documents": page_obj,  # 傳遞分頁結果
         "company_options": company_options,
-        
-        
         "invoice_status": invoice_status,
         #"void_status": void_status,
         "tax_type": tax_type,
         "display_limit": display_limit,  # 傳遞選擇的筆數
-        "documents": page_obj,  # 傳遞分頁結果
         "start_date": start_date.strftime('%Y-%m-%d'),  # 顯示篩選的開始日期
         "end_date": end_date.strftime('%Y-%m-%d'),  # 顯示篩選的結束日期
     })

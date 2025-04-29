@@ -125,7 +125,7 @@
                 <a class="nav-link" href="{% url 'main' %}">首頁</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'front4' %}">儀表板</a>
+                <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
             </li>
             <!-- 點擊展開 -->
             <li class="nav-item">
@@ -136,12 +136,11 @@
                     <ul class="nav flex-column text-end">
                         <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
                         <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">折讓發票B2B</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">折讓發票B2B</a></li>
-                        <li><a class="nav-link" href="#">作廢發票</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單B2B</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2C">折讓證明單B2C</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
                     </ul>
                 </div>
-
             </li>
 
             <li class="nav-item">
@@ -205,7 +204,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="pagination text-end">
+            <!-- <div class="pagination text-end">
                 <span class="step-links">
                     {% if documents.has_previous %}
                         <a href="?page=1&display_limit={{ display_limit }}">&laquo; 第一頁</a>
@@ -221,7 +220,7 @@
                         <a href="?page={{ documents.paginator.num_pages }}&display_limit={{ display_limit }}">最後一頁 &raquo;</a>
                     {% endif %}
                 </span>
-            </div>
+            </div> -->
         </form>
     </div>
 </div>

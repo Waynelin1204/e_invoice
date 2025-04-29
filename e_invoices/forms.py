@@ -12,6 +12,7 @@ class NumberDistributionForm(forms.ModelForm):
             'period': forms.TextInput(attrs={'class': 'form-control'}),
             'start_number': forms.TextInput(attrs={'class': 'form-control'}),
             'end_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
         }
 
     def clean_initial_char(self):
@@ -57,3 +58,4 @@ class NumberDistributionForm(forms.ModelForm):
                 raise forms.ValidationError("號碼必須為有效的數字。")
         
         return cleaned_data
+    

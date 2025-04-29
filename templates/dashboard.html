@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儀表板</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
+    <style>
+        .content-wrapper {
+            display: flex;
+            height: 150vh;
+            padding: 20px;
+        }
+
+        .sidebar {
+            width: 220px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            height: calc(100vh - 40px);
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.1);
+            margin-left: 20px;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #bdc3c7, #2c3e50);
+            color: white;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .charts-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .chart-item {
+            flex: 1;
+            min-width: 500px;
+            max-width: 50%;
+        }
+
+        .chart-container {
+            width:100%;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .filter-container {
+            margin-bottom: 20px;
+        }
+        .charts-row {
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+        }
+
+        .chart-item {
+            flex: 1;
+        }
+
+        .chart-container {
+            padding: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+
+<body>
+<div class="content-wrapper">
+    <div class="dashboard-container">
+        <div class="dashboard-container">
+            <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
+            <div class="mb-3"></div>
+            <h2>發票數據圖表</h2>
+    
+            <!-- Horizontal Layout for Charts -->
+            <div class="charts-row">
+                <!-- Company Total Bar Chart -->
+                <div class="chart-item">
+                    <div class="chart-container">
+                        <h3 style="color: black;">各公司發票總金額（依稅別分類）</h3>
+                        <div id="companyAmountChart" style="width: 100%; height: 485px;"></div>
+                    </div>
+                </div>
+    
+                <!-- Pie Chart -->
+                <div class="chart-item">
+                    <div class="chart-container">
+                        <h3 style="color: black;">公司稅別占比圓餅圖</h3>
+    
+                        <!-- 公司篩選器：單選，點擊展開 -->
+                        <div class="mb-3">
+                            <label for="companySelect" class="form-label" style="color: black;">選擇公司</label>
+                            <select id="companySelect" class="form-select">
+                                <option value="">請選擇公司</option>
+                                <!-- JS 動態插入公司選項 -->
+                            </select>
+                        </div>
+    
+                        <div id="companyPieChart" style="width: 100%; height: 400px;"></div>
+                    </div>
+                </div>
+                <!-- Invoice Status Bar Chart -->
+                <div class="chart-item">
+                    <div class="chart-container">
+                        <h3 style="color: black;">各公司發票狀態（依狀態分類）</h3>
+                        <div id="invoiceStatusChart" style="width: 100%; height: 485px;"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const fixedColors = ['#86BC25', '#43B02A', '#26890D', '#046A38'];
+    let companies = [];
+    const taxTypeMapping = {
+        '1': '應稅',
+        '2': '零稅率',
+        '3': '免稅'
+    };
+
+    Promise.all([
+        fetch('/api/company_total/').then(res => res.json()),
+        fetch('/api/invoice_status/').then(res => res.json())
+    ])
+    .then(([amountData, statusData]) => {
+        companies = amountData;
+        const companySelect = document.getElementById('companySelect');
+        const uniqueCompanies = [...new Set(amountData.map(item => item.company_id))];
+
+        // 建立下拉選單
+        companySelect.innerHTML = '';
+        uniqueCompanies.forEach(company => {
+            const option = document.createElement('option');
+            option.value = company;
+            option.text = company;
+            companySelect.appendChild(option);
+        });
+
+        if (uniqueCompanies.length > 0) {
+            const defaultCompany = uniqueCompanies[0];
+            companySelect.value = defaultCompany;
+            updateBarChart(amountData);                    // 公司稅別金額圖
+            updatePieChart(amountData, defaultCompany);    // 單公司餅圖
+            updateInvoiceStatusChart(statusData);          // 發票狀態圖
+        }
+
+        companySelect.addEventListener('change', () => {
+            const selectedCompany = companySelect.value;
+            updatePieChart(amountData, selectedCompany);   // 更新餅圖
+        });
+    })
+    .catch(error => console.error('載入統計資料失敗:', error));
+
+    // 條狀圖：所有公司稅別分類總金額
+    function updateBarChart(data) {
+        const companies = [...new Set(data.map(item => item.company_id))];
+        const taxTypes = ['1', '2', '3'];  // 固定稅別順序
+
+        const values = taxTypes.map(taxType => {
+            return companies.map(company => {
+                const item = data.find(d => d.company_id === company && d.tax_type === taxType);
+                return item ? parseFloat(item.total_amount) : 0;
+            });
+        });
+
+        const chartDom = document.getElementById('companyAmountChart');
+        const myChart = echarts.init(chartDom);
+        const option = {
+            title: {
+                text: '各公司發票總金額（依稅別分類）',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' }
+            },
+            legend: {
+                data: taxTypes.map(t => taxTypeMapping[t]),
+                top: '10%'
+            },
+            xAxis: {
+                type: 'category',
+                data: companies,
+                axisLabel: { rotate: 30 }
+            },
+            yAxis: {
+                type: 'value',
+                min: 0
+            },
+            series: taxTypes.map((taxType, index) => ({
+                name: taxTypeMapping[taxType],
+                data: values[index],
+                type: 'bar',
+                stack: 'total',
+                itemStyle: {
+                    color: fixedColors[index % fixedColors.length]
+                }
+            }))
+        };
+        myChart.setOption(option);
+    }
+
+    // 餅圖：單一公司內稅別占比
+    function updatePieChart(data, selectedCompany) {
+        const filtered = data.filter(item => item.company_id === selectedCompany);
+        const pieData = filtered.map((item, index) => ({
+            name: taxTypeMapping[item.tax_type],
+            value: parseFloat(item.total_amount),
+            itemStyle: {
+                color: fixedColors[index % fixedColors.length]
+            }
+        }));
+
+        const chartDom = document.getElementById('companyPieChart');
+        const myChart = echarts.init(chartDom);
+        const option = {
+            title: {
+                text: `${selectedCompany} 各稅別占比`,
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: '{b}: {c} ({d}%)'
+            },
+            series: [{
+                name: '稅別占比',
+                type: 'pie',
+                radius: '50%',
+                data: pieData,
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }]
+        };
+        myChart.setOption(option);
+    }
+
+// 更新發票狀態分組直方圖
+function updateInvoiceStatusChart(data) {
+    const labels = [...new Set(data.map(item => item.company_id))];  // 公司 ID 為橫軸
+    const statusTypes = ['未開立', '已開立', '已作廢'];  // 固定發票狀態類型
+
+    // 計算每個公司每個發票狀態的發票數量
+    const values = statusTypes.map(status => {
+        return labels.map(company => {
+            // 過濾出符合公司 ID 和發票狀態的資料
+            const filtered = data.filter(d => d.company_id === company && d.invoice_status === status);
+            return filtered.length > 0 ? filtered[0].invoice_count : 0;  // 使用實際的發票數量
+        });
+    });
+
+    const chartDom = document.getElementById('invoiceStatusChart');
+    const myChart = echarts.init(chartDom);
+    const option = {
+        title: {
+            text: '各公司發票狀態（依狀態分類）',
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' },
+            formatter: function (params) {
+                let tooltipText = params[0].name + '<br>';
+                params.forEach(param => {
+                    tooltipText += `${param.seriesName}: ${param.value} 張<br>`;  // 顯示實際張數
+                });
+                return tooltipText;
+            }
+        },
+        legend: {
+            data: statusTypes,
+            top: '10%'
+        },
+        xAxis: {
+            type: 'category',
+            data: labels,
+            axisLabel: { rotate: 30 }
+        },
+        yAxis: {
+            type: 'value',
+            min: 0
+        },
+        series: statusTypes.map((status, index) => ({
+            name: status,  // 使用發票狀態的名稱
+            data: values[index],
+            type: 'bar',
+            itemStyle: {
+                color: fixedColors[index % fixedColors.length]
+            }
+        }))
+    };
+    myChart.setOption(option);
+}
+</script>
+
+</body>
+</html>

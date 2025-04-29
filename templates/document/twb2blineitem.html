@@ -110,13 +110,13 @@
                 <!-- 主發票欄位 (表格上方) -->
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <label for="buyer_remark" class="form-label">買受人簽署適用零稅率註記</label>
-                        <select class="form-select" id="buyer_remark" name="buyer_remark" disabled>
+                        <label for="bonded_area_confirm" class="form-label">買受人簽署適用零稅率註記</label>
+                        <select class="form-select" id="bonded_area_confirm" name="bonded_area_confirm" disabled>
                             <option value="">-- 零稅率發票必填 --</option>
-                            <option value="1" {% if document.buyer_remark == '1' %}selected{% endif %}>1 - 買受人為保稅區營業人</option>
-                            <option value="2" {% if document.bbuyer_remark == '2' %}selected{% endif %}>2 - 買受人為遠洋漁業營業人</option>
-                            <option value="3" {% if document.bbuyer_remark == '3' %}selected{% endif %}>3 - 買受人為自由貿易港區營業人</option>
-                            <option value="4" {% if document.bbuyer_remark == '4' %}selected{% endif %}>4 - 其他</option>
+                            <option value="1" {% if document.bonded_area_confirm == '1' %}selected{% endif %}>1 - 買受人為保稅區營業人</option>
+                            <option value="2" {% if document.bonded_area_confirm == '2' %}selected{% endif %}>2 - 買受人為遠洋漁業營業人</option>
+                            <option value="3" {% if document.bonded_area_confirm == '3' %}selected{% endif %}>3 - 買受人為自由貿易港區營業人</option>
+                            <option value="4" {% if document.bonded_area_confirm == '4' %}selected{% endif %}>4 - 其他</option>
                         </select>
                     </div>
                     <div class="col-md-4">
@@ -141,19 +141,8 @@
                             <option value="">-- 請選擇 --</option>
                             <option value="1" {% if document.customs_clearance_mark == '1' %}selected{% endif %}>1 - 非經海關出口</option>
                             <option value="2" {% if document.customs_clearance_mark == '2' %}selected{% endif %}>2 - 經海關出口</option>
-
                         </select>
                     </div>
-        
-                    <div class="col-md-4">
-                        <label for="bonded_area_confirm" class="form-label">保稅區確認</label>
-                        <select class="form-select" id="bonded_area_confirm" name="bonded_area_confirm" disabled>
-                            <option value="">-- 請選擇 --</option>
-                            <option value="Y" {% if document.bonded_area_confirm == 'Y' %}selected{% endif %}>是 - 保稅區交易，需要特殊處理</option>
-                            <option value="N" {% if document.bonded_area_confirm == 'N' %}selected{% endif %}>否 - 不是保稅區交易，正常應稅發票</option>
-                        </select>
-                    </div>
-
                 </div>
         <div class="d-flex justify-content-between mb-3">
             <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>

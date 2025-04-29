@@ -26,7 +26,7 @@ from e_invoices.views import company_detail, company_detail_sub, company_add
 
 from e_invoices.views import main
 
-from e_invoices.views import front4
+from e_invoices.views import dashboard, company_total_amount, tax_type_summary_by_company, invoice_status
 
 from e_invoices.views import number_distribution, create_number_distribution
 
@@ -37,6 +37,8 @@ from e_invoices.views import twallowance, twallowance_filter, twallowance_delete
 from e_invoices.views import upload_file_tw, upload_test, run_script_tw
 
 from e_invoices.views import upload_file, upload_test, run_script, invoice_list, invoice_detail, update_invoice_status
+
+
 
 
 # from e_invoices.views import document_list
@@ -66,7 +68,11 @@ urlpatterns = [
 
 #-------------------for 儀錶板------------------- 
 
-    path('front4/', front4, name = 'front4'), 
+    path('dashboard/', dashboard, name = 'dashboard'), 
+    path('api/company_total/', company_total_amount, name='company_total_amount'),
+    path('api/tax_summary_by_company/', tax_type_summary_by_company, name='tax_summary_by_company'),
+    path('api/invoice_status/', invoice_status, name='invoice_status'),
+
    
 #-------------------for 使用者權限-------------------
 

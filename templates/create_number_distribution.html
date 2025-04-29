@@ -23,9 +23,8 @@
     <meta charset="UTF-8">
     <title>新增號碼區間</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         .content-wrapper {
             display: flex;
@@ -49,10 +48,10 @@
             background-color: #dfdee0;
         }
         /* 展開的下拉選單 */
-        .collaspe {
+        .collapse {
             padding-left: 15px;
         }
-        .collaspe .nav-link {
+        .collapse .nav-link {
             text-align: right;
             color: black;
         }
@@ -118,7 +117,10 @@
             display: block !important;
             color: black; /* Set text color to black */
         }
-
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+        }
     </style>
 </head>
 <body>
@@ -129,7 +131,7 @@
                     <a class="nav-link" href="{% url 'main' %}">首頁</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'front4' %}">儀表板</a>
+                    <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
                 </li>
                 <!-- 點擊展開 -->
                 <li class="nav-item">
@@ -140,9 +142,9 @@
                         <ul class="nav flex-column text-end">
                             <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
                             <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
-                            <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">折讓發票B2B</a></li>
-                            <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">折讓發票B2B</a></li>
-                            <li><a class="nav-link" href="#">作廢發票</a></li>
+                            <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單B2B</a></li>
+                            <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2C">折讓證明單B2C</a></li>
+                            <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
                         </ul>
                     </div>
                 </li>
@@ -166,6 +168,7 @@
         </nav>
 
     <!-- 表單區域 -->
+
     <div class="content">
         <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
         <!-- 發票列表 -->
@@ -173,85 +176,89 @@
             <h3>創建字軌</h3>
         </div>
         <!-- <form method="post" class="bg-white p-4 rounded shadow-sm"> -->
-        <form method="post" class="p-4 rounded">
-
-            {% csrf_token %}
-            {% if form.non_field_errors %}
+            <form method="post" action="{% url 'create_number_distribution' %}" class="p-4 rounded">
+                {% csrf_token %}
+                {% if form.errors %}
                 <div class="alert alert-danger">
-                    {{ form.non_field_errors }}
+                    <ul>
+                        {% for field, errors in form.errors.items %}
+                            <li>{{ field }}: {{ errors|join:", " }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
             {% endif %}
         
-            <!-- 營業人 -->
-            <div class="form-group d-flex align-items-center mb-3">
-                <label for="id_company" class="custom-label">營業人</label>
-                {{ form.company|add_class:"custom-input" }}
-                {% if form.company.errors %}
-                    <div class="error-message">
-                        {% for error in form.company.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
+                <!-- 營業人 -->
+                <div class="form-group d-flex align-items-center mb-3">
+                    <label for="company" class="custom-label">營業人</label>
+                    {{ form.company|add_class:"custom-input" }}
+                    {% if form.company.errors %}
+                        <div class="error-message">
+                            {% for error in form.company.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
         
-            <!-- 開頭字母 -->
-            <div class="form-group d-flex align-items-center mb-3">
-                <label for="id_initial_char" class="custom-label">開頭字母</label>
-                {{ form.initial_char|add_class:"custom-input" }}
-                {% if form.initial_char.errors %}
-                    <div class="error-message">
-                        {% for error in form.initial_char.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
+                <!-- 開頭字母 -->
+                <div class="form-group d-flex align-items-center mb-3">
+                    <label for="initial_char" class="custom-label">開頭字母</label>
+                    {{ form.initial_char|add_class:"custom-input" }}
+                    {% if form.initial_char.errors %}
+                        <div class="error-message">
+                            {% for error in form.initial_char.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
         
-            <!-- 期別 -->
-            <div class="form-group d-flex align-items-center mb-3">
-                <label for="id_period" class="custom-label">期別</label>
-                {{ form.period|add_class:"custom-input" }}
-                {% if form.period.errors %}
-                    <div class="error-message">
-                        {% for error in form.period.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-        
-            <!-- 起始號碼 -->
-            <div class="form-group d-flex align-items-center mb-3">
-                <label for="id_start_number" class="custom-label">起始號碼</label>
-                {{ form.start_number|add_class:"custom-input" }}
-                {% if form.start_number.errors %}
-                    <div class="error-message">
-                        {% for error in form.start_number.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-        
-            <!-- 結束號碼 -->
-            <div class="form-group d-flex align-items-center mb-3">
-                <label for="id_end_number" class="custom-label">結束號碼</label>
-                {{ form.end_number|add_class:"custom-input" }}
-                {% if form.end_number.errors %}
-                    <div class="error-message">
-                        {% for error in form.end_number.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-        
-            <button type="submit" class="btn btn-primary mt-3">儲存</button>
+                <!-- 期別 -->
+                <div class="form-group d-flex align-items-center mb-3">
+                    <label for="period" class="custom-label">期別</label>
+                    {{ form.period|add_class:"custom-input" }}
+                    {% if form.period.errors %}
+                        <div class="error-message">
+                            {% for error in form.period.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            
+                <!-- 起始號碼 -->
+                <div class="form-group d-flex align-items-center mb-3">
+                    <label for="start_number" class="custom-label">起始號碼</label>
+                    {{ form.start_number|add_class:"custom-input" }}
+                    {% if form.start_number.errors %}
+                        <div class="error-message">
+                            {% for error in form.start_number.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            
+                <!-- 結束號碼 -->
+                <div class="form-group d-flex align-items-center mb-3">
+                    <label for="end_number" class="custom-label">結束號碼</label>
+                    {{ form.end_number|add_class:"custom-input" }}
+                    {% if form.end_number.errors %}
+                        <div class="error-message">
+                            {% for error in form.end_number.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <input type="hidden" id="status" name="status" value="available">
+
+            <button type="button" id="saveBtn" class="btn btn-primary mt-3">儲存</button>
         </form>
     </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.getElementById('logoutLink').addEventListener('click', function () {
@@ -271,6 +278,43 @@
         });
     });
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const saveBtn = document.getElementById("saveBtn");
+        const confirmSaveBtn = document.getElementById("confirmSaveBtn");
+        const form = document.querySelector("form");
+        const confirmSaveModal = new bootstrap.Modal(document.getElementById("confirmSaveModal"));
+    
+        saveBtn.addEventListener("click", function () {
+            confirmSaveModal.show(); // 顯示確認 Modal
+        });
+    
+        confirmSaveBtn.addEventListener("click", function () {
+            confirmSaveModal.hide(); // 關閉 Modal
+            setTimeout(() => {
+                form.submit(); // 等 Modal 動畫完成後送出表單
+            }, 300);
+        });
+    });
+</script>
+<!-- 儲存確認 Modal -->
+<div class="modal fade" id="confirmSaveModal" tabindex="-1" aria-labelledby="confirmSaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="confirmSaveModalLabel">確認儲存</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-dark">
+          確定要儲存這個號碼區間嗎？
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" id="confirmSaveBtn" class="btn btn-primary">確定儲存</button>
+        </div>
+      </div>
+    </div>
+</div>
 </body>
 </html>
 

@@ -134,7 +134,7 @@
                 <a class="nav-link" href="{% url 'main' %}">首頁</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'front4' %}">儀表板</a>
+                <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
             </li>
             <!-- 點擊展開 -->
             <li class="nav-item">
@@ -147,7 +147,7 @@
                         <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
                         <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單B2B</a></li>
                         <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2C">折讓證明單B2C</a></li>
-                        <li><a class="nav-link" href="#">作廢發票</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
                     </ul>
                 </div>
 
@@ -284,11 +284,12 @@
                             <th>折讓單號碼</th>
                             <th>折讓開立日期</th>
                             <th>折讓總計</th>
+                            <th>金額檢查</th>
+                            <th>稅額檢查</th>
                             <th>折讓單開立狀態</th>
                             <!-- <th>發票作廢狀態</th> -->
                             <th>折讓單詳情</th>
-                            <th>金額檢查</th>
-                            <th>稅額檢查</th>
+
 
                         </tr>
                     </thead>
@@ -297,7 +298,7 @@
                         <tr>
                             <td class="text-center">
                                 <input type="checkbox" name="selected_documents" value="{{ allowance.id }}" 
-                                    {% if document.allowance_status == '已作廢' or not allowance.is_within_original_invoice_amount %} disabled {% endif %}>
+                                    {% if allowance.allowance_status == '已作廢' or not allowance.is_within_original_invoice_amount or not allowance.is_within_original_invoice_tax  %} disabled {% endif %}>
                             </td>
                             <td class="text-center" >{{ allowance.erp_number }}</td>
                             <td class="text-center" >{{ allowance.erp_date }}</td>
@@ -307,11 +308,11 @@
                             <td class="text-center">{{ allowance.allowance_number }}</td>
                             <td class="text-center">{{ allowance.allowance_date|default:"" }}</td>
                             <td class="text-center">{{ allowance.allowance_amount }}</td>
-                            <td class="text-center" style="background-color: 
+                            <!-- <td class="text-center" style="background-color: 
                                 {% if allowance.allowance_status == '已開立' %}
                                     #28a745;
                                 {% elif allowance.allowance_status == '已作廢' %}
-                                    #dc3545;  <!-- 紅色 -->
+                                    #dc3545;  紅色 
                                 {% else %}
                                     transparent;
                                 {% endif %}; 
@@ -319,11 +320,34 @@
                                 {% if allowance.allowance_status == '已開立' %}
                                     white;
                                 {% elif allowance.allowance_status == '已作廢' %}
-                                    white;  <!-- 白色字 -->
+                                    white;  白色字
                                 {% else %}
                                     black;
                                 {% endif %};">
                                 {{ allowance.allowance_status }}
+                            </td> -->
+                            <td class="text-center">
+                                {% if allowance.is_within_original_invoice_amount %}
+                                    ✅ 合法
+                                {% else %}
+                                    ❌ 超過原始發票金額
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if allowance.is_within_original_invoice_tax %}
+                                    ✅ 合法
+                                {% else %}
+                                    ❌ 超過原始發票稅額
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if allowance.allowance_status == '已開立' %}
+                                    <span class="badge bg-success" style="font-size: 1.0em;">已開立</span>
+                                {% elif allowance.allowance_status == '已作廢' %}
+                                    <span class="badge bg-danger" style="font-size: 1.0em;">已作廢</span>
+                                {% else %}
+                                    <span class="badge bg-secondary" style="font-size: 1.0em;">未開立</span>
+                                {% endif %}
                             </td>
                             <!-- <td class="text-center" >
                                 發票作廢狀態下拉選單
@@ -337,20 +361,6 @@
                                     <a href="{% url 'twallowance_detail' allowance.id %}" class="btn btn-primary btn-sm">查看詳情</a>
                                 {% else %}
                                     <span class="text-muted">無可用資料</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if allowance.is_within_original_invoice_amount %}
-                                    ✅ 合法
-                                {% else %}
-                                    ❌ 超過原始發票金額
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if allowance.is_within_original_invoice_tax %}
-                                    ✅ 合法
-                                {% else %}
-                                    ❌ 超過原始發票稅額
                                 {% endif %}
                             </td>
                         </tr>

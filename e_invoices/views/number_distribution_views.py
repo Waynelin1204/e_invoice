@@ -48,6 +48,7 @@ def number_distribution(request):
     numbers = NumberDistribution.objects.all()
     return render(request, 'number_distribution.html', {'numbers':numbers})
 
+@csrf_exempt
 def create_number_distribution(request):
     if request.method == 'POST':
         form = NumberDistributionForm(request.POST)
