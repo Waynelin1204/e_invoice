@@ -21,6 +21,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 
 # ====== Django DB 操作 ======
 from django.db import connection
@@ -34,65 +35,101 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-# ====== 專案內部（Model 與 Form） ======
-from e_invoices.models import (
-    RegisterForm, LoginForm,
-    Twa0101, Twa0101Item, Ocr, Ocritem, Company, UserProfile,
-    NumberDistribution, TWB2BMainItem, TWB2BLineItem
-)
-from e_invoices.forms import NumberDistributionForm
+# ====== 專案內部 ======
+from e_invoices.services.parse_services import process_data
+from e_invoices.models.uploadlog_models import UploadLog
+
+def import_log(request):
+    # 從資料庫中查詢匯入記錄
+    logs = UploadLog.objects.all().order_by('-upload_time')  # 根據上傳時間排序
+    return render(request, 'import_log.html', {'logs': logs})
 
 UPLOAD_DIR_TW = os.path.join(settings.BASE_DIR, "upload") 
 
-def upload_test(request):
-    user_profile = request.user.profile
-    
+def upload(request):
     # 取得該使用者可查看的公司名稱列表
+    user_profile = request.user.profile
     
     # 查詢符合條件的資料，並使用 prefetch_related 來查詢發票明細
     company_options = user_profile.viewable_companies.all()
-    context = {
-        "company_options": company_options,
-    }
+    form_data = {}
 
-    return render(request, 'upload_test.html',context)
+    if request.method == 'POST':
+        form_data = {
+            'company_id': request.POST.get('company_id', '').strip(),
+            'b2b_b2c': request.POST.get('b2b_b2c', '').strip(),
+            'import_type': request.POST.get('import_type', '').strip(),
+        }
+
+    context = {
+        'company_options': company_options,
+        'form_data': form_data,
+    }
+    return render(request, 'upload_invoice.html', context)
 
 
 @csrf_exempt
 def upload_file_tw(request):
-    if request.method == "POST":
-        uploaded_file = request.FILES.get("invoice_file")
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "無效的請求方式，請使用 POST"}, status=405)
 
-        if not uploaded_file:
-            return JsonResponse({"success": False, "error": "沒有收到檔案"}, status=400)
+    uploaded_file = request.FILES.get("upload_file")
+    if not uploaded_file:
+        return JsonResponse({"success": False, "error": "沒有收到檔案"}, status=400)
 
-        os.makedirs(UPLOAD_DIR_TW, exist_ok=True)
-        file_path = os.path.join(UPLOAD_DIR_TW, uploaded_file.name)
+    # 檢查副檔名
+    allowed_extensions = ['.xlsx', '.xls', '.csv']
+    _, ext = os.path.splitext(uploaded_file.name.lower())
+    if ext not in allowed_extensions:
+        return JsonResponse({
+            "success": False,
+            "error": "請上傳副檔名為 .xlsx、.xls 或 .csv 的檔案"
+        }, status=400)
 
-        try:
-            with open(file_path, "wb") as f:
-                for chunk in uploaded_file.chunks():
-                    f.write(chunk)
+    # 儲存檔案
+    os.makedirs(UPLOAD_DIR_TW, exist_ok=True)
+    save_path = os.path.join(UPLOAD_DIR_TW, uploaded_file.name)
 
-            return JsonResponse({"success": True, "file_path": file_path})
-        except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=500)
+    try:
+        with open(save_path, "wb+") as destination:
+            for chunk in uploaded_file.chunks():
+                destination.write(chunk)
 
-    return JsonResponse({"success": False, "error": "無效的請求"}, status=400)
+        return JsonResponse({
+            "success": True,
+            "file_path": save_path,
+            "file_name": uploaded_file.name
+        })
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": f"儲存檔案失敗：{str(e)}"}, status=500)
+
 
 @csrf_exempt
 def run_script_tw(request):
-    """Execute the parse.py script which handles Excel to DB import."""
-    parse_script_path = os.path.join(UPLOAD_DIR_TW, "import2sqlite.py")
-    
+    """執行資料解析"""
     if request.method == "POST":
         try:
-            # 執行 parse.py 腳本（Python 版本依實際情況調整：python 或 python3）
-            script_output = subprocess.check_output(["python", parse_script_path], text=True)
+            # 解析 JSON 資料
+            data = json.loads(request.body.decode("utf-8"))
+            company_id = data.get("company_id")
+            b2b_b2c = data.get("b2b_b2c")
+            import_type = data.get("import_type")
+            file_name = data.get("file_name")
+            if not file_name: # 用file_name組出完整檔案路徑
+                return JsonResponse({"success": False, "error": "缺少檔案名稱"}, status=400)
 
-            return JsonResponse({"success": True, "output": script_output})
+            file_path = os.path.join(UPLOAD_DIR_TW, file_name)
 
-        except subprocess.CalledProcessError as e:
-            return JsonResponse({"success": False, "error": str(e.output)}, status=500)
+            result = process_data(file_path, company_id, b2b_b2c, import_type, request.user.username)
+            # return JsonResponse({"success": True, **result})
+            return JsonResponse({
+                "success": True,
+                "file_path": file_path,
+                "file_name": file_name  # 加這行
+            })
+
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
     return JsonResponse({"success": False, "error": "Invalid request"}, status=400)

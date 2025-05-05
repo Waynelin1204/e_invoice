@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 from e_invoices.views import register, sign_in, logout
 
@@ -34,7 +36,7 @@ from e_invoices.views import number_distribution, twb2bmainitem, twb2blineitem, 
 
 from e_invoices.views import twallowance, twallowance_filter, twallowance_delete_selected_invoices, twallowance_export_invoices, twallowance_update_void_status, twallowance_detail, twallowance_update
 
-from e_invoices.views import upload_file_tw, upload_test, run_script_tw
+from e_invoices.views import upload, import_log, upload_file_tw, run_script_tw
 
 from e_invoices.views import upload_file, upload_test, run_script, invoice_list, invoice_detail, update_invoice_status
 
@@ -111,13 +113,14 @@ urlpatterns = [
 #-------------------for 發票字軌-------------------
 
     path('number_distribution/', number_distribution, name='number_distribution'),
-    path('create_number_distribution/', create_number_distribution, name='create_number_distribution'),
+    path('create_number_distribmution/', create_number_distribution, name='create_number_distribution'),
 
 #-------------------for 資料匯入-------------------
 
-    path('upload_test/',upload_test, name='upload_test'),
+    path('upload_invoice/', upload, name='upload_invoice'),
+    path('import_log/', import_log, name='import_log'),
     path('upload_file_tw/', upload_file_tw, name='upload_file_tw'),
-    path("run_script_tw/", run_script_tw, name="run_script_tw"),
+    path('run_script_tw/', run_script_tw, name='run_script_tw'),
 
 #-------------------for OCR-------------------
 
@@ -143,3 +146,5 @@ urlpatterns = [
 
 ]
 
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
