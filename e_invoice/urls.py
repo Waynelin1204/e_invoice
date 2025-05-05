@@ -38,7 +38,7 @@ from e_invoices.views import twallowance, twallowance_filter, twallowance_delete
 
 from e_invoices.views import upload, import_log, upload_file_tw, run_script_tw
 
-from e_invoices.views import upload_file, upload_test, run_script, invoice_list, invoice_detail, update_invoice_status
+from e_invoices.views import upload_file, upload, run_script, invoice_list, invoice_detail, update_invoice_status
 
 
 
