@@ -5,23 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>發票管理</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         /* 外層容器，包含導航欄與內容 */
         .content-wrapper {
+            margin-top: 60px;
             display: flex;
-            height: 100vh;
+            height: 95vh;
             padding: 20px;
-            justify-content: space-between; /* 保持導航欄和內容區的間隔 */
         }
-
+ 
         /* 側邊導覽欄 */
         .sidebar {
             width: 220px;
             background-color: #ffffff; /* 背景顏色 */
             border-radius: 8px; /* 圓角 */
             padding: 20px;
-            height: calc(100vh - 40px); /* 滿版高度但減去 padding */
+            height: calc(95vh - 40px); /* 滿版高度但減去 padding */
             box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2); /* 懸浮陰影 */
             transition: all 0.3s ease;
         }
@@ -38,48 +39,30 @@
         .sidebar .nav-link:hover {
             background-color: #dfdee0; /* 滑鼠懸停變色 */
         }
-
+ 
         /* 展開的下拉選單 */
-        .collapse {
+        .collaspe {
             padding-left: 15px;
         }
         .collaspe .nav-link {
             text-align: right;
             color: black;
         }
-
+ 
         /* 內容區域 */
         .content {
-            flex-grow: 1; /* 讓內容區域占滿剩餘空間 */
+            flex: 1;
             padding: 20px;
             background-color: white;
             border-radius: 8px;
-            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.1);
-            margin-left: 20px; /* 確保內容區和側邊欄之間有間距 */
-            max-width: calc(100% - 240px); /* 確保內容區不會超過剩餘空間 */
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.1); /* 內容區域也有陰影 */
+            margin-left: 20px;
         }
-
+        
         .table-wrapper {
             width: 100%;
             max-width: 100%;
-            max-height: fit-content;
-            padding: 0px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .table {
-            width: 100%;
-            max-height: fit-content;
-
-            margin: 0;
-        }
-        .table-wrapper {
-            width: 100%;
-            max-width: 100%;
-            height:550px;
+            height: 65vh;
             padding: 0px;
             background: white;
             border-radius: 8px;
@@ -95,6 +78,18 @@
             margin: 0;
             border-collapse: collapse;
         }
+
+
+        .table td, .table th {
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+
+        .table thead th {
+            text-align: center;
+            vertical-align: middle;
+        }
+
         /* 背景漸層效果 */
         body {
             background: linear-gradient(to bottom, #bdc3c7, #2c3e50); /* 背景漸層 */
@@ -102,52 +97,170 @@
             height: 100vh;
             margin: 0;
         }
+        /* 已開立狀態的綠色背景 */
+        .invoice-status-issued {
+            background-color: #28a745; /* 綠色背景 */
+            color: white; /* 白色字 */
+        }
+
+        .title-section h3 {
+            display: block !important;
+            color: black; /* Set text color to black */
+        }
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+        }
+        /* 黑色橫條樣式 */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: black;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000; /* 確保橫條在最上層 */
+        }
+        .top-bar .top-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .top-bar .top-buttons .btn {
+            margin-left: 10px;
+            color: white;
+            background-color: transparent;
+            border: none;
+        }
+
+        .top-bar .top-buttons .btn:hover {
+            color: #ccc;
+        }
+
+        /* 右上角按鈕 */
+        .top-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+        }
+        /* 右上角按鈕的樣式，不使用懸浮效果 */
+        .top-buttons .btn {
+            margin-left: 10px;
+        }
+        button {
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+        }
+        /* 讓選單在按鈕下方顯示 */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0; /* 確保選單從按鈕開始展開 */
+            top: 40px; /* 讓選單顯示在按鈕的下方 */
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
-<!-- 頂部導航欄 -->
-<div class="content-wrapper">
-    <nav class="sidebar">
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'main' %}">首頁</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
-            </li>
-            <!-- 點擊展開 -->
-            <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
-                    發票管理
-                </a>
-                <div class="collapse" id="invoiceMenu">
-                    <ul class="nav flex-column text-end">
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">折讓發票B2B</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">折讓發票B2B</a></li>
-                        <li><a class="nav-link" href="#">作廢發票</a></li>
+    <!-- {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mt-2" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %} -->
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li class="alert alert-{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <div class="top-bar">
+        <div class="logo">
+            <h5 class="m-0" style="font-weight: bold;">Deloitte</h5>
+        </div>
+        <div class="top-buttons">
+            <span id="currentUser" style="margin-right: 10px; font-weight: bold;">{{ user.username }}</span>
+            <button class="btn">&#128276;</button> <!-- 🔔 -->
+            <button class="btn">&#9881;</button>   <!-- ⚙️ -->
+            <button class="btn" id="profileButton">&#128100;</button> <!-- 👤 -->
+            <!-- 權限等級區塊：直接展開 -->
+            <div class="dropdown-menu" id="profileMenu">
+                         <!-- 使用者名稱 -->
+                <div class="px-3 pt-2 pb-1">
+                    <small class="text-muted">使用者：</small><br>
+                    <div class="px-3 pt-2 pb-1 text-center">
+                    <strong>{{ user.get_full_name|default:user.username }}</strong>
+                    </div>
+                </div>
+    
+                <hr class="my-1">
+                <div class="px-3 pt-2">
+                    <small class="text-muted">權限等級：</small>
+                    <ul class="list-unstyled mt-1 mb-2 text-center">
+                        {% for group in user.groups.all %}
+                            <li>{{ group.name }}</li>
+                        {% empty %}
+                            <li class="text-muted">無</li>
+                        {% endfor %}
                     </ul>
                 </div>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
-                    字軌管理
-                </a>
-                <div class="collapse" id="settingMenu">
-                    <ul class="nav flex-column text-end">
-                        <li><a class="nav-link" href="{% url 'number_distribution' %}">字軌列表</a></li>
-                        <li><a class="nav-link" href="{% url 'create_number_distribution' %}">新增字軌</a></li>
-                    </ul>
-                </div>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" href="javascript:void(0);" id="logoutLink">登出</a>
-            </li>
-        </ul>
-    </nav>
+                <div class="dropdown-divider"></div>       
+                <a class="dropdown-item" href="#">更改密碼</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="javascript:void(0);" id="logoutLink">登出</a>
+            </div>
+        </div>
+    </div>
+    <div class="content-wrapper">
+        <!-- 側邊導航欄 -->
+        <nav class="sidebar">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'main' %}">首頁</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
+                </li>
+                <!-- 點擊展開 -->
+                <li class="nav-item">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
+                        發票管理
+                    </a>
+                    <div class="collapse" id="invoiceMenu">
+                        <ul class="nav flex-column text-end">
+                            <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
+                            <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
+                            <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單B2B</a></li>
+                            <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2C">折讓證明單B2C</a></li>
+                            <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
+                        </ul>
+                    </div>
+    
+                </li>
+    
+                <li class="nav-item">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                        字軌管理
+                    </a>
+                    <div class="collapse" id="settingMenu">
+                        <ul class="nav flex-column text-end">
+                            <li><a class="nav-link" href="{% url 'number_distribution' %}">字軌列表</a></li>
+                            <li><a class="nav-link" href="{% url 'create_number_distribution' %}">新增字軌</a></li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </nav>
 
     <!-- 發票列表 -->
     <div class="content">
@@ -420,5 +533,69 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
         });
     });
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const logoutLink = document.getElementById('logoutLink');
+        const confirmLogoutModal = new bootstrap.Modal(document.getElementById('confirmLogoutModal'));
+        const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+
+        // 點擊登出按鈕時顯示 Modal
+        logoutLink.addEventListener('click', function (event) {
+            event.preventDefault(); // 防止預設行為
+            confirmLogoutModal.show(); // 顯示登出確認 Modal
+        });
+
+        // 點擊 Modal 的「確認登出」按鈕後執行登出操作
+        confirmLogoutBtn.addEventListener('click', function () {
+            fetch("{% url 'logout' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': "{{ csrf_token }}",
+                },
+                credentials: 'same-origin', // 保證 CSRF Token 會隨請求一起發送
+            }).then(response => {
+                if (response.ok) {
+                    alert("登出成功！");
+                    window.location.href = '/login/'; // 重定向到登入頁
+                }
+            }).catch(error => {
+                console.error('登出失敗:', error);
+            });
+        });
+    });
+</script>
+<script>
+    // 用來控制按鈕點擊時展開選單
+    $(document).ready(function() {
+        $('#profileButton').click(function() {
+            $('#profileMenu').toggleClass('show');
+        });
+
+        // 點選其他地方時隱藏選單
+        $(document).click(function(event) {
+            if (!$(event.target).closest('#profileButton').length && 
+                !$(event.target).closest('#profileMenu').length) {
+                $('#profileMenu').removeClass('show');
+            }
+        });
+    });
+</script>
+<div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmLogoutModalLabel">確認登出</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-dark">
+                您確定要登出嗎？
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmLogoutBtn">確認登出</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
