@@ -8,12 +8,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(to bottom, #bdc3c7, #2c3e50); /* 灰色漸層背景 */
+            background: linear-gradient(to bottom, #2c3e50 5%, #bdc3c7); /* 灰色漸層背景 */
             color: white;
             height: 100vh;
             margin: 0;
             display: flex;
             justify-content: center;
+            flex-wrap: wrap;
             align-items: center;
             position: relative; /* 讓右上角按鈕能夠絕對定位 */
         }
@@ -24,9 +25,11 @@
             margin: 20px;
             padding: 10px;
             background-color: white; /* 白色背景 */
-            border-radius: 10px; /* 圓角效果 */
+            border-radius: 8px; /* 圓角效果 */
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* 初始陰影 */
+            box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.1); /* 初始陰影 */
+            border: 2px solid #c5c5c5; /* 添加灰色邊線 */
+            
         }
 
         .icon-container img {
@@ -44,6 +47,14 @@
         .icon-container img:hover {
             box-shadow: 0px 8px 15px rgba(255, 255, 255, 0.4); /* 懸浮時增加陰影 */
         }
+        .icon-wrapper {
+            margin: 20px 40px;
+            text-align: center;
+            position: relative;
+            top: -300px; /* 整體上移 50px */
+
+        }
+
 
         /* 右上角按鈕 */
         .top-buttons {
@@ -75,51 +86,136 @@
         .dropdown-menu.show {
             display: block;
         }
+
+        /* 黑色橫條樣式 */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: black;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000; /* 確保橫條在最上層 */
+        }
+
+        .top-bar .top-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .top-bar .top-buttons .btn {
+            margin-left: 10px;
+            color: white;
+            background-color: transparent;
+            border: none;
+        }
+
+        .top-bar .top-buttons .btn:hover {
+            color: #ccc;
+        }
     </style>
 </head>
 <body>
-    <!-- 右上角按鈕 -->
-    <div class="top-buttons">
-        <button class="btn btn-light">&#128276;</button> <!-- 🔔 -->
-        <button class="btn btn-light">&#9881;</button>   <!-- ⚙️ -->
-        <button class="btn btn-light" id="profileButton">&#128100;</button> <!-- 👤 -->
-        <div class="dropdown-menu" id="profileMenu">
-            <a class="dropdown-item" href="#">個人資料</a>
-            <a class="dropdown-item" href="#">更改密碼</a>
-            <a class="dropdown-item" href="javascript:void(0);" id="logoutLink">登出</a>
+    <!-- 黑色橫條 -->
+    <div class="top-bar">
+        <div class="logo">
+            <h5 class="m-0" style="font-weight: bold;">Deloitte</h5>
         </div>
+        <div class="top-buttons">
+            <span id="currentUser" style="margin-right: 10px; font-weight: bold;">{{ user.username }}</span>
+            <button class="btn">&#128276;</button> <!-- 🔔 -->
+            <button class="btn">&#9881;</button>   <!-- ⚙️ -->
+            <button class="btn" id="profileButton">&#128100;</button> <!-- 👤 -->
+        
+            <div class="dropdown-menu" id="profileMenu">
+                <!-- 權限等級區塊：直接展開 -->
+                         <!-- 使用者名稱 -->
+                <div class="px-3 pt-2 pb-1">
+                    <small class="text-muted">使用者：</small><br>
+                    <div class="px-3 pt-2 pb-1 text-center">
+                    <strong>{{ user.get_full_name|default:user.username }}</strong>
+                    </div>
+                </div>
+
+                <hr class="my-1">
+                <div class="px-3 pt-2">
+                    <small class="text-muted">權限等級：</small>
+                    <ul class="list-unstyled mt-1 mb-2 text-center">
+                        {% for group in user.groups.all %}
+                            <li>{{ group.name }}</li>
+                        {% empty %}
+                            <li class="text-muted">無</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="dropdown-divider"></div>       
+                <a class="dropdown-item" href="#">更改密碼</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="javascript:void(0);" id="logoutLink">登出</a>
+            </div>
+        </div>
+        
     </div>
 
     <!-- 圖示區塊 (保持中央) -->
-    <div class="icon-container">
-        <a href="{% url 'dashboard' %}" class="text-decoration-none text-dark">
-            <img src="{% static 'dashboard.png' %}" alt="儀表板">
-            <h5>儀表板</h5>
-        </a>
+    <div class="icon-wrapper">
+        <div class="icon-container">
+            <a href="{% url 'dashboard' %}">
+                <img src="{% static 'dashboard.png' %}" alt="儀表板">
+            </a>
+        </div>
+        <h5 class="text-center mt-2">
+            <a href="{% url 'dashboard' %}" class="text-white text-decoration-none">儀表板</a>
+        </h5>
     </div>
-    <div class="icon-container">
-        <a href="{% url 'upload_test' %}" class="text-decoration-none text-dark">
-            <img src="{% static 'data-migration.png' %}" alt="資料匯入">
-            <h5>資料匯入</h5>
-        </a>
+    
+    <div class="icon-wrapper">
+        <div class="icon-container">
+            <a href="{% url 'upload_test' %}">
+                <img src="{% static 'data-migration.png' %}" alt="資料匯入">
+            </a>
+        </div>
+        <h5 class="text-center mt-2">
+            <a href="{% url 'upload_test' %}" class="text-white text-decoration-none">資料匯入</a>
+        </h5>
     </div>
-    <div class="icon-container">
-        <a href="{% url 'twb2bmainitem' %}" class="text-decoration-none text-dark">
-            <img src="{% static 'invoice.png' %}" alt="電子發票">
-            <h5>電子發票</h5>
-        </a>
+    
+    <div class="icon-wrapper">
+        <div class="icon-container">
+            <a href="{% url 'twb2bmainitem' %}">
+                <img src="{% static 'invoice.png' %}" alt="電子發票">
+            </a>
+        </div>
+        <h5 class="text-center mt-2">
+            <a href="{% url 'twb2bmainitem' %}" class="text-white text-decoration-none">電子發票</a>
+        </h5>
     </div>
-    <div class="icon-container">
-        <a href="{% url 'invoice_list' %}" class="text-decoration-none text-dark">
-            <img src="{% static 'bill.png' %}" alt="掃描帳單">
-            <h5>掃描帳單</h5>
-        </a>
+    
+    <div class="icon-wrapper">
+        <div class="icon-container">
+            <a href="{% url 'invoice_list' %}">
+                <img src="{% static 'bill.png' %}" alt="掃描帳單">
+            </a>
+        </div>
+        <h5 class="text-center mt-2">
+            <a href="{% url 'invoice_list' %}" class="text-white text-decoration-none">掃描帳單</a>
+        </h5>
     </div>
-    <div class="icon-container">
-        <a href="{% url 'manage_permissions' %}" class="text-decoration-none text-dark">
-            <img src="{% static 'settings.png' %}" alt="設定">
-            <h5>設定</h5>
-        </a>
+    
+    <div class="icon-wrapper">
+        <div class="icon-container">
+            <a href="{% url 'manage_permissions' %}">
+                <img src="{% static 'settings.png' %}" alt="設定">
+            </a>
+        </div>
+        <h5 class="text-center mt-2">
+            <a href="{% url 'manage_permissions' %}" class="text-white text-decoration-none">設定</a>
+        </h5>
     </div>
 </body>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -141,21 +237,51 @@
     });
 </script>
 <script>
-    document.getElementById('logoutLink').addEventListener('click', function () {
-        fetch("{% url 'logout' %}", {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': "{{ csrf_token }}",
-            },
-            credentials: 'same-origin',  // 保證 CSRF Token 會隨請求一起發送
-        }).then(response => {
-            if (response.ok) {
-                alert("已成功登出");
-                window.location.href = '/login/';  // 重定向到登入頁
-            }
-        }).catch(error => {
-            console.error('登出失敗:', error);
+    document.addEventListener("DOMContentLoaded", function () {
+        const logoutLink = document.getElementById('logoutLink');
+        const confirmLogoutModal = new bootstrap.Modal(document.getElementById('confirmLogoutModal'));
+        const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+
+        // 點擊登出按鈕時顯示 Modal
+        logoutLink.addEventListener('click', function (event) {
+            event.preventDefault(); // 防止預設行為
+            confirmLogoutModal.show(); // 顯示登出確認 Modal
+        });
+
+        // 點擊 Modal 的「確認登出」按鈕後執行登出操作
+        confirmLogoutBtn.addEventListener('click', function () {
+            fetch("{% url 'logout' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': "{{ csrf_token }}",
+                },
+                credentials: 'same-origin', // 保證 CSRF Token 會隨請求一起發送
+            }).then(response => {
+                if (response.ok) {
+                    alert("登出成功！");
+                    window.location.href = '/login/'; // 重定向到登入頁
+                }
+            }).catch(error => {
+                console.error('登出失敗:', error);
+            });
         });
     });
 </script>
+<div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmLogoutModalLabel">確認登出</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-dark">
+                您確定要登出嗎？
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmLogoutBtn">確認登出</button>
+            </div>
+        </div>
+    </div>
+</div>
 </html>

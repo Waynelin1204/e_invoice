@@ -57,10 +57,31 @@
             font-size: 1rem;
             border-radius: 4px;
             cursor: pointer;
+            text-align: center;
+            display: block;
+            margin-bottom: 1rem; /* 添加間隔 */
+            text-decoration: none; /* 移除超連結的下劃線 */
         }
+
         .btn-submit:hover {
             background-color: #45a049;
-        }
+        }    
+        .btn-cancel {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            width: 100%;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            display: block;
+            margin-bottom: 1rem; /* 添加間隔 */
+            text-decoration: none; /* 移除超連結的下劃線 */
+        }        
+
+
     </style>
 </head>
 <body>
@@ -122,7 +143,10 @@
             </div>
 
             <!-- Submit button -->
-            <button type="submit" class="btn-submit">完成註冊</button>
+            <div class="form-group">
+                <button type="submit" class="btn-submit">完成註冊</button>
+                <a href="{% url 'login' %}">取消註冊</a>
+            </div>
         </form>
     </div>
 </body>

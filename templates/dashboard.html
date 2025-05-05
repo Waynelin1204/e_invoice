@@ -6,23 +6,46 @@
     <title>儀表板</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         .content-wrapper {
+            margin-top: 60px;
             display: flex;
-            height: 150vh;
+            height: 95vh;
             padding: 20px;
         }
-
+ 
+        /* 側邊導覽欄 */
         .sidebar {
             width: 220px;
-            background-color: #ffffff;
-            border-radius: 8px;
+            background-color: #ffffff; /* 背景顏色 */
+            border-radius: 8px; /* 圓角 */
             padding: 20px;
-            height: calc(100vh - 40px);
-            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
+            height: calc(95vh - 40px); /* 滿版高度但減去 padding */
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2); /* 懸浮陰影 */
             transition: all 0.3s ease;
         }
 
+        /* 導覽列內的連結 */
+        .sidebar .nav-link {
+            color: black !important;
+            padding: 10px 15px;
+            display: block;
+            transition: background 0.3s;
+            border-radius: 6px;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #dfdee0; /* 滑鼠懸停變色 */
+        }
+        /* 展開的下拉選單 */
+        .collaspe {
+            padding-left: 15px;
+        }
+        .collaspe .nav-link {
+            text-align: right;
+            color: black;
+        }
         .content {
             flex: 1;
             padding: 20px;
@@ -80,55 +103,199 @@
             background: #fff;
             box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
+                /* 展開的下拉選單 */
+        .collapse {
+            padding-left: 15px;
+        }
+        .collapse .nav-link {
+            text-align: right;
+            color: black;
+        }
+        /* 黑色橫條樣式 */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: black;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000; /* 確保橫條在最上層 */
+        }
+
+        .top-bar .top-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .top-bar .top-buttons .btn {
+            margin-left: 10px;
+            color: white;
+            background-color: transparent;
+            border: none;
+        }
+
+        .top-bar .top-buttons .btn:hover {
+            color: #ccc;
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 50px; /* top bar 的高度是 50px，這樣就剛好貼齊底部 */
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
+            min-width: 160px;
+            z-index: 1001; /* 確保選單在 top-bar 上方 */
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
     </style>
 </head>
 
 <body>
+<div class="top-bar">
+    <div class="logo">
+        <h5 class="m-0" style="font-weight: 900;">Deloitte</h5>
+    </div>
+    <div class="top-buttons">
+        <span id="currentUser" style="margin-right: 10px; font-weight: bold;">{{ user.username }}</span>
+        <button class="btn">&#128276;</button> <!-- 🔔 -->
+        <button class="btn">&#9881;</button>   <!-- ⚙️ -->
+        <button class="btn" id="profileButton">&#128100;</button> <!-- 👤 -->
+        <div class="dropdown-menu" id="profileMenu">
+            <!-- 權限等級區塊：直接展開 -->
+                     <!-- 使用者名稱 -->
+            <div class="px-3 pt-2 pb-1">
+                <small class="text-muted">使用者：</small><br>
+                <div class="px-3 pt-2 pb-1 text-center">
+                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                </div>
+            </div>
+
+            <hr class="my-1">
+            <div class="px-3 pt-2">
+                <small class="text-muted">權限等級：</small>
+                <ul class="list-unstyled mt-1 mb-2 text-center">
+                    {% for group in user.groups.all %}
+                        <li>{{ group.name }}</li>
+                    {% empty %}
+                        <li class="text-muted">無</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="dropdown-divider"></div>       
+            <a class="dropdown-item" href="#">更改密碼</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="javascript:void(0);" id="logoutLink">登出</a>
+        </div>
+    </div>
+</div>
 <div class="content-wrapper">
-    <div class="dashboard-container">
-        <div class="dashboard-container">
-            <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
-            <div class="mb-3"></div>
-            <h2>發票數據圖表</h2>
-    
-            <!-- Horizontal Layout for Charts -->
-            <div class="charts-row">
-                <!-- Company Total Bar Chart -->
-                <div class="chart-item">
-                    <div class="chart-container">
-                        <h3 style="color: black;">各公司發票總金額（依稅別分類）</h3>
-                        <div id="companyAmountChart" style="width: 100%; height: 485px;"></div>
-                    </div>
-                </div>
-    
-                <!-- Pie Chart -->
-                <div class="chart-item">
-                    <div class="chart-container">
-                        <h3 style="color: black;">公司稅別占比圓餅圖</h3>
-    
-                        <!-- 公司篩選器：單選，點擊展開 -->
-                        <div class="mb-3">
-                            <label for="companySelect" class="form-label" style="color: black;">選擇公司</label>
-                            <select id="companySelect" class="form-select">
-                                <option value="">請選擇公司</option>
-                                <!-- JS 動態插入公司選項 -->
-                            </select>
-                        </div>
-    
-                        <div id="companyPieChart" style="width: 100%; height: 400px;"></div>
-                    </div>
-                </div>
-                <!-- Invoice Status Bar Chart -->
-                <div class="chart-item">
-                    <div class="chart-container">
-                        <h3 style="color: black;">各公司發票狀態（依狀態分類）</h3>
-                        <div id="invoiceStatusChart" style="width: 100%; height: 485px;"></div>
-                    </div>
+    <!-- 側邊導航欄 -->
+    <nav class="sidebar">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'main' %}">首頁</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
+            </li>
+            <!-- 點擊展開 -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
+                    發票管理
+                </a>
+                <div class="collapse" id="invoiceMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單B2B</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2C">折讓證明單B2C</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
+                    </ul>
                 </div>
 
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                    字軌管理
+                </a>
+                <div class="collapse" id="settingMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'number_distribution' %}">字軌列表</a></li>
+                        <li><a class="nav-link" href="{% url 'create_number_distribution' %}">新增字軌</a></li>
+                    </ul>
+                </div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0);" id="logoutLink">登出</a>
+            </li>
+        </ul>
+    </nav>
+    <div class="content">
+        <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
+        <div class="mb-3"></div>
+        <h3 style="color: black">發票數據圖表</h3>
+        <!-- 新增卡片 -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title" style="color: black"; >公司發票狀態總覽</h3>
+                <div class="mb-3">
+                    <label for="statusCompanySelect" class="form-label">選擇公司</label>
+                    <select id="statusCompanySelect" class="form-select">
+                        <option value="">請選擇公司</option>
+                        <!-- JS 動態插入公司選項 -->
+                    </select>
+                </div>
+                <div id="invoiceStatusSummary" class="mt-3">
+                    <p>未開立：<span id="statusNotIssued">0</span></p>
+                    <p>已開立：<span id="statusIssued">0</span></p>
+                    <p>已作廢：<span id="statusVoided">0</span></p>
+                </div>
             </div>
         </div>
+        <!-- Horizontal Layout for Charts -->
+        <div class="charts-row">
+            <!-- Company Total Bar Chart -->
+            <div class="chart-item">
+                <div class="chart-container">
+                    <h3 style="color: black;">各公司發票總金額（依稅別分類）</h3>
+                    <div id="companyAmountChart" style="width: 100%; height: 485px;"></div>
+                </div>
+            </div>
+            <!-- Pie Chart -->
+            <div class="chart-item">
+                <div class="chart-container">
+                    <h3 style="color: black;">公司稅別占比圓餅圖</h3>
 
+                    <!-- 公司篩選器：單選，點擊展開 -->
+                    <div class="mb-3">
+                        <label for="companySelect" class="form-label" style="color: black;">選擇公司</label>
+                        <select id="companySelect" class="form-select">
+                            <option value="">請選擇公司</option>
+                            <!-- JS 動態插入公司選項 -->
+                        </select>
+                    </div>
+                    <div id="companyPieChart" style="width: 100%; height: 400px;"></div>
+                </div>
+            </div>
+            <!-- Invoice Status Bar Chart -->
+            <div class="chart-item">
+                <div class="chart-container">
+                    <h3 style="color: black;">各公司發票狀態（依狀態分類）</h3>
+                    <div id="invoiceStatusChart" style="width: 100%; height: 485px;"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -148,28 +315,40 @@
     .then(([amountData, statusData]) => {
         companies = amountData;
         const companySelect = document.getElementById('companySelect');
+        const statusCompanySelect = document.getElementById('statusCompanySelect');
         const uniqueCompanies = [...new Set(amountData.map(item => item.company_id))];
 
         // 建立下拉選單
-        companySelect.innerHTML = '';
+        companySelect.innerHTML = '<option value="">請選擇公司</option>';
         uniqueCompanies.forEach(company => {
             const option = document.createElement('option');
             option.value = company;
             option.text = company;
             companySelect.appendChild(option);
+
+            const statusOption = option.cloneNode(true);
+            statusCompanySelect.appendChild(statusOption);
         });
 
         if (uniqueCompanies.length > 0) {
             const defaultCompany = uniqueCompanies[0];
             companySelect.value = defaultCompany;
+            statusCompanySelect.value = defaultCompany;
             updateBarChart(amountData);                    // 公司稅別金額圖
             updatePieChart(amountData, defaultCompany);    // 單公司餅圖
-            updateInvoiceStatusChart(statusData);          // 發票狀態圖
+            updateInvoiceStatusChart(statusData);
+            updateInvoiceStatusSummary(statusData, defaultCompany); // 更新卡片數據
+            // 發票狀態圖
         }
 
         companySelect.addEventListener('change', () => {
             const selectedCompany = companySelect.value;
             updatePieChart(amountData, selectedCompany);   // 更新餅圖
+        });
+
+        statusCompanySelect.addEventListener('change', () => {
+            const selectedCompany = statusCompanySelect.value;
+            updateInvoiceStatusSummary(statusData, selectedCompany); // 更新卡片數據
         });
     })
     .catch(error => console.error('載入統計資料失敗:', error));
@@ -261,7 +440,16 @@
         };
         myChart.setOption(option);
     }
+function updateInvoiceStatusSummary(data, selectedCompany) {
+    const filtered = data.filter(item => item.company_id === selectedCompany);
+    const notIssued = filtered.find(item => item.invoice_status === '未開立')?.invoice_count || 0;
+    const issued = filtered.find(item => item.invoice_status === '已開立')?.invoice_count || 0;
+    const voided = filtered.find(item => item.invoice_status === '已作廢')?.invoice_count || 0;
 
+    document.getElementById('statusNotIssued').textContent = notIssued;
+    document.getElementById('statusIssued').textContent = issued;
+    document.getElementById('statusVoided').textContent = voided;
+}
 // 更新發票狀態分組直方圖
 function updateInvoiceStatusChart(data) {
     const labels = [...new Set(data.map(item => item.company_id))];  // 公司 ID 為橫軸
@@ -318,7 +506,25 @@ function updateInvoiceStatusChart(data) {
     };
     myChart.setOption(option);
 }
-</script>
 
+</script>
+<script>
+    // 用來控制按鈕點擊時展開選單
+    $(document).ready(function() {
+        $('#profileButton').click(function() {
+            $('#profileMenu').toggleClass('show');
+        });
+
+        // 點選其他地方時隱藏選單
+        $(document).click(function(event) {
+            if (!$(event.target).closest('#profileButton').length && 
+                !$(event.target).closest('#profileMenu').length) {
+                $('#profileMenu').removeClass('show');
+            }
+        });
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 </body>
 </html>

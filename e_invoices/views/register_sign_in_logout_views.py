@@ -41,7 +41,7 @@ from e_invoices.models import (
     NumberDistribution, TWB2BMainItem, TWB2BLineItem
 )
 from e_invoices.forms import NumberDistributionForm
-
+@csrf_exempt
 def register(request):
 
     form = RegisterForm()
@@ -56,7 +56,7 @@ def register(request):
         'form':form
     }
     return render(request, 'accounts/register.html', context)
-
+@csrf_exempt
 def sign_in(request):
 
     form=LoginForm()
@@ -75,7 +75,7 @@ def sign_in(request):
         'form': form
     }
     return render(request, 'login.html', context)
-
+@csrf_exempt
 def logout(request):
 	logout(request)
 	return redirect('/login.html')
