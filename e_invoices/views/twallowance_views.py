@@ -28,7 +28,7 @@ from django.utils import timezone
 # ====== Django DB 操作 ======
 from django.db import connection
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 
 # ====== Django 使用者與驗證 ======
 from django.contrib import messages
@@ -44,6 +44,7 @@ from e_invoices.models import (
     NumberDistribution, TWB2BMainItem, TWB2BLineItem
 )
 from e_invoices.forms import NumberDistributionForm
+from e_invoices.services.validate_allowance import validate_allowance
 
 @login_required
 def twallowance(request):
@@ -63,10 +64,18 @@ def twallowance(request):
     filter_conditions = Q(company__in=viewable_company_codes) & Q(erp_date__gte=sixty_days_ago) & Q(b2b_b2c=b2b_b2c_filter)
 
     # 查詢符合條件的資料，並使用 prefetch_related 來查詢發票明細
-    allowances = TWAllowance.objects.filter(filter_conditions).order_by('-erp_date')
+    allowances = TWAllowance.objects.filter(filter_conditions).order_by('-erp_date').prefetch_related('items__linked_invoice')
     company_options = user_profile.viewable_companies.all()
 
-
+    # 驗證每個折讓單
+    validated_allowances = []
+    for allowance in allowances:
+        validation_result = validate_allowance(allowance)
+        allowance.is_valid_amount = validation_result["is_valid_amount"]
+        allowance.is_valid_tax = validation_result["is_valid_tax"]
+        validated_allowances.append(allowance)
+    
+    
     # 分頁：每頁顯示25筆資料
     paginator = Paginator(allowances, 25)  # 每頁顯示25筆資料
     page_number = request.GET.get('page')  # 取得當前頁數
@@ -76,6 +85,7 @@ def twallowance(request):
     context = {
         'allowances': page_obj,  # 傳遞分頁後的資料
         "company_options": company_options,
+        "allowances": validated_allowances,
     }
     print("🔍 可查看的公司 company_id：", list(viewable_company_codes))
     print("✅ 撈到的發票數：", TWAllowance.objects.filter(filter_conditions).count())
@@ -147,7 +157,6 @@ def twallowance_filter(request):
     # 限制在兩個月前到今天的時間範圍內
     filters &= Q(erp_date__range=[start_date, end_date])
 
-
     # 加入公司權限過濾條件
     filters &= Q(company__in=viewable_company_codes)
 
@@ -163,6 +172,13 @@ def twallowance_filter(request):
     allowance_status = TWAllowance.objects.values_list('allowance_status', flat=True).distinct()
     b2b_b2c = TWAllowance.objects.values_list('b2b_b2c', flat=True).distinct()
 
+    validated_allowances = []
+    for allowance in invoices_list:
+        validation_result = validate_allowance(allowance)
+        allowance.is_valid_amount = validation_result["is_valid_amount"]
+        allowance.is_valid_tax = validation_result["is_valid_tax"]
+        validated_allowances.append(allowance)
+
     # 檢查公司ID篩選是否有效
     if company_id_filter and int(company_id_filter) not in viewable_company_codes:
         messages.error(request, "您無權限查看該公司資料")
@@ -177,6 +193,7 @@ def twallowance_filter(request):
         "display_limit": display_limit,  # 傳遞選擇的筆數
         "start_date": start_date.strftime('%Y-%m-%d'),  # 顯示篩選的開始日期
         "end_date": end_date.strftime('%Y-%m-%d'),  # 顯示篩選的結束日期
+        "allowances": validated_allowances,
     })
 
 #====================================================== 折讓單明細 =======================================================
@@ -226,21 +243,23 @@ def twallowance_update(request, id):
         erp_reference = request.POST.get('erp_reference', '').strip()
         seller_bp_id = request.POST.get('seller_bp_id', '').strip()
         buyer_bp_id = request.POST.get('buyer_bp_id', '').strip()
-        # try:
-        #     allowance_amount = Decimal(request.POST.get('allowance_amount', '').strip()) if request.POST.get('allowance_amount', '').strip() else None
-        # except InvalidOperation:
-        #     allowance_amount = None
+        try:
+            allowance_amount = Decimal(request.POST.get('allowance_amount', '').strip()) if request.POST.get('allowance_amount', '').strip() else None
+        except InvalidOperation:
+            allowance_amount = 0
         
-        # try:
-        #     allowance_tax = Decimal(request.POST.get('allowance_tax', '').strip()) if request.POST.get('allowance_tax', '').strip() else None
-        # except InvalidOperation:
-        #     allowance_tax = None
+        try:
+            allowance_tax = Decimal(request.POST.get('allowance_tax', '').strip()) if request.POST.get('allowance_tax', '').strip() else None
+        except InvalidOperation:
+            allowance_tax = 0
 
         # 更新主項目資料
         allowance.allowance_period = allowance_period
         allowance.erp_reference = erp_reference
         allowance.seller_bp_id = seller_bp_id
         allowance.buyer_bp_id = buyer_bp_id
+        allowance.allowance_amount = allowance_amount
+        allowance.allowance_tax = allowance_tax
 
 
         #allowance.save()  # 保存主項目資料

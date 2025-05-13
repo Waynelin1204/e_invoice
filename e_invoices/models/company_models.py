@@ -53,7 +53,7 @@ class Company(models.Model):
     )
 
     # 稅籍編號
-    tax_identifer = models.CharField(
+    tax_identifier = models.CharField(
         max_length=9,
         validators=[RegexValidator(r'^\d{9}$', message='請輸入9碼數字')]
     )

@@ -20,7 +20,7 @@ from django.contrib.auth import views as auth_views
 
 from e_invoices.views import register, sign_in, logout
 
-from e_invoices.views import manage_user_permissions, update_permissions, get_user_permissions
+from e_invoices.views import manage_user_permissions, update_permissions, get_user_permissions, permission_denied_view
 
 from e_invoices.views import company_detail, company_detail_sub, company_add
 
@@ -34,12 +34,13 @@ from e_invoices.views import number_distribution, twb2bmainitem, twb2blineitem, 
 
 from e_invoices.views import twallowance, twallowance_filter, twallowance_delete_selected_invoices, twallowance_export_invoices, twallowance_update_void_status, twallowance_detail, twallowance_update
 
-from e_invoices.views import upload_file_tw, upload_test, run_script_tw
+from e_invoices.views import upload_file_tw, upload, run_script_tw, import_log
 
-from e_invoices.views import upload_file, upload_test, run_script, invoice_list, invoice_detail, update_invoice_status
+from e_invoices.views import upload_file, upload, run_script, invoice_list, invoice_detail, update_invoice_status
 
+from django.conf.urls.static import static
 
-
+from django.conf import settings
 
 # from e_invoices.views import document_list
 # from e_invoices.views import generate_pdf
@@ -79,6 +80,7 @@ urlpatterns = [
     path('update-permissions/<int:user_id>/', update_permissions, name='update_permissions'),
     path('permissions/', manage_user_permissions, name='manage_permissions'),
     path('get-user-permissions/<int:user_id>/', get_user_permissions, name='get_user_permissions'),
+    path('permission-denied/', permission_denied_view, name='permission_denied'),
 
 #-------------------for 營業人-------------------
 
@@ -115,9 +117,11 @@ urlpatterns = [
 
 #-------------------for 資料匯入-------------------
 
-    path('upload_test/',upload_test, name='upload_test'),
+    path('upload_invoice/',upload, name='upload_invoice'),
     path('upload_file_tw/', upload_file_tw, name='upload_file_tw'),
     path("run_script_tw/", run_script_tw, name="run_script_tw"),
+    path('import_log/', import_log, name='import_log'),
+
 
 #-------------------for OCR-------------------
 
@@ -143,3 +147,5 @@ urlpatterns = [
 
 ]
 
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

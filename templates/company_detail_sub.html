@@ -6,11 +6,13 @@
     <title>營業人管理-檢視</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         /* 外層容器，包含導航欄與內容 */
         .content-wrapper {
+            margin-top: 60px;
             display: flex;
-            height: auto;
+            height: 100vh;
             padding: 20px;
         }
  
@@ -20,7 +22,7 @@
             background-color: #ffffff; /* 背景顏色 */
             border-radius: 8px; /* 圓角 */
             padding: 20px;
-            height: calc(auto - 40px); /* 滿版高度但減去 padding */
+            height: calc(100vh - 40px); /* 滿版高度但減去 padding */
             box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2); /* 懸浮陰影 */
             transition: all 0.3s ease;
         }
@@ -40,10 +42,9 @@
  
         /* 展開的下拉選單 */
         .collapse {
-
+            padding-left: 15px;
         }
         .collapse .nav-link {
-            padding-left: 15px;
             text-align: right;
             color: black;
         }
@@ -103,35 +104,152 @@
             cursor: not-allowed;
             opacity: 1; /* 避免部分瀏覽器預設讓 disabled 欄位太淡 */
         }
+        /* 黑色橫條樣式 */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: black;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000; /* 確保橫條在最上層 */
+        }
+
+        .top-bar .top-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .top-bar .top-buttons .btn {
+            margin-left: 10px;
+            color: white;
+            background-color: transparent;
+            border: none;
+        }
+
+        .top-bar .top-buttons .btn:hover {
+            color: #ccc;
+        }
+        /* 讓選單在按鈕下方顯示 */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0; /* 確保選單從按鈕開始展開 */
+            top: 40px; /* 讓選單顯示在按鈕的下方 */
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
     </style>
 </head>
-<body>
-    <div class="content-wrapper">
-        <!-- 側邊導航欄 -->
-        <nav class="sidebar">
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'main' %}">首頁</a>
-                </li>
-                <!-- 點擊展開 -->
-                <li class="nav-item">
-                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
-                        設定
-                    </a>
-                    <div class="collapse" id="settingMenu">
-                        <ul class="nav flex-column text-end">
-                            <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
-                            <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
-                        </ul>
-                    </div>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="javascript:void(0);" id="logoutLink">登出</a>
-                </li>
-            </ul>
-        </nav>
+<div class="top-bar">
+    <div class="logo">
+        <h5 class="m-0" style="font-weight: bold;">Deloitte</h5>
+    </div>
+    <div class="top-buttons">
+        <span id="currentUser" style="margin-right: 10px; font-weight: bold;">{{ user.username }}</span>
+        <button class="btn">&#128276;</button> <!-- 🔔 -->
+        <button class="btn">&#9881;</button>   <!-- ⚙️ -->
+        <button class="btn" id="profileButton">&#128100;</button> <!-- 👤 -->
+        <!-- 權限等級區塊：直接展開 -->
+        <div class="dropdown-menu" id="profileMenu">
+                    <!-- 使用者名稱 -->
+            <div class="px-3 pt-2 pb-1">
+                <small class="text-muted">使用者：</small><br>
+                <div class="px-3 pt-2 pb-1 text-center">
+                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                </div>
+            </div>
+
+            <hr class="my-1">
+            <div class="px-3 pt-2">
+                <small class="text-muted">權限等級：</small>
+                <ul class="list-unstyled mt-1 mb-2 text-center">
+                    {% for group in user.groups.all %}
+                        <li>{{ group.name }}</li>
+                    {% empty %}
+                        <li class="text-muted">無</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="dropdown-divider"></div>       
+            <a class="dropdown-item" href="#">更改密碼</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="javascript:void(0);" id="logoutLink">登出</a>
+        </div>
+    </div>
+</div>
+<div class="content-wrapper">
+    <!-- 側邊導航欄 -->
+    <nav class="sidebar">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'main' %}">首頁</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#importMenu">
+                    資料匯入
+                </a>
+                <div class="collapse" id="importMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'upload_invoice' %}">匯入檔案</a></li>
+                        <li><a class="nav-link" href="{% url 'import_log' %}">歷史記錄</a></li>
+                    </ul>
+                </div>
+            </li>
+            <!-- 點擊展開 -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
+                    發票管理
+                </a>
+                <div class="collapse" id="invoiceMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單B2B</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2C">折讓證明單B2C</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
+                    </ul>
+                </div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#numberMenu">
+                    字軌管理
+                </a>
+                <div class="collapse" id="numberMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'number_distribution' %}">字軌列表</a></li>
+                        <li><a class="nav-link" href="{% url 'create_number_distribution' %}">新增字軌</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                    設定
+                </a>
+                <div class="collapse" id="settingMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
+                        <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
+    </nav>
     
         <div class="content">
+            <div class="title-section mt-3">
+                <h3 class="fw-bold mb-4" style="color: black;" >營業人明細</h3>
+            </div>
             {% if messages %}
                 <div class="mt-4">
                     {% for message in messages %}
@@ -143,8 +261,11 @@
             <form method="post" action="{% url 'company_detail_sub' company.company_id %}">
                 {% csrf_token %}
                 <div class="d-flex justify-content-between mb-3">
-                    <a href="{% url 'company_detail' %}" class="btn btn-secondary back-button">← 返回上一頁</a>
-                    <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+                    {% if request.user.groups.all.0.name == 'keyuser' or request.user.is_superuser %}
+                        <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+                    {% else %}
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#noPermissionModal">修改</button>
+                    {% endif %}
                 </div>
         
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -337,27 +458,6 @@
                 }
             });
     
-            // 登出處理（若有 logoutLink）
-            const logout = document.getElementById('logoutLink');
-            if (logout) {
-                logout.addEventListener('click', function () {
-                    fetch("{% url 'logout' %}", {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': "{{ csrf_token }}",
-                        },
-                        credentials: 'same-origin',
-                    }).then(response => {
-                        if (response.ok) {
-                            alert("登出成功！");
-                            window.location.href = '/login/';
-                        }
-                    }).catch(error => {
-                        console.error('登出失敗:', error);
-                    });
-                });
-            }
-    
             // 修改按鈕解鎖欄位
             document.getElementById('edit_button').addEventListener('click', function () {
                 // 隱藏上方 messages 區塊
@@ -378,5 +478,85 @@
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 用來控制按鈕點擊時展開選單
+    $(document).ready(function() {
+        $('#profileButton').click(function() {
+            $('#profileMenu').toggleClass('show');
+        });
+
+        // 點選其他地方時隱藏選單
+        $(document).click(function(event) {
+            if (!$(event.target).closest('#profileButton').length && 
+                !$(event.target).closest('#profileMenu').length) {
+                $('#profileMenu').removeClass('show');
+            }
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const logoutLink = document.getElementById('logoutLink');
+        const confirmLogoutModal = new bootstrap.Modal(document.getElementById('confirmLogoutModal'));
+        const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+
+        // 點擊登出按鈕時顯示 Modal
+        logoutLink.addEventListener('click', function (event) {
+            event.preventDefault(); // 防止預設行為
+            confirmLogoutModal.show(); // 顯示登出確認 Modal
+        });
+
+        // 點擊 Modal 的「確認登出」按鈕後執行登出操作
+        confirmLogoutBtn.addEventListener('click', function () {
+            fetch("{% url 'logout' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': "{{ csrf_token }}",
+                },
+                credentials: 'same-origin', // 保證 CSRF Token 會隨請求一起發送
+            }).then(response => {
+                if (response.ok) {
+                    alert("登出成功！");
+                    window.location.href = '/login/'; // 重定向到登入頁
+                }
+            }).catch(error => {
+                console.error('登出失敗:', error);
+            });
+        });
+    });
+</script>
+<div class="modal fade" id="noPermissionModal" tabindex="-1" aria-labelledby="noPermissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-dark">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title" id="noPermissionModalLabel">權限不足</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+        </div>
+        <div class="modal-body">
+          您沒有修改公司資料的權限。
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmLogoutModalLabel">確認登出</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-dark">
+                您確定要登出嗎？
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmLogoutBtn">確認登出</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

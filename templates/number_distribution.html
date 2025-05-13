@@ -226,6 +226,17 @@
             </li>
             <!-- 點擊展開 -->
             <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#importMenu">
+                    資料匯入
+                </a>
+                <div class="collapse" id="importMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'upload_invoice' %}">匯入檔案</a></li>
+                        <li><a class="nav-link" href="{% url 'import_log' %}">歷史記錄</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
                     發票管理
                 </a>
@@ -256,10 +267,9 @@
 
     <!-- 主要內容 -->
     <div class="content">
-        <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
         <!-- 發票列表 -->
         <div class="title-section mt-3">
-            <h3>字軌列表</h3>
+            <h3 class="fw-bold mb-4" style="color: black;" >字軌列表</h3>
         </div>
         <div class="mb-3"></div>
         <!-- 匯出表單與傳送發票按鈕並排 -->

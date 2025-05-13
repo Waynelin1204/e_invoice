@@ -4,13 +4,15 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
-
+from django.db.models import Sum
 from django.db import models
+from django.utils.functional import cached_property
 
 
 
 class TWB2BMainItem(models.Model):
     company= models.ForeignKey("e_invoices.Company", on_delete=models.PROTECT, related_name="twb2bmainitem_invoices",blank=True, null=True)  # 公司代碼
+    b2b_b2c = models.CharField(max_length=3, choices=[('B2B', 'B2B'), ('B2C', 'B2C')], blank=True, null=True)  # B2B/B2C
     sys_number = models.CharField(max_length=20,blank=True, null=True) # 平台文件號碼
     sys_date = models.DateTimeField(blank=True, null=True)    #  平台匯入日期
     export_date = models.DateTimeField(blank=True, null=True)    #  平台匯出日期
@@ -26,7 +28,7 @@ class TWB2BMainItem(models.Model):
     
     company_identifier = models.CharField(max_length=60, blank=True, null=True) #統一編號
     seller_bp_id = models.CharField(max_length=20, blank=True, null=True)
-    #seller_name = models.CharField(max_length=60,blank=True, null=True)
+    seller_name = models.CharField(max_length=60,blank=True, null=True)
     buyer_identifier = models.CharField(max_length=10,blank=True, null=True) #買方統編
     buyer_name = models.CharField(max_length=60,blank=True, null=True)
     buyer_bp_id = models.CharField(max_length=20, blank=True, null=True)
@@ -75,7 +77,9 @@ class TWB2BMainItem(models.Model):
     cancel_mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
     cancel_mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
     #discount_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)
-    #tax_identifier = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)
+    tax_identifier = models.CharField(max_length=13, blank=True, null=True)
+    accurated_allowance_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)  # 累計折讓金額
+    remaining_allowance_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)  # 剩餘可折讓金額
     #description = models.CharField(max_length=255, blank=True, null=True)
     #remark = models.CharField(max_length=120, blank=True, null=True)
     #payment_status = models.CharField(max_length=10, blank=True, null=True)

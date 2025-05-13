@@ -1,5 +1,6 @@
 # ====== Python 標準函式庫 ======
 import os
+import re
 import json
 import logging
 import subprocess
@@ -195,3 +196,20 @@ def company_add(request):
         'errors': {}
     })
     
+# 統一編號檢查碼邏輯
+def validateUniformNumberTW(value: str) -> bool:
+    if not re.fullmatch(r'^\d{8}$', value):
+        return False
+
+    multipliers = [1, 2, 1, 2, 1, 2, 4, 1]
+    total = 0
+
+    for i in range(8):
+        product = int(value[i]) * multipliers[i]
+        total += product // 10 + product % 10
+
+    # 特例：第7碼是7且 total+1 可被5整除
+    if value[6] == '7' and (total + 1) % 5 == 0:
+        return True
+
+    return total % 5 == 0

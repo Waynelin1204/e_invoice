@@ -27,7 +27,7 @@ from django.utils import timezone
 # ====== Django DB 操作 ======
 from django.db import connection
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 
 # ====== Django 使用者與驗證 ======
 from django.contrib import messages
@@ -66,18 +66,30 @@ def twb2bmainitem(request):
 
 
 
-    for document in documents:
-        document.is_disabled = (
-            document.invoice_status == '已作廢' or
-            (
-                document.tax_type == '2' and (
-                    (document.zerotax_sales_amount or 0) <= 0 or
-                    not document.customs_clearance_mark or
-                    not document.bonded_area_confirm or
-                    not document.zero_tax_rate_reason
-                )
-            )
-        )
+#-----------------計算剩餘可扣抵金額-----------------
+    # for document in documents:
+    #     document.is_disabled = (
+    #         document.invoice_status == '已作廢' or
+    #         (
+    #             document.tax_type == '2' and (
+    #                 (document.zerotax_sales_amount or 0) <= 0 or
+    #                 not document.customs_clearance_mark or
+    #                 not document.bonded_area_confirm or
+    #                 not document.zero_tax_rate_reason
+    #             )
+    #         )
+    #     )
+    # # 批量更新邏輯
+    # for document in documents:
+    #     total_amount = document.total_amount or 0
+    #     accurated_allowance_amount = document.accurated_allowance_amount or 0
+    #     document.remaining_allowance_amount = total_amount - accurated_allowance_amount
+
+    # # 使用 bulk_update 批量保存
+    # TWB2BMainItem.objects.bulk_update(documents, ['remaining_allowance_amount'])
+#-------------------------------------------------------
+# 
+
 
     # 分頁：每頁顯示25筆資料
     paginator = Paginator(documents, 25)  # 每頁顯示25筆資料
@@ -105,7 +117,45 @@ def twb2bmainitem(request):
 def twb2blineitem(request, id):
     document = get_object_or_404(TWB2BMainItem, id=id)
     items = document.items.all()  # 確保有正確查詢
-    return render(request, 'document/twb2blineitem.html', {'document': document, 'items': items})
+
+    # 計算屬性值
+    total_allowanced_amount = document.allowance_lineitems.aggregate(
+        total=Sum('line_allowance_amount')
+    )['total'] or 0
+
+    total_allowanced_tax = document.allowance_lineitems.aggregate(
+        total=Sum('line_allowance_tax')
+    )['total'] or 0
+
+    available_amount = (
+        (document.sales_amount or 0)
+        + (document.zerotax_sales_amount or 0)
+        + (document.freetax_sales_amount or 0)
+        - total_allowanced_amount
+    )
+
+    available_tax = (document.total_tax_amount or 0) - total_allowanced_tax
+
+    # 判斷是否有效
+    print(f"原銷售金額: {document.sales_amount}")    
+    print(f"原零稅銷售金額: {document.zerotax_sales_amount}")
+    print(f"原免稅銷售金額: {document.freetax_sales_amount}")
+    print(f"累計折讓金額: {total_allowanced_amount}")
+    print(f"累計折讓金額: {total_allowanced_tax}")
+    print(f"累計折讓金額: {available_amount}")
+    print(f"累計折讓金額: {available_tax}")
+
+
+
+    return render(request, 'document/twb2blineitem.html', {
+        'document': document,
+        'items': items,
+        'available_amount': available_amount,
+        'available_tax': available_tax,
+        'total_allowanced_amount': total_allowanced_amount,
+        'total_allowanced_tax': total_allowanced_tax,
+    })
+
 
 def twb2blineitem_update(request, id):
     document = get_object_or_404(TWB2BMainItem, id=id)

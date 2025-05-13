@@ -57,6 +57,11 @@
             border-radius: 8px;
             box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.1); /* 內容區域也有陰影 */
             margin-left: 20px;
+            max-width: calc(100% - 240px); /* 確保內容區不會超過剩餘空間 */
+            /* display: flex; */
+            flex-direction: column; /* 垂直排列內容 */
+            /* max-height: calc(100vh - 100px); /*根據頁面其他元素調整*/
+            overflow: auto; /*同時處理水平和垂直超出*/
         }
         
         .table-wrapper {
@@ -231,6 +236,17 @@
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#importMenu">
+                    資料匯入
+                </a>
+                <div class="collapse" id="importMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'upload_invoice' %}">匯入檔案</a></li>
+                        <li><a class="nav-link" href="{% url 'import_log' %}">歷史記錄</a></li>
+                    </ul>
+                </div>
+            </li>
             <!-- 點擊展開 -->
             <li class="nav-item">
                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
@@ -245,17 +261,27 @@
                         <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
                     </ul>
                 </div>
-
             </li>
 
             <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#numberMenu">
                     字軌管理
                 </a>
-                <div class="collapse" id="settingMenu">
+                <div class="collapse" id="numberMenu">
                     <ul class="nav flex-column text-end">
                         <li><a class="nav-link" href="{% url 'number_distribution' %}">字軌列表</a></li>
                         <li><a class="nav-link" href="{% url 'create_number_distribution' %}">新增字軌</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                    設定
+                </a>
+                <div class="collapse" id="settingMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
+                        <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
                     </ul>
                 </div>
             </li>
@@ -264,10 +290,9 @@
 
     <!-- 主要內容 -->
     <div class="content">
-        <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
         <!-- 發票列表 -->
         <div class="title-section mt-3">
-            <h3>發票列表</h3>
+            <h3 class="fw-bold mb-4" style="color: black;" >發票列表</h3>
         </div>
         <!-- 搜尋表單 -->
         <form method="get" class="mb-3">
@@ -337,7 +362,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="selected_documents" id="selectedInvoicesExport">
                 <div class="d-flex justify-content-start gap-1 mb-10">
-                    <button type="submit" class="btn btn-secondary btn-spacing" id="exportExcelBtn">開立發票</button>
+                    <button type="submit" class="btn btn-success btn-spacing" id="exportExcelBtn">開立發票</button>
                 </div>
             </form> 
                        
@@ -389,14 +414,24 @@
                         <tr>
                             <td class="text-center">
                                 <input type="checkbox" name="selected_documents" value="{{ document.id }}"
-                                    {% if document.is_disabled %}disabled{% endif %}>
+                                {% if document.invoice_status == '已作廢' %}
+                                    disabled
+                                {% elif document.tax_type == '2' and document.zerotax_sales_amount|default:0 <= 0 %}
+                                    disabled
+                                {% elif not document.customs_clearance_mark %}
+                                    disabled
+                                {% elif not document.bonded_area_confirm %}
+                                    disabled
+                                {% elif not document.zero_tax_rate_reason %}
+                                    disabled
+                                {% endif %}>
                             </td>
                             <td class="text-center" >{{ document.erp_number }}</td>
                             <td class="text-center" >{{ document.erp_date }}</td>
                             <td class="text-left" >{{ document.company }}</td>
                             <td class="text-center" >{{ document.buyer_name }}</td>
                             <td class="text-left" >{{ document.buyer_identifier }}</td>
-                            <td class="text-center">{{ document.invoice_number }}</td>
+                            <td class="text-center">{{ document.invoice_number}}</td>
                             <td class="text-center">{{ document.invoice_date|default:"" }}</td>
                             <td class="text-center">{{ document.export_date|default:"" }}</td>
                             <td class="text-center">{{ document.invoice_period }}</td>
@@ -871,7 +906,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (row.querySelectorAll('td').length === 1) return;
 
             const erpNumber = row.children[1].textContent.toLowerCase();      // 系統單號
-            const invoiceNumber = row.children[7].textContent.toLowerCase();  // 發票號碼
+            const invoiceNumber = row.children[6].textContent.toLowerCase();  // 發票號碼
             const buyerIdentifier = row.children[5].textContent.toLowerCase(); // 買方統編
 
             if (

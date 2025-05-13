@@ -36,7 +36,12 @@
 <div class="container mt-4" style="border: 1px solid black; padding:20px;">
     <div class="d-flex justify-content-between mb-3">
         <a href="{% url 'twb2bmainitem' %}" class="btn btn-secondary back-button">← 返回發票列表</a>
-        <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+        {% if request.user.groups.all.0.name == 'keyuser' or request.user.is_superuser %}
+            <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+        {% else %}
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#noPermissionModal">修改</button>
+        {% endif %}
+
     </div>
 
 
@@ -46,7 +51,11 @@
     <p><strong>營業人名稱:</strong> {{ document.company.company_id }}</p>
     <p><strong>發票日期:</strong> {{ document.invoice_date|default:"" }}</p>
     <p><strong>總金額:</strong> {{ document.total_amount }}</p>
-    
+    <p><strong>累計折讓金額:</strong> {{ total_allowanced_amount|default:"0" }}</p>
+    <p><strong>剩餘可折讓金額:</strong> {{ available_amount }}</p>
+    <p><strong>剩餘可折讓稅額:</strong> {{ available_tax }}</p>
+
+
 
     <form method="POST" action="{% url 'twb2blineitem_update' document.id %}">
         {% csrf_token %}
@@ -173,5 +182,21 @@
         });
     });
 </script>
+<div class="modal fade" id="noPermissionModal" tabindex="-1" aria-labelledby="noPermissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title" id="noPermissionModalLabel">權限不足</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+        </div>
+        <div class="modal-body">
+          您沒有修改這筆發票的權限。
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

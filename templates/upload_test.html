@@ -231,6 +231,17 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                        資料匯入
+                    </a>
+                    <div class="collapse" id="settingMenu">
+                        <ul class="nav flex-column">
+                            <li><a class="nav-link" href="{% url 'upload_invoice' %}">匯入</a></li>
+                            <li><a class="nav-link" href="{% url 'import_log' %}">匯入記錄</a></li>
+                        </ul>
+                    </div>
+                </li>
                 <!-- 點擊展開 -->
                 <li class="nav-item">
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">

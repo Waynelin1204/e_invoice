@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>匯入檔案</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* 外層容器，包含導航欄與內容 */
+        .content-wrapper {
+            margin-top: 60px;
+            display: flex;
+            height: 100vh;
+            padding: 20px;
+            justify-content: space-between; /* 保持導航欄和內容區的間隔 */
+        }
+
+        /* 側邊導覽欄 */
+        .sidebar {
+            width: 220px;
+            background-color: #ffffff; /* 背景顏色 */
+            border-radius: 8px; /* 圓角 */
+            padding: 20px;
+            height: calc(100vh - 40px); /* 滿版高度但減去 padding */
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2); /* 懸浮陰影 */
+            transition: all 0.3s ease;
+        }
+
+        /* 導覽列內的連結 */
+        .sidebar .nav-link {
+            color: black !important;
+            padding: 10px 15px;
+            display: block;
+            transition: background 0.3s;
+            border-radius: 6px;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #dfdee0; /* 滑鼠懸停變色 */
+        }
+
+        /* 展開的下拉選單 */
+        .collapse {
+            padding-left: 15px;
+        }
+        .collapse .nav-link {
+            text-align: right;
+            color: black;
+        }
+
+        /* 內容區域 */
+        .content {
+            flex-grow: 1; /* 讓內容區域占滿剩餘空間 */
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.1);
+            margin-left: 20px; /* 確保內容區和側邊欄之間有間距 */
+            max-width: calc(100% - 240px); /* 確保內容區不會超過剩餘空間 */
+            /* display: flex; */
+            flex-direction: column; /* 垂直排列內容 */
+            /* max-height: calc(100vh - 100px); /*根據頁面其他元素調整*/
+            overflow: auto; /*同時處理水平和垂直超出*/
+        }
+
+        .table-wrapper {
+            width: 100%;
+            max-width: 100%;
+            height: calc(70% - 50px); /* 使用 calc 根據 .content 的高度調整 */
+            padding: 0px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto; /* 讓表格容器內部可垂直滾動 */
+            overflow-x: hidden; /* 禁止水平滾動 */
+        }
+
+        .table {
+            
+            width: 100%;
+            margin: 0;
+            border-collapse: collapse;
+        }
+
+        .table thead th {
+            position: sticky;
+            top: 0;
+            background-color: white; /* 表頭滾動時不會被遮住 */
+            z-index: 1; /* 確保表頭在內容之上 */
+        }
+
+        /* 背景漸層效果 */
+        body {
+            background: linear-gradient(to bottom, #bdc3c7, #2c3e50); /* 背景漸層 */
+            color: white;
+            height: 100vh;
+            margin: 0;
+        }
+        /* 已開立狀態的綠色背景 */
+        .invoice-status-issued {
+            background-color: #28a745; /* 綠色背景 */
+            color: white; /* 白色字 */
+        }
+
+        .title-section h3 {
+            display: block !important;
+            color: black; /* Set text color to black */
+        }
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+        }
+        /* 黑色橫條樣式 */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: black;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000; /* 確保橫條在最上層 */
+        }
+        .top-bar .top-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .top-bar .top-buttons .btn {
+            margin-left: 10px;
+            color: white;
+            background-color: transparent;
+            border: none;
+        }
+
+        .top-bar .top-buttons .btn:hover {
+            color: #ccc;
+        }
+
+        /* 右上角按鈕 */
+        .top-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+        }
+        /* 右上角按鈕的樣式，不使用懸浮效果 */
+        .top-buttons .btn {
+            margin-left: 10px;
+        }
+        button {
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+        }
+        /* 讓選單在按鈕下方顯示 */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0; /* 確保選單從按鈕開始展開 */
+            top: 40px; /* 讓選單顯示在按鈕的下方 */
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<!-- 頂部導航欄 -->
+<div class="top-bar">
+    <div class="logo">
+        <h5 class="m-0" style="font-weight: bold;">Deloitte</h5>
+    </div>
+    <div class="top-buttons">
+        <span id="currentUser" style="margin-right: 10px; font-weight: bold;">{{ user.username }}</span>
+        <button class="btn">&#128276;</button> <!-- 🔔 -->
+        <button class="btn">&#9881;</button>   <!-- ⚙️ -->
+        <button class="btn" id="profileButton">&#128100;</button> <!-- 👤 -->
+        <!-- 權限等級區塊：直接展開 -->
+        <div class="dropdown-menu" id="profileMenu">
+                     <!-- 使用者名稱 -->
+            <div class="px-3 pt-2 pb-1">
+                <small class="text-muted">使用者：</small><br>
+                <div class="px-3 pt-2 pb-1 text-center">
+                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                </div>
+            </div>
+
+            <hr class="my-1">
+            <div class="px-3 pt-2">
+                <small class="text-muted">權限等級：</small>
+                <ul class="list-unstyled mt-1 mb-2 text-center">
+                    {% for group in user.groups.all %}
+                        <li>{{ group.name }}</li>
+                    {% empty %}
+                        <li class="text-muted">無</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="dropdown-divider"></div>       
+            <a class="dropdown-item" href="#">更改密碼</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="javascript:void(0);" id="logoutLink">登出</a>
+        </div>
+    </div>
+</div>
+<div class="content-wrapper">
+    <nav class="sidebar">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'main' %}">首頁</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#importMenu">
+                    資料匯入
+                </a>
+                <div class="collapse" id="importMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'upload_invoice' %}">匯入檔案</a></li>
+                        <li><a class="nav-link" href="{% url 'import_log' %}">歷史記錄</a></li>
+                    </ul>
+                </div>
+            </li>
+
+            <!-- 點擊展開 -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
+                    發票管理
+                </a>
+                <div class="collapse" id="invoiceMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單B2B</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2C">折讓證明單B2C</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
+                    </ul>
+                </div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#numberMenu">
+                    字軌管理
+                </a>
+                <div class="collapse" id="numberMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'number_distribution' %}">字軌列表</a></li>
+                        <li><a class="nav-link" href="{% url 'create_number_distribution' %}">新增字軌</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                    設定
+                </a>
+                <div class="collapse" id="settingMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
+                        <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
+                    </ul>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- 發票列表 -->
+    <div class="content">
+        <div class="title-section mt-3">
+            <h3 class="fw-bold mb-4" style="color: black;" >銷項發票/折讓證明單匯入</h3>
+        </div>
+        <!-- 文件上傳表單 -->
+        <form id="uploadForm" method="post" enctype="multipart/form-data" class="mb-5">
+            {% csrf_token %}
+            <div class="row mb-4">
+                <div class="col-auto me-3">
+                    <label for="company_id" class="form-label text-dark">營業人代碼</label>
+                    <select name="company_id" id="company_id" class="form-select" style="width: 300px;">
+                        <option value="">--請選擇--</option>
+                        {% for company in company_options %}
+                            <option value="{{company.company_id}}" {% if form_data and form_data.company_id == company.company_id %}selected{% endif %}>
+                                {{ company.company_id }} - {{ company.company_name}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div id="companyError" class="text-danger mt-1 d-none">請選擇營業人代碼</div>    
+                </div>
+                
+                <div class="col-auto me-3">
+                    <label for="b2b_b2c" class="form-label text-dark">電子發票類型</label>
+                    <select name="b2b_b2c" id="b2b_b2c" class="form-select" style="width: 250px;">
+                        <option value="">--請選擇--</option>
+                        <option value="B2B">B2B</option>
+                        <option value="B2C">B2C</option>
+                    </select>
+                    <div id="b2b2cError" class="text-danger mt-1 d-none">請選擇電子發票類型</div>    
+                </div>
+                
+                <div class="col-auto me-3">
+                    <label for="import_type" class="form-label text-dark">匯入類型</label>
+                    <select name="import_type" id="import_type" class="form-select" style="width: 250px;">
+                        <option value="">--請選擇--</option>
+                        <option value="invoice">發票</option>
+                        <option value="allowance">折讓證明單</option>
+                    </select>
+                    <div id="importTypeError" class="text-danger mt-1 d-none">請選擇匯入類型</div>    
+                </div>
+            </div> 
+            
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <div style="flex: 1 1 auto; max-width: 880px;">
+                    <input type="file" name="upload_file" class="form-control" style="max-width: 880px; flex: 1 1 auto;">
+                    <div id="fileError" class="text-danger mt-1 d-none">請選擇檔案</div>
+                </div>
+                <button type="submit" class="btn btn-success align-self-start" style="height: 38px;">上傳檔案並解析</button>
+            </div>
+        </form>    
+
+        <h3 class="fw-bold mb-4" style="color: black;">電子發票欄位規格說明</h3>
+        <div class="table-wrapper">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th style="min-width: 50px; max-width: 150px;">欄位名稱</th>
+                    <th style="min-width: 50px; max-width: 100px;">長度</th>
+                    <th style="min-width: 50px; max-width: 100px; white-space: nowrap;">必要性</th>
+                    <th style="white-space: normal;">說明</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>發票號碼</td>
+                    <td>10</td>
+                    <td>M</td>
+                    <td>格式為字軌 + 8碼數字，例如：QQ12345678</td>
+                </tr>
+                <tr>
+                    <td>發票開立時間</td>
+                    <td></td>
+                    <td>M</td>
+                    <td>西元格式 yyyy-MM-dd HH:mm:ss，例如：2017-08-25 13:05:09</td>
+                </tr>
+                <tr>
+                    <td>買方統編</td>
+                    <td>10</td>
+                    <td>M</td>
+                    <td>營業人或機關團體為8碼數字；個人則填入10個"0"</td>
+                </tr>
+                <tr>
+                    <td>買方名稱</td>
+                    <td>60</td>
+                    <td>M</td>
+                    <td>營業人或機關團體免填；個人則為消費者名稱或個人識別碼</td>
+                </tr>
+                <tr>
+                    <td>買方電子郵件地址</td>
+                    <td>80</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>總備註</td>
+                    <td>200</td>
+                    <td></td>
+                    <td>自由定義資料</td>
+                </tr>
+                <tr>
+                    <td>發票類別</td>
+                    <td>2</td>
+                    <td>M</td>
+                    <td>
+                        07：一般稅額計算之電子發票<br />
+                        08：特種稅額計算之電子發票
+                    </td>
+                </tr>      
+                <tr>
+                    <td>載具類別號碼</td>
+                    <td>6</td>
+                    <td>A</td>
+                    <td>境外電商必填</td>
+
+                </tr>       
+                <tr>
+                    <td>載具顯碼</td>
+                    <td>400</td>
+                    <td>A</td>
+                    <td>境外電商必填：消費者之電子郵件地址</td>
+                </tr>    
+                <tr>
+                    <td>通關方式註記</td>
+                    <td>1</td>
+                    <td>A</td>
+                    <td>
+                        <strong>零稅率發票必填</strong><br />
+                        1: 非經海關出口<br />
+                        2: 經海關出口
+                    </td>
+                </tr>
+                <tr>
+                    <td>買受人簽署適用零稅率註記</td>
+                    <td>1</td>
+                    <td>A</td>
+                    <td>
+                        <strong>B2B零稅率發票必填</strong><br />
+                        1: 買受人為保稅區營業人<br />
+                        2: 買受人為遠洋漁業營業人<br />
+                        3: 買受人為自由貿易港區營業人<br />
+                        4: 其他
+                    </td>
+                </tr>
+                <tr>
+                    <td>零稅率原因</td>
+                    <td>2</td>
+                    <td>A</td>
+                    <td>
+                        <strong>零稅率發票必填</strong><br />
+                        參照加值型及非加值型營業稅法第7條：<br />
+                        71：第一款 外銷貨物<br />
+                        72：第二款 與外銷有關之勞務，或在國內提供而在國外使用之勞務<br />
+                        73：第三款 依法設立之免稅商店銷售與過境或出境旅客之貨物<br />
+                        74：第四款 銷售與保稅區營業人供營運之貨物或勞務<br />
+                        75：第五款 國際間之運輸。但外國運輸事業在中華民國境內經營國際運輸業務者，應以各該國對中華民國國際運輸事業予以相等待遇或免徵類似稅捐者為限<br />
+                        76：第六款 國際運輸用之船舶、航空器及遠洋漁船<br />
+                        77：第七款 銷售與國際運輸用之船舶、航空器及遠洋漁船所使用之貨物或修繕勞務<br />
+                        78：第八款 保稅區營業人銷售與課稅區營業人未輸往課稅區而直接出口之貨物<br />
+                        79：第九款 保稅區營業人銷售與課稅區營業人存入自由港區事業或海關管理之保稅倉庫、物流中心以供外銷之貨物<br />
+                    </td>
+                </tr>   
+                <tr>
+                    <td>銷售額合計</td>
+                    <td></td>
+                    <td>M</td>
+                    <td>B2B未稅合計，B2C含稅合計；整數格式、四捨五入、不可為負數</td>
+                </tr>
+                <tr>
+                    <td>課稅別(發票級別)</td>
+                    <td>1</td>
+                    <td>M</td>
+                    <td>
+                        1：應稅； 2：零稅率； 3：免稅 <br />
+                        4：應稅(特種稅率)； 9：混合稅率（限B2C無法分辨時）
+                    </td>
+                </tr>
+                <tr>
+                    <td>稅率</td>
+                    <td></td>
+                    <td>M</td>
+                    <td>如 5%，則填入 0.05</td>
+                </tr>
+                <tr>
+                    <td>營業稅額</td>
+                    <td></td>
+                    <td>M</td>
+                    <td>
+                        買受人為營業人者，為銷項稅額；非營業人者則填0 <br />
+                        整數格式，四捨五入，不可為負數
+                    </td>
+                </tr>
+                <tr>
+                    <td>總計</td>
+                    <td></td>
+                    <td>M</td>
+                    <td>銷售額合計 + 營業稅額；整數格式，四捨五入，不可為負數</td>
+                </tr>
+                <tr>
+                    <td>明細-品名</td>
+                    <td>256</td>
+                    <td>M</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>明細-數量</td>
+                    <td>decimal<wbr>(20,7)</td>
+                    <td>M</td>
+                    <td>可為小數</td>
+                </tr>
+                <tr>
+                    <td>明細-單位</td>
+                    <td>6</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>明細-單價</td>
+                    <td>decimal<wbr>(20,7)</td>
+                    <td>M</td>
+                    <td>可為小數</td>
+                </tr>
+                <tr>
+                    <td>明細-金額</td>
+                    <td>decimal<wbr>(20,7)</td>
+                    <td>M</td>
+                    <td>可為小數</td>
+                </tr>
+                <tr>
+                    <td>明細-備註</td>
+                    <td>40</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>明細-相關號碼</td>
+                    <td>20</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center p-3">
+        <div class="modal-body">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">正在處理發票，請稍候...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- 通用通知 Modal -->
+<div class="modal fade" id="noticeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center p-4">
+        <div class="modal-body">
+          <h5 class="modal-title mb-3 fw-bold" id="noticeModalTitle"></h5>
+          <p id="noticeModalMessage" class="mb-3 text-dark"></p>
+          <div id="noticeModalButtons" class="d-flex justify-content-center gap-2"></div>
+        </div>
+      </div>
+    </div>
+</div>
+
+<!-- 隱藏的解析按鈕 -->
+<button id="parseBtn" class="d-none"></button>
+
+<script>
+    let uploadedFileName = "";
+    // 取得 cookie 裡的 CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();  //去除空格
+                if (cookie.substring(0, name.length + 1 ) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    document.getElementById("uploadForm").addEventListener("submit", function(e) {
+        e.preventDefault(); 
+
+        // 驗證三個下拉選單是否有選值
+        const companyId = document.getElementById("company_id").value.trim();
+        const b2bB2c = document.getElementById("b2b_b2c").value.trim();
+        const importType = document.getElementById("import_type").value.trim();
+        const fileInput = document.querySelector("input[name='upload_file']");
+        const fileName = fileInput.value.trim();
+
+        const companyError = document.getElementById("companyError");
+        const b2b2cError = document.getElementById("b2b2cError");
+        const importTypeError = document.getElementById("importTypeError");
+        const fileError = document.getElementById("fileError");
+
+        let valid = true;
+
+        // 驗證營業人代碼
+        if(!companyId.trim()) {
+            companyError.classList.remove("d-none"); 
+            valid =false;
+        } else {
+            companyError.classList.add("d-none");
+        }
+
+        // 驗證電子發票類型
+        if(!b2bB2c.trim()) {
+            b2b2cError.classList.remove("d-none"); 
+            valid =false;
+        } else {
+            b2b2cError.classList.add("d-none");
+        }
+
+        // 驗證匯入類型
+        if(!importType.trim()) {
+            importTypeError.classList.remove("d-none"); 
+            valid =false;
+        } else {
+            importTypeError.classList.add("d-none");
+        }
+
+        // 驗證檔案是否選擇
+        if (!fileName) {
+            fileError.textContent = "請選擇檔案";
+            fileError.classList.remove("d-none");
+            valid = false;
+        } else if (!fileName.match(/\.(xlsx|xls|csv)$/)) {
+            fileError.classList.add("d-none");  // 先隱藏下方錯誤欄位
+            showNoticeModal("請上傳副檔名為 .xlsx、.xls 或 .csv 的檔案");
+            return; // <-- 一定要 return，否則 showNoticeModal 馬上被其他流程蓋掉
+        }
+
+        // 如果有任何欄位未通過驗證，阻止表單提交
+        if (!valid) {
+            return;
+        }
+
+        // 通過驗證後才執行上傳
+        const formData = new FormData(this);
+
+        fetch("{% url 'upload_file_tw' %}", {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"), // 加入 CSRF token
+            },
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                uploadedFileName = data.file_name;
+                showNoticeModal("上傳成功！請點擊「開始解析」", true, true);
+            } else {
+                showNoticeModal("沒有收到檔案");
+                return;
+            }
+        })
+        .catch((err) => {
+            showNoticeModal("上傳失敗：" + err);
+            return;
+        });
+    });
+
+    // 監聽「開始解析」按鈕的點擊事件
+    document.getElementById("parseBtn").addEventListener("click", function() {
+        if (!uploadedFileName) { // 先確認是否有檔案上傳
+            showNoticeModal("請先上傳檔案再進行解析");
+            return;
+        }
+
+        let loadingModal = new bootstrap.Modal(document.getElementById('loadingModal')); 
+        loadingModal.show(); // 顯示載入中的 Modal
+        
+        // 發送請求到後端，觸發資料解析
+        fetch("{% url 'run_script_tw' %}", {  // 後端解析URL
+            method: "POST",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie('csrftoken')  //這裡也建議補上 CSRF Token
+            },
+            body: JSON.stringify({ // 傳遞檔案名或其他必要的資料
+                file_name: uploadedFileName,
+                company_id: document.getElementById("company_id").value,
+                b2b_b2c: document.getElementById("b2b_b2c").value,
+                import_type: document.getElementById("import_type").value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingModal.hide();  // 關閉載入中的 Modal
+
+            // 根據後端回傳的結果顯示提示訊息
+            if (data.success) {
+                showNoticeModal("資料解析完成！", true);
+            } else {
+                showNoticeModal("解析失敗：" + data.error);
+            }
+        })
+        .catch(err => {
+            loadingModal.hide();  // 出現錯誤時，關閉載入中的 Modal
+            showNoticeModal("解析過程中出錯：" + err);
+        });
+    });
+
+    // 顯示通用通知 Modal（可用於成功或錯誤）
+    function showNoticeModal(message, isSuccess = false, showParseButtons = false) {
+        const title = document.getElementById("noticeModalTitle");
+        const msg = document.getElementById("noticeModalMessage");
+        const buttonsContainer = document.getElementById("noticeModalButtons");
+        const modal = new bootstrap.Modal(document.getElementById("noticeModal"));
+
+        // 設定標題樣式與文字
+        title.textContent = isSuccess ? "✅ 成功！" : "❌ 發生錯誤";
+        title.className = isSuccess ? "modal-title mb-3 fw-bold text-success" : "modal-title mb-3 fw-bold text-danger";
+
+        // 確保訊息不為空
+        if (!message || message.trim() === "") {
+            console.error("showNoticeModal: 傳入的訊息為空");
+            message = "未知錯誤，請稍後再試";
+        }
+        msg.textContent = message;
+
+        // 清空按鈕容器
+        buttonsContainer.innerHTML = "";
+
+        if (showParseButtons) {
+            // 「開始解析」 + 「取消」按鈕
+            const parseButton = document.createElement("button");
+            parseButton.className = "btn btn-primary";
+            parseButton.textContent = "開始解析";
+            parseButton.addEventListener("click", function () {
+                modal.hide();
+                document.getElementById("parseBtn").click();
+            });
+
+            const cancelButton = document.createElement("button");
+            cancelButton.className = "btn btn-secondary";
+            cancelButton.textContent = "取消";
+            cancelButton.setAttribute("data-bs-dismiss", "modal");
+
+            buttonsContainer.appendChild(parseButton);
+            buttonsContainer.appendChild(cancelButton);
+
+        } else {
+            // 成功或錯誤的「確認」按鈕
+            const confirmButton = document.createElement("button");
+            confirmButton.className = "btn btn-primary";
+            confirmButton.textContent = "確認";
+            confirmButton.addEventListener("click", function () {
+                modal.hide();
+                if (isSuccess) {
+                    location.reload();  // ✅ 只有成功才 reload
+                }
+            });
+            buttonsContainer.appendChild(confirmButton);
+        }
+
+        modal.show();
+    }
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const logoutLink = document.getElementById('logoutLink');
+        const confirmLogoutModal = new bootstrap.Modal(document.getElementById('confirmLogoutModal'));
+        const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+
+        // 點擊登出按鈕時顯示 Modal
+        logoutLink.addEventListener('click', function (event) {
+            event.preventDefault(); // 防止預設行為
+            confirmLogoutModal.show(); // 顯示登出確認 Modal
+        });
+
+        // 點擊 Modal 的「確認登出」按鈕後執行登出操作
+        confirmLogoutBtn.addEventListener('click', function () {
+            fetch("{% url 'logout' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': "{{ csrf_token }}",
+                },
+                credentials: 'same-origin', // 保證 CSRF Token 會隨請求一起發送
+            }).then(response => {
+                if (response.ok) {
+                    alert("登出成功！");
+                    window.location.href = '/login/'; // 重定向到登入頁
+                }
+            }).catch(error => {
+                console.error('登出失敗:', error);
+            });
+        });
+    });
+</script>
+<script>
+    // 用來控制按鈕點擊時展開選單
+    $(document).ready(function() {
+        $('#profileButton').click(function() {
+            $('#profileMenu').toggleClass('show');
+        });
+
+        // 點選其他地方時隱藏選單
+        $(document).click(function(event) {
+            if (!$(event.target).closest('#profileButton').length && 
+                !$(event.target).closest('#profileMenu').length) {
+                $('#profileMenu').removeClass('show');
+            }
+        });
+    });
+</script>
+<div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmLogoutModalLabel">確認登出</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-dark">
+                您確定要登出嗎？
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmLogoutBtn">確認登出</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

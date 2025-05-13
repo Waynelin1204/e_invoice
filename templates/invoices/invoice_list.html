@@ -258,7 +258,7 @@
         <!-- 文件上傳表單 -->
         <form method="post" action="{% url 'upload_file' %}" enctype="multipart/form-data" class="mb-3">
             <div class="input-group">
-                <input type="file" name="invoice_file" class="form-control">
+                <input type="file" name="file" class="form-control">
                 <button type="submit" class="btn btn-success">上傳發票</button>
                 <button id="runScriptBtn" class="btn btn-warning ms-2">執行 OCR 解析</button>
             </div>

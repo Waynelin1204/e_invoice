@@ -46,15 +46,16 @@ def is_admin(user):
     return user.is_superuser or user.is_staff
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_admin, login_url='/permission-denied/')  # 權限不足自動導向到此頁面
 def manage_user_permissions(request):
+
     all_users = User.objects.all()
     # companies = {company.id: f"{company.company_id} - {company.company_name}" for company in Company.objects.all()}  
     companies = {company.company_id: f"{company.company_id} - {company.company_name}" for company in Company.objects.all()} 
     return render(request, "permissions.html", {"all_users": all_users, "companies": json.dumps(companies)})
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_admin, login_url='/permission-denied/')  # 權限不足自動導向到此頁面
 def get_user_permissions(request, user_id):
     try:
         user = get_object_or_404(User, id=user_id)
@@ -76,7 +77,7 @@ def get_user_permissions(request, user_id):
 # **更新使用者的可查看公司權限**
 @csrf_exempt  # 這裡使用 @csrf_exempt 來免除 CSRF 檢查，視情況而定可選擇開啟 CSRF 檢查
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_admin, login_url='/permission-denied/')  # 權限不足自動導向到此頁面
 def update_permissions(request, user_id):
     if request.method == "POST":
         try:
@@ -100,3 +101,6 @@ def update_permissions(request, user_id):
             return JsonResponse({"status": "error", "message": f"發生錯誤: {str(e)}"})
 
     return JsonResponse({"status": "error", "message": "無效的請求"}, status=400)
+
+def permission_denied_view(request, exception=None):
+    return render(request, '403.html', status=403)

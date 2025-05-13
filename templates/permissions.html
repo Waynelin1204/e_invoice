@@ -180,34 +180,73 @@
         </div>
     </div>
 
-<div class="content-wrapper">
-    <!-- 側邊導航欄 -->
-    <nav class="sidebar">
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'main' %}">首頁</a>
-            </li>
-            <!-- 點擊展開 -->
-            <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
-                    設定
-                </a>
-                <div class="collapse" id="settingMenu">
-                    <ul class="nav flex-column text-end">
-                        <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
-                        <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
-                    </ul>
-                </div>
-            </li>
-        </ul>
-    </nav>
+    <div class="content-wrapper">
+        <!-- 側邊導航欄 -->
+        <nav class="sidebar">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'main' %}">首頁</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#importMenu">
+                        資料匯入
+                    </a>
+                    <div class="collapse" id="importMenu">
+                        <ul class="nav flex-column text-end">
+                            <li><a class="nav-link" href="{% url 'upload_invoice' %}">匯入檔案</a></li>
+                            <li><a class="nav-link" href="{% url 'import_log' %}">歷史記錄</a></li>
+                        </ul>
+                    </div>
+                </li>
+                <!-- 點擊展開 -->
+                <li class="nav-item">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
+                        發票管理
+                    </a>
+                    <div class="collapse" id="invoiceMenu">
+                        <ul class="nav flex-column text-end">
+                            <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
+                            <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
+                            <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單B2B</a></li>
+                            <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2C">折讓證明單B2C</a></li>
+                            <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
+                        </ul>
+                    </div>
+                </li>
+    
+                <li class="nav-item">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#numberMenu">
+                        字軌管理
+                    </a>
+                    <div class="collapse" id="numberMenu">
+                        <ul class="nav flex-column text-end">
+                            <li><a class="nav-link" href="{% url 'number_distribution' %}">字軌列表</a></li>
+                            <li><a class="nav-link" href="{% url 'create_number_distribution' %}">新增字軌</a></li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                        設定
+                    </a>
+                    <div class="collapse" id="settingMenu">
+                        <ul class="nav flex-column text-end">
+                            <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
+                            <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </nav>
 
     <!-- 主要內容 -->
     <div class="content">
-        <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
         <!-- 發票列表 -->
         <div class="title-section mt-3">
-            <h3>權限管理</h3>
+            <h3 class="fw-bold mb-4" style="color: black;" >權限管理</h3>
         </div>
         <!-- 搜尋表單 -->
 

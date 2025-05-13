@@ -53,7 +53,7 @@ def upload_file(request):
         if "file" not in request.FILES:
             return JsonResponse({"success":False, "error": "Didn't Receive"}, status=400)
 
-        file = request.FIELS["file"]
+        file = request.FILES["file"]
         file_path = os.path.join(UPLOAD_DIR, file.name)
 
         try:
