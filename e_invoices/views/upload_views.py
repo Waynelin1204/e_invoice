@@ -21,6 +21,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 
 # ====== Django DB 操作 ======
 from django.db import connection
@@ -34,13 +35,6 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-# ====== 專案內部（Model 與 Form） ======
-from e_invoices.models import (
-    RegisterForm, LoginForm,
-    Twa0101, Twa0101Item, Ocr, Ocritem, Company, UserProfile,
-    NumberDistribution, TWB2BMainItem, TWB2BLineItem
-)
-from e_invoices.forms import NumberDistributionForm
 # ====== 專案內部 ======
 from e_invoices.services.parse_services import process_data
 from e_invoices.models.uploadlog_models import UploadLog
@@ -49,7 +43,6 @@ def import_log(request):
     # 從資料庫中查詢匯入記錄
     logs = UploadLog.objects.all().order_by('-upload_time')  # 根據上傳時間排序
     return render(request, 'import_log.html', {'logs': logs})
-
 
 UPLOAD_DIR_TW = os.path.join(settings.BASE_DIR, "upload") 
 

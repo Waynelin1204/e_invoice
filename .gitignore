@@ -1,0 +1,6 @@
+# Python compiled files
+__pycache__/
+*.py[cod]
+
+# Local SQLite database
+db.sqlite3

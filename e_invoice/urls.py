@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 from e_invoices.views import register, sign_in, logout
 
@@ -113,15 +115,14 @@ urlpatterns = [
 #-------------------for 發票字軌-------------------
 
     path('number_distribution/', number_distribution, name='number_distribution'),
-    path('create_number_distribution/', create_number_distribution, name='create_number_distribution'),
+    path('create_number_distribmution/', create_number_distribution, name='create_number_distribution'),
 
 #-------------------for 資料匯入-------------------
 
-    path('upload_invoice/',upload, name='upload_invoice'),
-    path('upload_file_tw/', upload_file_tw, name='upload_file_tw'),
-    path("run_script_tw/", run_script_tw, name="run_script_tw"),
+    path('upload_invoice/', upload, name='upload_invoice'),
     path('import_log/', import_log, name='import_log'),
-
+    path('upload_file_tw/', upload_file_tw, name='upload_file_tw'),
+    path('run_script_tw/', run_script_tw, name='run_script_tw'),
 
 #-------------------for OCR-------------------
 

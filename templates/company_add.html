@@ -390,14 +390,14 @@
 
                     <!-- 稅籍編號 -->
                     <div class="mb-4">
-                        <label for="tax_identifer" class="block text-sm font-medium text-gray-700">
+                        <label for="tax_identifier" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>稅籍編號
                         </label>
-                        <input type="text" maxlength="9" name="tax_identifer" id="tax_identifer"
+                        <input type="text" maxlength="9" name="tax_identifier" id="tax_identifier"
                             class="mt-1 block w-full border border-gray-300 rounded-md"
-                            value="{{ form_data.tax_identifer|default_if_none:'' }}" required>
-                        <div id="error_tax_identifer" class="text-danger text-sm mt-1">
-                            {% if errors.tax_identifer %}{{ errors.tax_identifer }}{% endif %}
+                            value="{{ form_data.tax_identifier|default_if_none:'' }}" required>
+                        <div id="error_tax_identifier" class="text-danger text-sm mt-1">
+                            {% if errors.tax_identifier %}{{ errors.tax_identifier }}{% endif %}
                         </div>
                     </div>
 
@@ -442,10 +442,11 @@
                 },
                 company_identifier: {
                     regex: /^\d{8}$/,
-                    msg: '請輸入8碼數字',
-                    allowEmpty: false
+                    msg: '請輸入有效的統一編號',
+                    allowEmpty: false,
+                    customValidate: validateUniformNumberTW
                 },
-                tax_identifer: {
+                tax_identifier: {
                     regex: /^\d{9}$/,
                     msg: '請輸入9碼數字',
                     allowEmpty: false
@@ -480,6 +481,12 @@
                     showError(id, config.msg);
                     return false;
                 }
+
+                // 若不符合統編檢查碼邏輯，回傳錯誤
+                if (config.customValidate && !config.customValidate(value)) {
+                    showError(id, config.msg);
+                    return false;
+                }
     
                 clearError(id);
                 return true;
@@ -504,7 +511,7 @@
                 }
             });
     
-            // 登出處理（若有 logoutLink）
+            // 登出處理
             const logout = document.getElementById('logoutLink');
             if (logout) {
                 logout.addEventListener('click', function () {
@@ -523,6 +530,26 @@
                         console.error('登出失敗:', error);
                     });
                 });
+            }
+
+            // 統一編號檢查碼邏輯
+            function validateUniformNumberTW(number) {
+                if (!/^\d{8}$/.test(number)) return false;
+
+                const multipliers = [1, 2, 1, 2, 1, 2, 4, 1];
+                let total = 0;
+
+                for (let i = 0; i < 8; i++) {
+                    const product = parseInt(number[i]) * multipliers[i];
+                    total += Math.floor(product / 10) + (product % 10);
+                }
+
+                // 特例處理：第7碼是7且total+1可被5整除，視為通過
+                if (number[6] === '7' && (total + 1) % 5 === 0) {
+                    return true;
+                }
+
+                return total % 5 === 0;
             }
         });
     </script>

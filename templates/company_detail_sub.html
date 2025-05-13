@@ -269,13 +269,15 @@
                 </div>
         
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 營業人代碼 -->
                     <div class="mb-4">
                         <label for="company_id" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>營業人代碼 (不可修改)
                         </label>
                         <input type="text" name="company_id" id="company_id" value="{{ company.company_id|default:'' }}" class="mt-1 block w-full border border-gray-300 rounded-md" readonly disabled>
                     </div>
-        
+                    
+                    <!-- 統一編號 -->
                     <div class="mb-4">
                         <label for="company_identifier" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>統一編號
@@ -286,6 +288,7 @@
                         </div>
                     </div>
         
+                    <!-- 營業人註冊名稱 -->
                     <div class="mb-4">
                         <label for="company_register_name" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>營業人註冊名稱
@@ -296,6 +299,7 @@
                         </div>
                     </div>
         
+                    <!-- 營業人簡稱 -->
                     <div class="mb-4">
                         <label for="company_name" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>營業人簡稱
@@ -308,6 +312,7 @@
                 </div>
         
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 營業人地址 -->
                     <div class="mb-4">
                         <label for="company_address" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>營業人地址
@@ -318,6 +323,7 @@
                         </div>
                     </div>
         
+                    <!-- 總機構 -->
                     <div class="mb-4">
                         <label for="head_company_identifer" class="block text-sm font-medium text-gray-700">總機構</label>
                         <select name="head_company_identifer" id="head_company_identifer" class="mt-1 block w-full border border-gray-300 rounded-md" disabled>
@@ -330,6 +336,7 @@
                         </select>
                     </div>
         
+                    <!-- 營業人類型 -->
                     <div class="mb-4">
                         <label for="company_type" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>營業人類型
@@ -340,6 +347,7 @@
                         </select>
                     </div>
         
+                    <!-- 是否為境外電商 -->
                     <div class="mb-4">
                         <label for="is_foreign_ecomm" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>是否為境外電商
@@ -350,16 +358,18 @@
                         </select>
                     </div>
         
+                    <!-- 稅籍編號 -->
                     <div class="mb-4">
-                        <label for="tax_identifer" class="block text-sm font-medium text-gray-700">
+                        <label for="tax_identifier" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>稅籍編號
                         </label>
-                        <input type="text" maxlength="9" name="tax_identifer" id="tax_identifer" value="{{ company.tax_identifer }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
-                        <div id="error_tax_identifer" class="text-danger text-sm mt-1">
-                            {% if errors.tax_identifer %}{{ errors.tax_identifer }}{% endif %}
+                        <input type="text" maxlength="9" name="tax_identifier" id="tax_identifier" value="{{ company.tax_identifier }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
+                        <div id="error_tax_identifier" class="text-danger text-sm mt-1">
+                            {% if errors.tax_identifier %}{{ errors.tax_identifier }}{% endif %}
                         </div>
                     </div>
         
+                    <!-- Email -->
                     <div class="mb-4">
                         <label for="email" class="block text-sm font-medium text-gray-700">電子郵件地址</label>
                         <input type="text" maxlength="100" name="email" id="email" value="{{ company.email }}" class="mt-1 block w-full border border-gray-300 rounded-md" required disabled>
@@ -368,6 +378,7 @@
                         </div>
                     </div>
         
+                    <!-- 申報期別 -->
                     <div class="mb-4">
                         <label for="reporting_period" class="block text-sm font-medium text-gray-700">
                             <span class="text-danger">*</span>申報期別
@@ -396,10 +407,11 @@
                 },
                 company_identifier: {
                     regex: /^\d{8}$/,
-                    msg: '請輸入8碼數字',
-                    allowEmpty: false
+                    msg: '請輸入有效的統一編號',
+                    allowEmpty: false,
+                    customValidate: validateUniformNumberTW
                 },
-                tax_identifer: {
+                tax_identifier: {
                     regex: /^\d{9}$/,
                     msg: '請輸入9碼數字',
                     allowEmpty: false
@@ -434,6 +446,12 @@
                     showError(company_id, config.msg);
                     return false;
                 }
+                
+                // 若不符合統編檢查碼邏輯，回傳錯誤
+                if (config.customValidate && !config.customValidate(value)) {
+                    showError(id, config.msg);
+                    return false;
+                }
     
                 clearError(company_id);
                 return true;
@@ -458,6 +476,30 @@
                 }
             });
     
+<<<<<<< HEAD
+=======
+            // 登出處理
+            const logout = document.getElementById('logoutLink');
+            if (logout) {
+                logout.addEventListener('click', function () {
+                    fetch("{% url 'logout' %}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': "{{ csrf_token }}",
+                        },
+                        credentials: 'same-origin',
+                    }).then(response => {
+                        if (response.ok) {
+                            alert("登出成功！");
+                            window.location.href = '/login/';
+                        }
+                    }).catch(error => {
+                        console.error('登出失敗:', error);
+                    });
+                });
+            }
+    
+>>>>>>> dev
             // 修改按鈕解鎖欄位
             document.getElementById('edit_button').addEventListener('click', function () {
                 // 隱藏上方 messages 區塊
@@ -467,7 +509,7 @@
                 const editableFields = [
                     "company_register_name", "company_identifier", "company_name",
                     "company_address", "head_company_identifer", "company_type",
-                    "is_foreign_ecomm", "tax_identifer", "email", "reporting_period"
+                    "is_foreign_ecomm", "tax_identifier", "email", "reporting_period"
                 ];
                 
                 editableFields.forEach(company_id => {
@@ -475,6 +517,26 @@
                     if (el) el.disabled = false;
                 });
             });
+
+            // 統一編號檢查碼邏輯
+            function validateUniformNumberTW(number) {
+                if (!/^\d{8}$/.test(number)) return false;
+
+                const multipliers = [1, 2, 1, 2, 1, 2, 4, 1];
+                let total = 0;
+
+                for (let i = 0; i < 8; i++) {
+                    const product = parseInt(number[i]) * multipliers[i];
+                    total += Math.floor(product / 10) + (product % 10);
+                }
+
+                // 特例處理：第7碼是7且total+1可被5整除，視為通過
+                if (number[6] === '7' && (total + 1) % 5 === 0) {
+                    return true;
+                }
+
+                return total % 5 === 0;
+            }
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

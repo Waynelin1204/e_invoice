@@ -12,7 +12,7 @@ alphanumeric_validator = RegexValidator(r'^[a-zA-Z0-9]{1,10}$')
 # 僅限數字
 digit_validator = RegexValidator(r'^[0-9]+$')
 class Company(models.Model):
-    # 公司代碼
+    # 營業人代碼
     company_id = models.CharField(
         max_length=10,
         validators=[alphanumeric_validator],
