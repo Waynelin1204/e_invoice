@@ -195,6 +195,10 @@ def company_add(request):
         'form_data': {},
         'errors': {}
     })
+<<<<<<< HEAD
+=======
+
+>>>>>>> dev
 # 統一編號檢查碼邏輯
 def validateUniformNumberTW(value: str) -> bool:
     if not re.fullmatch(r'^\d{8}$', value):
@@ -212,4 +216,8 @@ def validateUniformNumberTW(value: str) -> bool:
         return True
 
     return total % 5 == 0
+<<<<<<< HEAD
     
+=======
+    
+>>>>>>> dev
