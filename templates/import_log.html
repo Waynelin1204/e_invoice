@@ -247,10 +247,6 @@
             </div>
         </div>
     </div>
-=======
->>>>>>> dev
-=======
->>>>>>> dev
 <div class="content-wrapper">
     <!-- 側邊導航欄 -->
     <nav class="sidebar">
@@ -297,6 +293,17 @@
                     <ul class="nav flex-column text-end">
                         <li><a class="nav-link" href="{% url 'number_distribution' %}">字軌列表</a></li>
                         <li><a class="nav-link" href="{% url 'create_number_distribution' %}">新增字軌</a></li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                    設定
+                </a>
+                <div class="collapse" id="settingMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
+                        <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
                     </ul>
                 </div>
             </li>
@@ -461,13 +468,3 @@
 </div>
 </body>
 </html>
-=======
-</script>
-</body>
-</html>
->>>>>>> dev
-=======
-</script>
-</body>
-</html>
->>>>>>> dev

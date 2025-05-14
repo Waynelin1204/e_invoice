@@ -262,6 +262,17 @@
                     </ul>
                 </div>
             </li>
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
+                    設定
+                </a>
+                <div class="collapse" id="settingMenu">
+                    <ul class="nav flex-column text-end">
+                        <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
+                        <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
+                    </ul>
+                </div>
+            </li>
         </ul>
     </nav>
 
