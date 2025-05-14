@@ -1,17 +1,8 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
->>>>>>> dev
-=======
->>>>>>> dev
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<<<<<<< HEAD
-<<<<<<< HEAD
     <title>歷史紀錄</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -20,19 +11,6 @@
         /* 外層容器 */
         .content-wrapper {
             margin-top: 60px;
-=======
-=======
->>>>>>> dev
-    <title>匯入記錄</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <style>
-        /* 外層容器 */
-        .content-wrapper {
-<<<<<<< HEAD
->>>>>>> dev
-=======
->>>>>>> dev
             display: flex;
             height: 100vh;
             padding: 20px;
@@ -54,20 +32,12 @@
             padding: 10px 15px;
             border-radius: 6px;
             transition: background 0.3s;
-<<<<<<< HEAD
-<<<<<<< HEAD
             border-radius: 6px;
-=======
->>>>>>> dev
-=======
->>>>>>> dev
         }
 
         .sidebar .nav-link:hover {
             background-color: #f0f0f0;
         }
-<<<<<<< HEAD
-<<<<<<< HEAD
  
         /* 展開的下拉選單 */
         .collaspe {
@@ -77,12 +47,6 @@
             text-align: right;
             color: black;
         }
-=======
-
->>>>>>> dev
-=======
-
->>>>>>> dev
         /* 內容區域 */
         .content {
             flex-grow: 1;
@@ -92,8 +56,7 @@
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
             overflow: auto;
         }
-<<<<<<< HEAD
-<<<<<<< HEAD
+
         .table-wrapper {
             width: 100%;
             max-width: 100%;
@@ -106,12 +69,7 @@
             overflow-y: auto; /* 讓表格容器內部可垂直滾動 */
             overflow-x: hidden; /* 禁止水平滾動 */
         }
-=======
 
->>>>>>> dev
-=======
-
->>>>>>> dev
         /* 表格樣式 */
         .table {
             width: 100%;
@@ -143,8 +101,7 @@
         }
 
         /* 回到頂部按鈕 */
-<<<<<<< HEAD
-<<<<<<< HEAD
+
         /* .back-to-top {
 =======
         .back-to-top {
@@ -242,24 +199,17 @@
         }
         .dropdown-menu.show {
             display: block;
-=======
-=======
->>>>>>> dev
+
         }
 
         .back-to-top:hover {
             background-color: #0056b3;
-<<<<<<< HEAD
->>>>>>> dev
-=======
->>>>>>> dev
+
         }
     </style>
 </head>
 
 <body>
-<<<<<<< HEAD
-<<<<<<< HEAD
     <div class="top-bar">
         <div class="logo">
             <h5 class="m-0" style="font-weight: bold;">Deloitte</h5>
@@ -309,8 +259,6 @@
                 <a class="nav-link" href="{% url 'main' %}">首頁</a>
             </li>
             <li class="nav-item">
-<<<<<<< HEAD
-<<<<<<< HEAD
                 <a class="nav-link" href="{% url 'dashboard' %}">儀表板</a>
             </li>
             <li class="nav-item">
@@ -325,33 +273,12 @@
                 </div>
             </li>
             <!-- 點擊展開 -->
-=======
-=======
->>>>>>> dev
-                <a class="nav-link" href="{% url 'front4' %}">儀表板</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
-                    資料匯入
-                </a>
-                <div class="collapse" id="settingMenu">
-                    <ul class="nav flex-column">
-                        <li><a class="nav-link" href="{% url 'upload_invoice' %}">匯入</a></li>
-                        <li><a class="nav-link" href="{% url 'import_log' %}">匯入記錄</a></li>
-                    </ul>
-                </div>
-            </li>
-<<<<<<< HEAD
->>>>>>> dev
-=======
->>>>>>> dev
+
             <li class="nav-item">
                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
                     發票管理
                 </a>
                 <div class="collapse" id="invoiceMenu">
-<<<<<<< HEAD
-<<<<<<< HEAD
                     <ul class="nav flex-column text-end">
                         <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
                         <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
@@ -370,25 +297,10 @@
                     <ul class="nav flex-column text-end">
                         <li><a class="nav-link" href="{% url 'number_distribution' %}">字軌列表</a></li>
                         <li><a class="nav-link" href="{% url 'create_number_distribution' %}">新增字軌</a></li>
-=======
-=======
->>>>>>> dev
-                    <ul class="nav flex-column">
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">折讓證明單B2B</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">折讓證明單B2C</a></li>
-                        <li><a class="nav-link" href="#">作廢發票</a></li>
-<<<<<<< HEAD
->>>>>>> dev
-=======
->>>>>>> dev
                     </ul>
                 </div>
             </li>
             <li class="nav-item">
-<<<<<<< HEAD
-<<<<<<< HEAD
                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
                     設定
                 </a>
@@ -398,34 +310,17 @@
                         <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>
                     </ul>
                 </div>
-=======
-                <a class="nav-link" href="javascript:void(0);" id="logoutLink">登出</a>
->>>>>>> dev
-=======
-                <a class="nav-link" href="javascript:void(0);" id="logoutLink">登出</a>
->>>>>>> dev
             </li>
         </ul>
     </nav>
 
     <!-- 內容區域 -->
     <div class="content">
-<<<<<<< HEAD
-<<<<<<< HEAD
         <div class="title-section mt-3">
             <h3 class="fw-bold mb-4" style="color: black;" >匯入紀錄列表</h3>
         </div>
         <div class="table-wrapper">
-=======
-        <a href="{% url 'upload_invoice' %}" class="btn btn-secondary mb-3">← 回到匯入頁</a>
-        <h3 class="fw-bold mb-4" style="color: black;" >匯入紀錄列表</h3>
         <div class="table-responsive">
->>>>>>> dev
-=======
-        <a href="{% url 'upload_invoice' %}" class="btn btn-secondary mb-3">← 回到匯入頁</a>
-        <h3 class="fw-bold mb-4" style="color: black;" >匯入紀錄列表</h3>
-        <div class="table-responsive">
->>>>>>> dev
             <table class="table table-bordered table-striped align-middle">
                 <thead class="table-light">
                     <tr>
@@ -471,8 +366,6 @@
 </div>
 
 <!-- 回到頂部按鈕 -->
-<<<<<<< HEAD
-<<<<<<< HEAD
 <!-- <button class="back-to-top d-flex" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">
     ↑
 </button> -->

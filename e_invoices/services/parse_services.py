@@ -1,12 +1,7 @@
-<<<<<<< HEAD
 
 import pandas as pd
 from e_invoices.models.twb2bmainitem_models import TWB2BMainItem, TWB2BLineItem
 from e_invoices.models.twallowance_models import TWAllowance, TWAllowanceLineItem
-=======
-import pandas as pd
-from e_invoices.models.twb2bmainitem_models import TWB2BMainItem, TWB2BLineItem
->>>>>>> dev
 from e_invoices.views.company_views import validateUniformNumberTW
 from e_invoices.models.uploadlog_models import UploadLog
 from e_invoices.models.company_models import Company
@@ -118,7 +113,6 @@ def validate_row(row, company_id, line_grouped_dict=None):
     return errors
 
 
-<<<<<<< HEAD
 def allowance_validate_row(row, company_id, allowance_line_grouped_dict=None):
     errors = []
     
@@ -181,8 +175,6 @@ def allowance_validate_row(row, company_id, allowance_line_grouped_dict=None):
         return errors
 
 
-=======
->>>>>>> dev
 def process_data(file_path, company_id, b2b_b2c, import_type, username):
     print(f"[process_data] file_path={file_path}, company_id={company_id}, b2b_b2c={b2b_b2c}, import_type={import_type}, username={username}")
     
@@ -195,7 +187,6 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
     # 查公司資料
     company_obj = Company.objects.get(company_id=company_id)
     company_identifier = company_obj.company_identifier
-<<<<<<< HEAD
     c_id = company_obj.company_id
     tax_identifier = company_obj.tax_identifier
     seller_name = company_obj.company_name
@@ -214,18 +205,6 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
             (str(row["erp_number"]), int(row["line_tax_type"])): float(row["line_allowance_amount"])
             for _, row in allowance_line_grouped.iterrows()
         }
-=======
-    c_id = company_obj.id
-    tax_identifier = company_obj.tax_identifier
-    seller_name = company_obj.company_name
-
-    # line_amount 分組加總（for E04金額完整性）
-    line_grouped = df.groupby(["erp_number", "line_tax_type"])["line_amount"].sum().reset_index()
-    line_grouped_dict = {
-        (str(row["erp_number"]), int(row["line_tax_type"])): float(row["line_amount"])
-        for _, row in line_grouped.iterrows()
-    }
->>>>>>> dev
 
     valid_rows = []
     error_rows = []
@@ -239,7 +218,6 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
         cleaned_row["sys_number"] = f"{company_id}{erp_date_str}{cleaned_row.get('erp_number')}"
         cleaned_row["company_identifier"] = company_identifier
         cleaned_row["tax_rate"] = 0.05 if safe_int(cleaned_row.get("tax_type")) == 1 else 0
-<<<<<<< HEAD
         
         if import_type == "invoice":
             # 驗證
@@ -258,16 +236,6 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
                 error_rows.append(cleaned_row)
             else:
                 valid_rows.append(cleaned_row)
-=======
-
-        # 驗證
-        error_list = validate_row(cleaned_row, company_id, line_grouped_dict)
-        if error_list:
-            cleaned_row["errors"] = "; ".join(error_list)
-            error_rows.append(cleaned_row)
-        else:
-            valid_rows.append(cleaned_row)
->>>>>>> dev
 
     # 如果有錯誤，產生錯誤Excel
     error_excel_path = None
@@ -288,18 +256,11 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
                         sys_number=sys_number,
                         defaults={
                             "company_id": c_id,
-<<<<<<< HEAD
-=======
-                            "company_code": company_id,
->>>>>>> dev
                             "b2b_b2c": b2b_b2c,
                             "sys_date": datetime.now(),
                             "invoice_period": row.get("invoice_period"),
                             "invoice_type": '07',
-<<<<<<< HEAD
                             "invoice_number": '',
-=======
->>>>>>> dev
                             "erp_number": row.get("erp_number"),
                             "erp_date": row.get("erp_date"),
                             "erp_reference": row.get("erp_reference"),
@@ -337,10 +298,7 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
                     twb2bmainitem_id=main_item.id,
                     line_description=row.get("line_description"),
                     line_amount=safe_float(row.get("line_amount")),
-<<<<<<< HEAD
                     line_tax_amount=safe_float(row.get("line_tax_amount")),
-=======
->>>>>>> dev
                     line_tax_type=safe_int(row.get("line_tax_type")),
                     line_quantity=row.get("line_quantity"),
                     line_unit=row.get("line_unit"),
@@ -350,7 +308,6 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
                 )
 
             elif import_type == "allowance":
-<<<<<<< HEAD
                 sys_number = row["sys_number"]
 
                 if sys_number in main_item_cache:
@@ -415,10 +372,6 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
                     line_original_invoice_date=row.get("line_original_invoice_date"),
                     line_original_invoice_number=row.get("line_original_invoice_number")
                 )
-=======
-                # TODO: 這邊如果有折讓單要另外補
-                pass
->>>>>>> dev
 
     # Log寫入
     success_count = len(valid_rows)
