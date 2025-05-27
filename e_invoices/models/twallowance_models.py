@@ -31,9 +31,9 @@ class TWAllowance(models.Model):
     buyer_name = models.CharField(max_length=60, blank=True, null=True)   # 買方名稱
     buyer_bp_id = models.CharField(max_length=20, blank=True, null=True)    # 買方客戶編號
 
-    allowance_amount = models.DecimalField(max_digits=13, decimal_places=7)     # 未稅總計
-    allowance_tax = models.DecimalField(max_digits=20, decimal_places=0)     # 營業稅額總計
-    allowance_status = models.CharField(max_length=6, default='未開立')     # 折讓單開立狀態：未開立/已開立/已作廢
+    allowance_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)     # 未稅總計
+    allowance_tax = models.DecimalField(max_digits=20, decimal_places=0, blank=True, null=True)     # 營業稅額總計
+    allowance_status = models.CharField(max_length=6, default='未開立',blank=True, null=True)     # 折讓單開立狀態：未開立/已開立/已作廢
     mof_date = models.DateField(blank=True, null=True)     #    稅局回應日
     mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
     mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
@@ -49,70 +49,6 @@ class TWAllowance(models.Model):
    
     def __str__(self):
         return f"{self.allowance_number}"
-    
-    # def save(self, *args, **kwargs):
-    #     # 計算該折讓單的總折讓金額與稅額
-    #     allowance = self.allowance  # 假設有反向關聯
-    #     total_allowance_amount = allowance.items.aggregate(
-    #         total_allowance_amount=Sum('line_allowance_amount')
-    #     )['total_allowance_amount'] or 0
-
-    #     total_allowance_tax = allowance.items.aggregate(
-    #         total_allowance_tax=Sum('line_allowance_tax')
-    #     )['total_allowance_tax'] or 0
-
-    #     # 找出發票的可折讓金額
-    #     invoice = self.linked_invoice
-    #     already_deducted = TWAllowanceLineItem.objects.filter(linked_invoice=invoice).aggregate(
-    #         total_deducted_amount=Sum('line_allowance_amount')
-    #     ).get('total_deducted_amount') or 0
-
-    #     invoice_total_amount = (invoice.sales_amount or 0) + (invoice.zerotax_sales_amount or 0) + (invoice.freetax_sales_amount or 0)
-    #     available_deduction_amount = invoice_total_amount - already_deducted
-
-    #     # 檢查折讓金額是否超過可折讓金額
-    #     if total_allowance_amount > available_deduction_amount:
-    #         self.is_valid_amount = False
-    #         # 儲存檢查結果，但不中止
-    #         self.save()
-    #         return  # 可以選擇返回或者繼續處理其他的邏輯
-
-    #     available_deduction_tax = invoice.total_tax_amount or 0
-    #     if total_allowance_tax > available_deduction_tax:
-    #         self.is_valid_tax = False
-    #         # 儲存檢查結果，但不中止
-    #         self.save()
-    #         return  # 可以選擇返回或者繼續處理其他的邏輯
-
-    #     # 如果沒有問題，保持有效狀態
-    #     self.is_valid_amount = True
-    #     self.is_valid_tax = True
-
-    #     # 儲存該折讓單項目
-    #     super(TWAllowanceLineItem, self).save(*args, **kwargs)
-
-    # def is_within_original_invoice_amount(self):
-    #     total_invoice_amount = 0
-    #     for item in self.items.all():
-    #         invoice = item.linked_invoice  # 對應的發票
-    #         if invoice:
-    #             total_invoice_amount += (
-    #                 (invoice.sales_amount or 0)
-    #                 + (invoice.zerotax_sales_amount or 0)
-    #                 + (invoice.freetax_sales_amount or 0)
-    #             )
-    #     return self.allowance_amount <= total_invoice_amount
-    
-    
-    # def is_within_original_invoice_tax(self):
-    #     total_invoice_tax = 0
-    #     for item in self.items.all():
-    #         invoice = item.linked_invoice  # 對應的發票
-    #         if invoice:
-    #             total_invoice_tax += (
-    #                 (invoice.total_tax_amount or 0)
-    #             )
-    #     return self.allowance_tax <= total_invoice_tax
     
 class TWAllowanceLineItem(models.Model):
     twallowance = models.ForeignKey(TWAllowance, related_name='items', on_delete=models.CASCADE)  # TWB2BMainItem
@@ -132,48 +68,8 @@ class TWAllowanceLineItem(models.Model):
     line_tax_type = models.CharField(max_length=1, choices=LINE_TAX_TYPE_CHOICES,blank=True, null=True)     # 課稅別 (1：應稅；2：零稅率；3：免稅)
     line_allowance_amount = models.DecimalField(max_digits=13, decimal_places=3,blank=True, null=True)     # 金額 (未稅)
     line_allowance_tax = models.DecimalField(max_digits=20, decimal_places=3,blank=True, null=True)     # 營業稅額
-
-    # def save(self, *args, **kwargs):
-    #     # 計算該折讓單的總折讓金額與稅額
-    #     allowance = self.twallowance  # 假設有反向關聯
-    #     total_allowance_amount = allowance.items.aggregate(
-    #         total_allowance_amount=Sum('line_allowance_amount')
-    #     )['total_allowance_amount'] or 0
-
-    #     total_allowance_tax = allowance.items.aggregate(
-    #         total_allowance_tax=Sum('line_allowance_tax')
-    #     )['total_allowance_tax'] or 0
-    #     # 找出發票的可折讓金額
-    #     invoice = self.linked_invoice
-    #     if invoice:
-    #         # 計算該發票已被折讓的總金額
-    #         already_deducted = TWAllowanceLineItem.objects.filter(linked_invoice=invoice).aggregate(
-    #             total_deducted_amount=Sum('line_allowance_amount')
-    #         ).get('total_deducted_amount') or 0
-
-    #         # 更新發票的累計折讓金額
-    #         invoice.accurated_allowance_amount = already_deducted
-    #         invoice.remaining_allowance_amount = max(invoice.total_amount - already_deducted, 0)
-    #         invoice.save()
-
-    #     # 檢查折讓金額是否超過可折讓金額
-    #         invoice_total_amount = (invoice.sales_amount or 0) + (invoice.zerotax_sales_amount or 0) + (invoice.freetax_sales_amount or 0)
-    #         available_deduction_amount = invoice_total_amount - already_deducted
-
-
-
-    #         if total_allowance_amount > available_deduction_amount:
-    #             allowance.is_valid_amount = False
-    #         else:
-    #             allowance.is_valid_amount = True
-
-    #         available_deduction_tax = invoice.total_tax_amount or 0
-    #         if total_allowance_tax > available_deduction_tax:
-    #             allowance.is_valid_tax = False
-    #         else:
-    #             allowance.is_valid_tax = True
-        
-    #     allowance.save()
-
-    #     # 儲存該折讓單項目
-    #     super(TWAllowanceLineItem, self).save(*args, **kwargs)
+    INVOICE_CANCEL_STATUS_CHOICES = [
+        ('0', '未作廢'),
+        ('1', '已作廢')       
+    ]    
+    line_invoice_cancel_status = models.CharField(max_length=20, choices=INVOICE_CANCEL_STATUS_CHOICES, null=True, blank=True)

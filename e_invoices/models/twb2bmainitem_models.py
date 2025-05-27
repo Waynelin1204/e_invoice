@@ -59,6 +59,9 @@ class TWB2BMainItem(models.Model):
     exchange_rate = models.DecimalField(max_digits=8, decimal_places=5, blank=True, null=True)
     currency = models.CharField(max_length=3, blank=True, null=True)
     invoice_status = models.CharField(max_length=10, blank=True, null=True, default='未開立')
+    allowance_status = models.CharField(max_length=10, blank=True, null=True, default='未開立折讓單')  # 折讓單開立狀態：未開立/已開立/已作廢
+    invoice_allowance_amount = models.DecimalField(max_digits=20, decimal_places=0, blank=True, null=True)     #  證明單金額總計
+    invoice_allowance_tax = models.DecimalField(max_digits=20, decimal_places=0, blank=True, null=True)     # 折讓單稅額總計
 
 
     mof_date = models.DateField(blank=True, null=True)     #    稅局回應日

@@ -45,6 +45,20 @@ from e_invoices.models import (
 )
 from e_invoices.forms import NumberDistributionForm
 from e_invoices.services.validate_allowance import validate_allowance
+from decimal import Decimal, InvalidOperation
+
+def update_decimal_field(obj, field_name, raw_val):
+    """
+    如果 raw_val 有值且為合法 Decimal，更新 obj 的指定欄位。
+    否則保留原值不動。
+    """
+    val = (raw_val or '').strip()
+    if val:
+        try:
+            setattr(obj, field_name, Decimal(val))
+        except InvalidOperation:
+            # 你可以改為 log 錯誤或顯示錯誤訊息
+            pass
 
 @login_required
 def twallowance(request):
@@ -66,34 +80,50 @@ def twallowance(request):
     # 查詢符合條件的資料，並使用 prefetch_related 來查詢發票明細
     allowances = TWAllowance.objects.filter(filter_conditions).order_by('-erp_date').prefetch_related('items__linked_invoice')
     company_options = user_profile.viewable_companies.all()
-
-    # 驗證每個折讓單
-    validated_allowances = []
-    for allowance in allowances:
-        validation_result = validate_allowance(allowance)
-        allowance.is_valid_amount = validation_result["is_valid_amount"]
-        allowance.is_valid_tax = validation_result["is_valid_tax"]
-        validated_allowances.append(allowance)
-    
     
     # 分頁：每頁顯示25筆資料
     paginator = Paginator(allowances, 25)  # 每頁顯示25筆資料
     page_number = request.GET.get('page')  # 取得當前頁數
     page_obj = paginator.get_page(page_number)  # 根據頁數取得對應的資料
+    validation_results = validate_allowance(page_obj)
+
+    # 驗證每個折讓單
+    #validated_allowances = []
+    for result in validation_results:
+        allowance = result["allowance"]
+        allowance.is_allowance_valid = result["is_allowance_valid"]
+        allowance.is_valid_amount = result["is_valid_amount"]
+        allowance.is_valid_tax = result["is_valid_tax"]
+        # 若需要也可以掛載 validated_items
+        allowance.validated_items = result["validated_items"]
+        #allowance.invalid_invoice_numbers = result["invalid_invoice_numbers"]
+    
+        
+    
+        print(f"\n📄 折讓單號：{getattr(allowance, 'allowance_number', allowance.id)}")
+        print(f"   ✅ 是否有效折讓單：{allowance.is_allowance_valid}")
+        print(f"   📌 金額驗證：{allowance.is_valid_amount}")
+        print(f"   📌 稅額驗證：{allowance.is_valid_tax}")
+        
+        print("   ── 明細驗證 ──")
+        for item_result in result["validated_items"]:
+            item = item_result["item"]
+            print(f"      - 明細ID: {item.id}, is_valid_amount: {item_result['is_valid_amount']}, is_valid_tax: {item_result['is_valid_tax']}")
+        
+        print("   ── 發票剩餘可折讓金額與稅額 ──")
+        for invoice_number, amount in result.get("invoice_remaining_amounts", {}).items():
+            tax = result.get("invoice_remaining_taxes", {}).get(invoice_number, "N/A")
+            print(f"      - 發票號碼：{invoice_number}, 剩餘金額：{amount}, 剩餘稅額：{tax}")
+
+
 
     # 傳遞資料給模板
     context = {
-        'allowances': page_obj,  # 傳遞分頁後的資料
+        "page_obj": page_obj,
         "company_options": company_options,
-        "allowances": validated_allowances,
+        "allowances":  [r['allowance'] for r in validation_results],
     }
-    print("🔍 可查看的公司 company_id：", list(viewable_company_codes))
-    print("✅ 撈到的發票數：", TWAllowance.objects.filter(filter_conditions).count())
-    print("🟡 viewable_company_ids:", list(viewable_company_codes))
-    print("🟡 篩選時間從:", sixty_days_ago)
-    print("🟡 所有發票的公司代碼：", TWAllowance.objects.values_list("company_id", flat=True).distinct())
-    print("🟡 最近60天的發票：", TWAllowance.objects.filter(erp_date__gte=sixty_days_ago).values_list("company_id", flat=True))
-    print("🟡 完整符合條件的發票數：", TWAllowance.objects.filter(filter_conditions).count())
+
 
     return render(request, 'twallowance.html', context)
 
@@ -163,21 +193,31 @@ def twallowance_filter(request):
     # 查詢所有符合條件的發票資料
     invoices_list = TWAllowance.objects.filter(filters).order_by('-erp_date')
 
+    # 獲取篩選條件的選項
+    allowance_status = TWAllowance.objects.values_list('allowance_status', flat=True).distinct()
+    b2b_b2c = TWAllowance.objects.values_list('b2b_b2c', flat=True).distinct()
+
     # 分頁
     paginator = Paginator(invoices_list, display_limit)  # 每頁顯示的資料筆數
     page_number = request.GET.get('page')  # 獲取當前頁碼
     page_obj = paginator.get_page(page_number)  # 根據頁碼獲取相應的頁面資料
 
-    # 獲取篩選條件的選項
-    allowance_status = TWAllowance.objects.values_list('allowance_status', flat=True).distinct()
-    b2b_b2c = TWAllowance.objects.values_list('b2b_b2c', flat=True).distinct()
 
-    validated_allowances = []
-    for allowance in invoices_list:
-        validation_result = validate_allowance(allowance)
-        allowance.is_valid_amount = validation_result["is_valid_amount"]
-        allowance.is_valid_tax = validation_result["is_valid_tax"]
-        validated_allowances.append(allowance)
+    # 分頁：每頁顯示25筆資料
+
+    validation_results = validate_allowance(page_obj)
+
+    # 驗證每個折讓單
+    #validated_allowances = []
+    for result in validation_results:
+        allowance = result["allowance"]
+        allowance.is_allowance_valid = result["is_allowance_valid"]
+        allowance.is_valid_amount = result["is_valid_amount"]
+        allowance.is_valid_tax = result["is_valid_tax"]
+        # 若需要也可以掛載 validated_items
+        allowance.validated_items = result["validated_items"]
+        #allowance.invalid_invoice_numbers = result["invalid_invoice_numbers"]
+    
 
     # 檢查公司ID篩選是否有效
     if company_id_filter and int(company_id_filter) not in viewable_company_codes:
@@ -186,14 +226,14 @@ def twallowance_filter(request):
 
     return render(request, "twallowance.html", {
         "company_id_filter": company_id_filter,
-        "allowances": page_obj,  # 傳遞分頁結果
+        "page_obj": page_obj,  # 傳遞分頁結果
         "company_options": company_options,
         "b2b_b2c": b2b_b2c,
         "invoice_status": allowance_status,
         "display_limit": display_limit,  # 傳遞選擇的筆數
         "start_date": start_date.strftime('%Y-%m-%d'),  # 顯示篩選的開始日期
         "end_date": end_date.strftime('%Y-%m-%d'),  # 顯示篩選的結束日期
-        "allowances": validated_allowances,
+        "allowances":  [r['allowance'] for r in validation_results],
     })
 
 #====================================================== 折讓單明細 =======================================================
@@ -243,17 +283,12 @@ def twallowance_update(request, id):
         erp_reference = request.POST.get('erp_reference', '').strip()
         seller_bp_id = request.POST.get('seller_bp_id', '').strip()
         buyer_bp_id = request.POST.get('buyer_bp_id', '').strip()
-        try:
-            allowance_amount = Decimal(request.POST.get('allowance_amount', '').strip()) if request.POST.get('allowance_amount', '').strip() else None
-        except InvalidOperation:
-            allowance_amount = 0
-        
-        try:
-            allowance_tax = Decimal(request.POST.get('allowance_tax', '').strip()) if request.POST.get('allowance_tax', '').strip() else None
-        except InvalidOperation:
-            allowance_tax = 0
+        allowance_amount = request.POST.get('allowance_amount', allowance.allowance_amount)
+        allowance_tax = request.POST.get('allowance_tax', allowance.allowance_tax)
+
 
         # 更新主項目資料
+
         allowance.allowance_period = allowance_period
         allowance.erp_reference = erp_reference
         allowance.seller_bp_id = seller_bp_id
@@ -262,22 +297,25 @@ def twallowance_update(request, id):
         allowance.allowance_tax = allowance_tax
 
 
-        #allowance.save()  # 保存主項目資料
+        allowance.save()  # 保存主項目資料
 
         # 更新明細項目資料
         for item in allowance.items.all():
+            update_decimal_field(item, 'line_unit_price', request.POST.get(f'line_unit_price_{item.id}'))
+            update_decimal_field(item, 'line_allowance_amount', request.POST.get(f'line_allowance_amount_{item.id}'))
+            update_decimal_field(item, 'line_allowance_tax', request.POST.get(f'line_allowance_tax_{item.id}'))
             #line_quantity = request.POST.get(f'line_quantity_{item.id}', '').strip()
-            line_unit_price =  Decimal(request.POST.get(f'line_unit_price_{item.id}', '').strip())
+            #line_unit_price =  Decimal(request.POST.get(f'line_unit_price_{item.id}', '').strip())
             # line_allowance_amount = request.POST.get(f'line_allowance_amount_{item.id}', '').strip()
-            line_allowance_tax = Decimal(request.POST.get(f'line_allowance_tax_{item.id}', '').strip())
-            line_allowance_amount = Decimal(request.POST.get(f'line_allowance_amount_{item.id}', '').strip())
+            #line_allowance_tax = Decimal(request.POST.get(f'line_allowance_tax_{item.id}', '').strip())
+            #line_allowance_amount = Decimal(request.POST.get(f'line_allowance_amount_{item.id}', '').strip())
 
 
 
             #item.line_quantity = line_quantity 
-            item.line_unit_price = line_unit_price
-            item.line_allowance_amount = line_allowance_amount
-            item.line_allowance_tax = line_allowance_tax
+            #item.line_unit_price = line_unit_price
+            #item.line_allowance_amount = line_allowance_amount
+            #item.line_allowance_tax = line_allowance_tax
 
             item.save()  # 保存明細項目資料
 
@@ -304,6 +342,9 @@ def twallowance_export_invoices(request):
     all_selected_allowances = TWAllowance.objects.filter(id__in=selected_ids)
 
     allowances = all_selected_allowances.exclude(allowance_status='已開立')
+
+    if not allowances.exists():
+        return HttpResponse("No valid allowances found", status=404)    
 
     # # 先找出所有選取的發票
     # all_selected_invoices = TWAllowance.objects.filter(id__in=selected_ids)
@@ -368,6 +409,13 @@ def twallowance_export_invoices(request):
     # 6️⃣ 開始配號與寫入 Excel
     with transaction.atomic():
         for allowance in allowances:
+            validation_results = validate_allowance([allowance])
+            validation_result = validation_results[0]
+            is_valid_allowance = validation_result.get("is_allowance_valid", True)
+            print(f"Allowance ID {allowance.id} valid? {is_valid_allowance}")
+            if not is_valid_allowance:
+                continue
+
             # #company_obj = company_map.get(invoice.company_id)
             # company_obj = company_map.get(invoice.company.company_id)
             # if not company_obj:
@@ -394,6 +442,20 @@ def twallowance_export_invoices(request):
             allowance.allowance_time = now 
             allowance.export_date = now.date()
             allowance.save()
+            for item in allowance.items.all():
+                # 🟡 這裡是你要的邏輯：根據原始發票號碼與公司找發票，並更新其 allowance_status
+                original_number = item.line_original_invoice_number
+                if original_number:
+                    try:
+                        original_invoice = TWB2BMainItem.objects.get(
+                            invoice_number=original_number,
+                            company=allowance.company
+                        )
+                        if original_invoice.allowance_status != "已開立折讓單":
+                            original_invoice.allowance_status = "已開立折讓單"
+                            original_invoice.save()
+                    except TWB2BMainItem.DoesNotExist:
+                        pass  # 如找不到可記錄 log 或忽略
 
             for item in allowance.items.all():
                 sheet.cell(row=row, column=1, value=allowance.company.company_id)
@@ -463,10 +525,16 @@ def twallowance_update_void_status(request):
     selected_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
     if not selected_ids:
         return HttpResponse("No invoice IDs provided", status=400)
-
+    
     allowances = TWAllowance.objects.filter(id__in=selected_ids).prefetch_related('items')
     if not allowances.exists():
         return HttpResponse("No invoices found", status=404)
+
+    # 僅篩出「已開立」的折讓單
+    to_cancel = [a for a in allowances if a.allowance_status == '已開立']
+
+    if not to_cancel:
+        return HttpResponse("所有選取的折讓單皆為『未開立』或『已作廢』狀態，無法作廢。", status=400)
 
     # 載入 Excel 樣板
     template_path = os.path.join(settings.BASE_DIR, 'export', 'B0201.xlsx')
@@ -476,7 +544,11 @@ def twallowance_update_void_status(request):
     row = 2  # Excel 開始列
 
     with transaction.atomic():
-        for allowance in allowances:
+         for allowance in to_cancel:
+                        # 新增條件：只處理已開立的折讓單
+            if allowance.allowance_status != '已開立':
+                # 可選擇跳過此筆或回傳錯誤訊息，這裡我先用 continue 跳過
+                continue
             # 更新作廢狀態與時間
             allowance.allowance_status = '已作廢'
             allowance.allowance_cancel_date = localtime(timezone.now()).replace(tzinfo=None).date()

@@ -36,12 +36,19 @@
 <div class="container mt-4" style="border: 1px solid black; padding:20px;">
     <div class="d-flex justify-content-between mb-3">
         <a href="{% url 'twb2bmainitem' %}" class="btn btn-secondary back-button">← 返回發票列表</a>
+
         {% if request.user.groups.all.0.name == 'keyuser' or request.user.is_superuser %}
-            <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+            {% if document.invoice_status == '未開立' %}
+                <!-- ✅ 權限夠、狀態也正確，可以修改 -->
+                <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+            {% else %}
+                <!-- ❌ 權限夠但發票狀態不對，顯示警告 modal -->
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#wrongStatusModal">修改</button>
+            {% endif %}
         {% else %}
+            <!-- ❌ 權限不夠 -->
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#noPermissionModal">修改</button>
         {% endif %}
-
     </div>
 
 
@@ -51,6 +58,14 @@
     <p><strong>營業人名稱:</strong> {{ document.company.company_id }}</p>
     <p><strong>發票日期:</strong> {{ document.invoice_date|default:"" }}</p>
     <p><strong>總金額:</strong> {{ document.total_amount }}</p>
+    <p><strong>是否已開立折讓單:</strong> {{ document.allowance_status }}</p>
+    <p><strong>已開立的折讓單號:</strong>
+    {% for allowance in related_allowances %}
+        {{ allowance.allowance_number }}{% if not forloop.last %}, {% endif %}
+      {% empty %}
+        無
+      {% endfor %}
+    </p>
     <p><strong>累計折讓金額:</strong> {{ total_allowanced_amount|default:"0" }}</p>
     <p><strong>剩餘可折讓金額:</strong> {{ available_amount }}</p>
     <p><strong>剩餘可折讓稅額:</strong> {{ available_tax }}</p>
@@ -153,6 +168,22 @@
                         </select>
                     </div>
                 </div>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <td>
+                            <label for="cancel_reason" class="form-label me-2 mb-0" style="width: 120px;">作廢理由:</label>
+                            <input type="text" class="form-control" id="cancel_reason" name="cancel_reason" value="{{ document.cancel_reason|default_if_none:'' }}" disabled style="max-width: 1400px;">
+                        </td>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <td>
+                            <label for="returntax_document_number" class="form-label me-2 mb-0" style="width: 250px;">跨期作廢需填專案作廢核准文號:</label>
+                            <input type="text" class="form-control" id="returntax_document_number" name="returntax_document_number" value="{{ document.returntax_document_number|default_if_none:'' }}" disabled style="max-width: 1400px;">
+                        </td>
+                    </div>
+                </div>
         <div class="d-flex justify-content-between mb-3">
             <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
 
@@ -198,5 +229,23 @@
       </div>
     </div>
   </div>
+  <!-- 狀態錯誤 Modal -->
+
+<div class="modal fade" id="wrongStatusModal" tabindex="-1" aria-labelledby="wrongStatusModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="wrongStatusModalLabel">狀態不允許修改</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        僅『未開立』狀態的發票或折讓單才可進行修改操作。
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

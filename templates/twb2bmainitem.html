@@ -182,13 +182,13 @@
         </div>
     {% endfor %}
 {% endif %} -->
-{% if messages %}
+<!-- {% if messages %}
   <ul class="messages">
     {% for message in messages %}
       <li class="alert alert-{{ message.tags }}">{{ message }}</li>
     {% endfor %}
   </ul>
-{% endif %}
+{% endif %} -->
 <div class="top-bar">
     <div class="logo">
         <h5 class="m-0" style="font-weight: bold;">Deloitte</h5>
@@ -370,9 +370,13 @@
 
             <form id="deleteForm" method="post" action="{% url 'twb2bmainitem_delete_selected_invoices' %}">
                 {% csrf_token %}
-                <input type="hidden" name="selected_documents" id="selectedInvoicesDelete">
                 <div class="d-flex justify-content-start gap-1 mb-10">
-                    <button type= "submit" class="btn btn-danger btn-spacing" id="deleteButton">刪除發票</button>
+                    {% if request.user.groups.all.0.name == 'keyuser' or request.user.is_superuser %}
+                        <button type="submit" class="btn btn-danger btn-spacing" id="deleteButton">刪除發票</button>
+                        <input type="hidden" name="selected_documents" id="selectedInvoicesDelete">
+                    {% else %}
+                        <button type="button" class="btn btn-danger btn-spacing" data-bs-toggle="modal" data-bs-target="#noPermissionModal">刪除發票</button>
+                    {% endif %}
                 </div>
             </form>
             <form id="voidForm" method="post" action="{% url 'twb2bmainitem_update_void_status' %}"  id="voidForm">
@@ -415,14 +419,6 @@
                             <td class="text-center">
                                 <input type="checkbox" name="selected_documents" value="{{ document.id }}"
                                 {% if document.invoice_status == '已作廢' %}
-                                    disabled
-                                {% elif document.tax_type == '2' and document.zerotax_sales_amount|default:0 <= 0 %}
-                                    disabled
-                                {% elif not document.customs_clearance_mark %}
-                                    disabled
-                                {% elif not document.bonded_area_confirm %}
-                                    disabled
-                                {% elif not document.zero_tax_rate_reason %}
                                     disabled
                                 {% endif %}>
                             </td>
@@ -497,6 +493,7 @@
                                     <span class="text-muted">無可用資料</span>
                                 {% endif %}
                             </td>
+                            <td></td>
 
                         </tr>
                         {% empty %}
@@ -1004,6 +1001,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 <button type="button" class="btn btn-primary" id="confirmLogoutBtn">確認登出</button>
             </div>
         </div>
+    </div>
+</div>
+<div class="modal fade" id="noPermissionModal" tabindex="-1" aria-labelledby="noPermissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="noPermissionModalLabel">權限不足</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+        </div>
+        <div class="modal-body text-dark">
+          您沒有刪除這筆發票的權限。
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        </div>
+      </div>
     </div>
 </div>
 </body>

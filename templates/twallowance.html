@@ -177,13 +177,13 @@
         </div>
     {% endfor %}
 {% endif %} -->
-{% if messages %}
+<!-- {% if messages %}
   <ul class="messages">
     {% for message in messages %}
       <li class="alert alert-{{ message.tags }}">{{ message }}</li>
     {% endfor %}
   </ul>
-{% endif %}
+{% endif %} -->
 <div class="top-bar">
     <div class="logo">
         <h5 class="m-0" style="font-weight: bold;">Deloitte</h5>
@@ -366,9 +366,13 @@
 
             <form id="deleteForm" method="post" action="{% url 'twallowance_delete_selected_invoices' %}">
                 {% csrf_token %}
-                <input type="hidden" name="selected_documents" id="selectedInvoicesDelete">
                 <div class="d-flex justify-content-start gap-1 mb-10">
-                    <button type= "submit" class="btn btn-danger btn-spacing" id="deleteButton">刪除折讓單</button>
+                    {% if request.user.groups.all.0.name == 'keyuser' or request.user.is_superuser %}
+                        <button type="submit" class="btn btn-danger btn-spacing" id="deleteButton">刪除發票</button>
+                        <input type="hidden" name="selected_documents" id="selectedInvoicesDelete">
+                    {% else %}
+                        <button type="button" class="btn btn-danger btn-spacing" data-bs-toggle="modal" data-bs-target="#noPermissionModal">刪除發票</button>
+                    {% endif %}
                 </div>
             </form>
             <form id="voidForm" method="post" action="{% url 'twallowance_update_void_status' %}"  id="voidForm">
@@ -410,7 +414,7 @@
                         <tr>
                             <td class="text-center">
                                 <input type="checkbox" name="selected_documents" value="{{ allowance.id }}" 
-                                    {% if allowance.allowance_status == '已作廢' or not allowance.is_valid_amount or not allowance.is_valid_tax  %} disabled {% endif %}>
+                                    {% if allowance.allowance_status == '已作廢' %} disabled {% endif %}>
                             </td>
                             <td class="text-center" >{{ allowance.erp_number }}</td>
                             <td class="text-center" >{{ allowance.erp_date }}</td>
@@ -484,22 +488,40 @@
                     </tbody>
                 </table>
             </div>
-            <div class="pagination text-end">
-                <span class="step-links">
-                    {% if allowances.has_previous %}
-                        <a href="?page=1&display_limit={{ display_limit }}">&laquo; 第一頁</a>
-                        <a href="?page={{ allowances.previous_page_number }}&display_limit={{ display_limit }}">上一頁</a>
-                    {% endif %}
-            
-                    <span class="current">
-                        頁碼 {{ allowances.number }} 共 {{ allowances.paginator.num_pages }} 頁
-                    </span>
-            
-                    {% if allowances.has_next %}
-                        <a href="?page={{ allowances.next_page_number }}&display_limit={{ display_limit }}">下一頁</a>
-                        <a href="?page={{ allowances.paginator.num_pages }}&display_limit={{ display_limit }}">最後一頁 &raquo;</a>
-                    {% endif %}
-                </span>
+            <div class="d-flex justify-content-center my-3">
+                <nav aria-label="Page navigation" class="mt-3">
+                    <ul class="pagination justify-content-end">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1&display_limit={{ display_limit }}">&laquo; 第一頁</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&display_limit={{ display_limit }}">上一頁</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo; 第一頁</span></li>
+                            <li class="page-item disabled"><span class="page-link">上一頁</span></li>
+                        {% endif %}
+
+                        <li class="page-item disabled">
+                            <span class="page-link">
+                                頁碼 {{ page_obj.number }} 共 {{ page_obj.paginator.num_pages }} 頁
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&display_limit={{ display_limit }}">下一頁</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&display_limit={{ display_limit }}">最後一頁 &raquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">下一頁</span></li>
+                            <li class="page-item disabled"><span class="page-link">最後一頁 &raquo;</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
             </div>
         </form>
     </div>
@@ -963,6 +985,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 <button type="button" class="btn btn-primary" id="confirmLogoutBtn">確認登出</button>
             </div>
         </div>
+    </div>
+</div>
+<div class="modal fade" id="noPermissionModal" tabindex="-1" aria-labelledby="noPermissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="noPermissionModalLabel">權限不足</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+        </div>
+        <div class="modal-body text-dark">
+          您沒有刪除這筆發票的權限。
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        </div>
+      </div>
     </div>
 </div>
 </body>

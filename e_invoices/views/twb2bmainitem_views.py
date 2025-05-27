@@ -40,7 +40,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from e_invoices.models import (
     RegisterForm, LoginForm,
     Twa0101, Twa0101Item, Ocr, Ocritem, Company, UserProfile,
-    NumberDistribution, TWB2BMainItem, TWB2BLineItem
+    NumberDistribution, TWB2BMainItem, TWB2BLineItem, TWAllowanceLineItem, TWAllowance
 )
 from e_invoices.forms import NumberDistributionForm
 
@@ -117,16 +117,31 @@ def twb2bmainitem(request):
 def twb2blineitem(request, id):
     document = get_object_or_404(TWB2BMainItem, id=id)
     items = document.items.all()  # 確保有正確查詢
-
     # 計算屬性值
-    total_allowanced_amount = document.allowance_lineitems.aggregate(
-        total=Sum('line_allowance_amount')
-    )['total'] or 0
+    # total_allowanced_amount = document.allowance_lineitems.aggregate(
+    #     total=Sum('line_allowance_amount')
+    # )['total'] or 0
 
-    total_allowanced_tax = document.allowance_lineitems.aggregate(
-        total=Sum('line_allowance_tax')
-    )['total'] or 0
+    # total_allowanced_tax = document.allowance_lineitems.aggregate(
+    #     total=Sum('line_allowance_tax')
+    # )['total'] or 0
 
+# 對應到 linked_invoice（ForeignKey）所連的 TWB2BMainItem 的 invoice_number 欄位
+    total_allowanced_amount = TWAllowanceLineItem.objects.filter(
+        linked_invoice=document,
+        twallowance__allowance_status='已開立'
+    ).aggregate(
+        total_allowanced_amount=Sum('line_allowance_amount')
+    )['total_allowanced_amount'] or 0
+
+    total_allowanced_tax = TWAllowanceLineItem.objects.filter(
+        linked_invoice=document,
+        twallowance__allowance_status='已開立'
+    ).aggregate(
+        total_allowanced_tax=Sum('line_allowance_tax')
+    )['total_allowanced_tax'] or 0
+
+    # 發票可用金額與稅額
     available_amount = (
         (document.sales_amount or 0)
         + (document.zerotax_sales_amount or 0)
@@ -135,15 +150,24 @@ def twb2blineitem(request, id):
     )
 
     available_tax = (document.total_tax_amount or 0) - total_allowanced_tax
+    
+    related_allowances = TWAllowance.objects.filter(
+        items__linked_invoice=document,
+        allowance_status='已開立'
+    ).distinct()
+
+
+
 
     # 判斷是否有效
     print(f"原銷售金額: {document.sales_amount}")    
     print(f"原零稅銷售金額: {document.zerotax_sales_amount}")
     print(f"原免稅銷售金額: {document.freetax_sales_amount}")
+    print(f"已開立折讓單號: {[a.allowance_number for a in related_allowances]}")
     print(f"累計折讓金額: {total_allowanced_amount}")
     print(f"累計折讓金額: {total_allowanced_tax}")
-    print(f"累計折讓金額: {available_amount}")
-    print(f"累計折讓金額: {available_tax}")
+    print(f"剩餘折讓金額: {available_amount}")
+    print(f"剩餘折讓稅額: {available_tax}")
 
 
 
@@ -154,6 +178,7 @@ def twb2blineitem(request, id):
         'available_tax': available_tax,
         'total_allowanced_amount': total_allowanced_amount,
         'total_allowanced_tax': total_allowanced_tax,
+        'related_allowances': related_allowances,
     })
 
 
@@ -174,6 +199,8 @@ def twb2blineitem_update(request, id):
         zero_tax_rate_reason = request.POST.get('zero_tax_rate_reason', '').strip()
         reserved1 = request.POST.get('reserved1', '').strip()
         reserved2 = request.POST.get('reserved2', '').strip()
+        cancel_reason = request.POST.get('cancel_reason', '').strip()
+        returntax_document_number = request.POST.get('returntax_document_number', '').strip()
         try:
             original_currency_amount = Decimal(request.POST.get('original_currency_amount', '').strip()) if request.POST.get('original_currency_amount', '').strip() else None
         except InvalidOperation:
@@ -201,7 +228,8 @@ def twb2blineitem_update(request, id):
         document.original_currency_amount = original_currency_amount
         document.exchange_rate = exchange_rate
         document.currency = currency
-
+        document.cancel_reason= cancel_reason
+        document.returntax_document_number = returntax_document_number
         document.save()  # 保存主項目資料
 
         # 更新明細項目資料
@@ -343,18 +371,35 @@ def twb2bmainitem_export_invoices(request):
         return HttpResponse("No invoice IDs provided", status=400)
 
     #invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items')
-    invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items').exclude(invoice_status='已開立')
+    # 零稅率欄位不合法的條件
+    zero_tax_invalid = (
+        Q(tax_type='2') & (
+            Q(zerotax_sales_amount__lte=0) |
+            Q(customs_clearance_mark__in=[None, '']) |
+            Q(bonded_area_confirm__in=[None, '']) |
+            Q(zero_tax_rate_reason__in=[None, ''])
+        )
+    )
+
+    # 綜合排除條件
+    invalid_condition = Q(invoice_status='已開立') | zero_tax_invalid
+
+    invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items').exclude(invalid_condition)
+
+
 
     if not invoices.exists():
-        return HttpResponse("No invoices found", status=404)
+         return HttpResponse("No invoices found", status=404)
 
     # 先找出所有選取的發票
-    all_selected_invoices = TWB2BMainItem.objects.filter(id__in=selected_ids)
+    #all_selected_invoices = TWB2BMainItem.objects.filter(id__in=selected_ids)
+
     # 計算「已開立」的數量
-    excluded_count = all_selected_invoices.filter(invoice_status='已開立').count()
+    #excluded_count = all_selected_invoices.filter(invoice_status='已開立').count()
+    excluded_count = invoices.count()
 
     # 篩選出尚未開立的發票
-    invoices = all_selected_invoices.exclude(invoice_status='已開立').prefetch_related('items')
+    #invoices = all_selected_invoices.exclude(invoice_status='已開立').prefetch_related('items')
 
     # 如果有被排除的，就提示使用者
     if excluded_count > 0:
@@ -546,6 +591,21 @@ def twb2bmainitem_update_void_status(request):
     if not invoices.exists():
         return HttpResponse("No invoices found", status=404)
 
+
+    # ✅ 排除未開立的發票
+    #not_issued = invoices.filter(invoice_status='未開立')
+    to_cancel = invoices.exclude(Q(invoice_status='未開立') | Q(allowance_status='已開立折讓單'))
+
+
+    if not to_cancel.exists():
+        return HttpResponse("所有選取的發票皆為『未開立』發票或包含『已開立折讓單』發票，故無法作廢。", status=400)
+    
+    # ✅ 檢查是否每筆作廢發票都有填寫作廢理由
+    missing_reason = [inv for inv in to_cancel if not inv.cancel_reason or inv.cancel_reason.strip() == '']
+    if missing_reason:
+        return HttpResponse("有發票未填寫作廢理由，請補齊後再作廢。", status=400)
+    
+
     # 載入 Excel 樣板
     template_path = os.path.join(settings.BASE_DIR, 'export', 'A0201.xlsx')
     workbook = load_workbook(template_path)
@@ -554,7 +614,7 @@ def twb2bmainitem_update_void_status(request):
     row = 2  # Excel 開始列
 
     with transaction.atomic():
-        for invoice in invoices:
+        for invoice in to_cancel:
             # 更新作廢狀態與時間
             invoice.invoice_status = '已作廢'
             invoice.cancel_date = localtime(timezone.now()).replace(tzinfo=None).date()

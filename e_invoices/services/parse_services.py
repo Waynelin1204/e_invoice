@@ -113,7 +113,7 @@ def validate_row(row, company_id, line_grouped_dict=None):
     return errors
 
 
-def allowance_validate_row(row, company_id, allowance_line_grouped_dict=None):
+def allowance_validate_row(row, company_id, allowance_amount_dict, allowance_tax_dict, invoice_status_map, original_invoice_dict):
     errors = []
     
     # === E01: 必填欄位不可為空 ===
@@ -135,44 +135,56 @@ def allowance_validate_row(row, company_id, allowance_line_grouped_dict=None):
     if missing_fields:
         errors.append(f"E01-必填欄位不可為空：{', '.join(missing_fields)}")
     
-        # === E02: 格式錯誤或無效 ===
-        format_error_fields = []
+    # === E02: 格式錯誤或無效 ===
+    format_error_fields = []
     
-        buyer_identifier = str(row.get("buyer_identifier")).strip()
-        if buyer_identifier and not validateUniformNumberTW(buyer_identifier):
-            format_error_fields.append("buyer_identifier")
+    buyer_identifier = str(row.get("buyer_identifier")).strip()
+    if buyer_identifier and not validateUniformNumberTW(buyer_identifier):
+        format_error_fields.append("buyer_identifier")
     
-        if format_error_fields:
-            errors.append(f"E02-格式錯誤或無效：{', '.join(format_error_fields)}")
+    if format_error_fields:
+        errors.append(f"E02-格式錯誤或無效：{', '.join(format_error_fields)}")
     
         # === E03: 資料重複 ===
-        sys_number = row.get("sys_number")
-        if sys_number and TWB2BMainItem.objects.filter(sys_number=sys_number).exists():
-            errors.append("E03-資料重複：此筆資料已存在")
+    sys_number = row.get("sys_number")
+    if sys_number and TWAllowance.objects.filter(sys_number=sys_number).exists():
+        errors.append("E03-資料重複：此筆資料已存在")
         # === E04: 金額完整性 ===
 
-        if allowance_line_grouped_dict:
-            erp_number = str(row.get("erp_number"))
+    if allowance_amount_dict:
+        erp_number = str(row.get("erp_number"))
+        expected_amount = allowance_amount_dict.get(erp_number, 0.0)
+        if abs(float(row.get("total_allowance_amount", 0)) - expected_amount) >= 1:
+            errors.append("E04-金額完整性：折讓金額明細加總不一致")
 
-            # 1. sales_amount 應稅合計
-            expected_amount = allowance_line_grouped_dict.get((erp_number, 1), 0.0)
-            if abs(float(row.get("total_allowance_amount", 0)) - expected_amount) >= 1:
-                errors.append("E04-金額完整性：折讓金額明細加總不一致")
 
-            # 2. zerotax_sales_amount 零稅率合計
-            expected_tax = allowance_line_grouped_dict.get((erp_number, 2), 0.0)
-            if abs(float(row.get("total_allowance_tax", 0)) - expected_tax) >= 1:
-                errors.append("E04-金額完整性：折讓課稅金額明細加總不一致")
+    if allowance_tax_dict:
+        erp_number = str(row.get("erp_number"))
+        expected_tax = allowance_tax_dict.get(erp_number,0.0)
+        if abs(float(row.get("total_allowance_tax", 0)) - expected_tax) >= 1:
+            errors.append("E04-金額完整性：折讓稅額明細加總不一致")
 
-            # 4. 營業稅 total_tax_amount 應接近 sales_amount * 5%
-            total_allowance_amount = float(row.get("total_allowance_amount", 0))
-            total_allowance_tax = float(row.get("total_allowance_tax", 0))
-            if total_allowance_amount > 0:
-                expected_tax = total_allowance_amount * 0.05
-                if abs(total_allowance_tax - expected_tax) >= 1:
-                    errors.append("E04-金額完整性：營業稅 total_allowance_tax 誤差過大")
+        # # 4. 營業稅 total_tax_amount 應接近 sales_amount * 5%
+        # total_allowance_amount = float(row.get("total_allowance_amount", 0))
+        # total_allowance_tax = float(row.get("total_allowance_tax", 0))
+        # if total_allowance_amount > 0:
+        #     expected_tax = total_allowance_amount * 0.05
+        #     if abs(total_allowance_tax - expected_tax) >= 1:
+        #         errors.append("E04-金額完整性：營業稅 total_allowance_tax 誤差過大")
+        
+    erp_number = str(row.get("erp_number"))
+    original_invoices = original_invoice_dict.get(erp_number, [])
+    for inv_num in original_invoices:
+        status = invoice_status_map.get(inv_num)
+        print(status)
+        if not status:
+            errors.append(f"E05-原發票號碼 {inv_num} 查無發票資料")
+        elif status != "已開立":
+            errors.append(f"E05-原發票號碼 {inv_num} 為「{status}」，不允許折讓")
 
-        return errors
+    return errors
+
+
 
 
 def process_data(file_path, company_id, b2b_b2c, import_type, username):
@@ -200,11 +212,39 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
         }
     elif import_type == "allowance":
     # allowance line_amount 分組加總（for E04金額完整性）
-        allowance_line_grouped = df.groupby(["erp_number", "line_tax_type"])["line_allowance_amount"].sum().reset_index()
-        allowance_line_grouped_dict = {
-            (str(row["erp_number"]), int(row["line_tax_type"])): float(row["line_allowance_amount"])
-            for _, row in allowance_line_grouped.iterrows()
+        df["erp_number"] = df["erp_number"].astype(str)
+        amount_grouped = df.fillna({"line_allowance_amount": 0}).groupby("erp_number")["line_allowance_amount"].sum().reset_index()
+        allowance_amount_dict = {
+            str(row["erp_number"]): float(row["line_allowance_amount"])
+            for _, row in amount_grouped.iterrows()
         }
+       
+        # 稅額加總
+        #tax_grouped = df.groupby(["erp_number"])["line_allowance_tax"].sum().reset_index()
+        df["erp_number"] = df["erp_number"].astype(str)
+        tax_grouped = df.fillna({"line_allowance_tax": 0}).groupby("erp_number")["line_allowance_tax"].sum().reset_index()
+        allowance_tax_dict = {
+            str(row["erp_number"]): float(row["line_allowance_tax"])
+            for _, row in tax_grouped.iterrows()
+        }
+
+        # === 建立 erp_number -> 所有原發票號碼的 dict ===
+        original_invoice_dict = df["line_original_invoice_number"].fillna("").astype(str)
+        original_invoice_dict = (
+            df.groupby("erp_number")["line_original_invoice_number"]
+            .apply(lambda x: list(x.dropna().astype(str)))
+            .to_dict()
+        )
+
+        # === Step: 查詢所有原發票號碼的狀態，避免 N+1 ===
+        all_original_invoices = set(i for sublist in original_invoice_dict.values() for i in sublist if i)
+        invoice_qs = TWB2BMainItem.objects.filter(invoice_number__in=all_original_invoices)
+        invoice_status_map = {
+            i.invoice_number: i.invoice_status
+            for i in invoice_qs
+        }
+        print(invoice_qs)
+        print(invoice_status_map)
 
     valid_rows = []
     error_rows = []
@@ -229,13 +269,16 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
                 valid_rows.append(cleaned_row)
 
         elif import_type == "allowance":
+
             #驗證allowance
-            allowance_error_list = allowance_validate_row(cleaned_row, company_id, allowance_line_grouped_dict)
+            allowance_error_list = allowance_validate_row(cleaned_row, company_id, allowance_amount_dict, allowance_tax_dict, invoice_status_map, original_invoice_dict)
             if allowance_error_list:
                 cleaned_row["errors"] = "; ".join(allowance_error_list)
                 error_rows.append(cleaned_row)
             else:
                 valid_rows.append(cleaned_row)
+
+    
 
     # 如果有錯誤，產生錯誤Excel
     error_excel_path = None
@@ -357,8 +400,43 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
                     )
                     main_item_cache[sys_number] = main_item
 
+                # line_original_invoice_number = row.get("line_original_invoice_number")
+                #     # 預設取消狀態
+                # line_invoice_cancel_status = ""
+
+                # if line_original_invoice_number:
+                #     try:
+                #         linked_invoice = TWB2BMainItem.objects.get(invoice_number=line_original_invoice_number, company_id=c_id)
+                #         if linked_invoice.invoice_status == "已作廢":
+                #             line_invoice_cancel_status = "無效"
+                #         else:
+                #             line_invoice_cancel_status = "有效"
+                #     except TWB2BMainItem.DoesNotExist:
+                #         line_invoice_cancel_status = "找不到原發票"
+                # else:
+                #     line_invoice_cancel_status = "無原發票號碼"
+
+
                 # 建立 LineItem
-                TWAllowanceLineItem.objects.create(
+                # TWAllowanceLineItem.objects.create(
+                #     twallowance_id=main_item.id,
+                #     line_description=row.get("line_description"),
+                #     line_allowance_amount=safe_float(row.get("line_allowance_amount")),
+                #     line_allowance_tax=safe_float(row.get("line_allowance_tax")),
+                #     line_tax_type=safe_int(row.get("line_tax_type")),
+                #     line_quantity=row.get("line_quantity"),
+                #     line_unit=row.get("line_unit"),
+                #     line_unit_price=safe_float(row.get("line_unit_price")),
+                #     line_sequence_number=safe_int(row.get("line_sequence_number")),
+                #     #line_relate_number=row.get("line_relate_number"),
+                #     line_original_invoice_date=row.get("line_original_invoice_date"),
+                #     line_original_invoice_number=row.get("line_original_invoice_number"),
+                #     #line_invoice_cancel_status=line_invoice_cancel_status,
+                # )
+
+                #是的，我們仍然在寫入資料。只是換了一種方式 —— 先建立一個物件（不儲存），補上 linked_invoice 關聯，再 save() 寫入。
+                # 建立 LineItem
+                allowance_line = TWAllowanceLineItem(
                     twallowance_id=main_item.id,
                     line_description=row.get("line_description"),
                     line_allowance_amount=safe_float(row.get("line_allowance_amount")),
@@ -368,10 +446,21 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
                     line_unit=row.get("line_unit"),
                     line_unit_price=safe_float(row.get("line_unit_price")),
                     line_sequence_number=safe_int(row.get("line_sequence_number")),
-                    #line_relate_number=row.get("line_relate_number"),
                     line_original_invoice_date=row.get("line_original_invoice_date"),
-                    line_original_invoice_number=row.get("line_original_invoice_number")
+                    line_original_invoice_number=row.get("line_original_invoice_number"),
                 )
+
+                # 查找對應的原發票（若存在則關聯）
+                line_original_invoice_number = row.get("line_original_invoice_number")
+                if line_original_invoice_number:
+                    linked_invoice = TWB2BMainItem.objects.filter(
+                        invoice_number=line_original_invoice_number, company_id=c_id
+                    ).first()
+                    if linked_invoice:
+                        allowance_line.linked_invoice = linked_invoice
+
+                # 儲存
+                allowance_line.save()
 
     # Log寫入
     success_count = len(valid_rows)

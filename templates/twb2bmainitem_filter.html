@@ -412,14 +412,6 @@
                                 <input type="checkbox" name="selected_documents" value="{{ document.id }}"
                                 {% if document.invoice_status == '已作廢' %}
                                     disabled
-                                {% elif document.tax_type == '2' and document.zerotax_sales_amount|default:0 <= 0 %}
-                                    disabled
-                                {% elif not document.customs_clearance_mark %}
-                                    disabled
-                                {% elif not document.bonded_area_confirm %}
-                                    disabled
-                                {% elif not document.zero_tax_rate_reason %}
-                                    disabled
                                 {% endif %}>
                             </td>
                             <td class="text-center" >{{ document.erp_number }}</td>

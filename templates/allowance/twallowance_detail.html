@@ -35,13 +35,21 @@
 <!-- 發票詳情 -->
 <div class="container mt-4" style="border: 1px solid black; padding:20px;">
     <div class="d-flex justify-content-between mb-3">
-        <a href="{% url 'twallowance' %}" class="btn btn-secondary back-button">← 返回上一頁</a>
+    <a href="{% url 'twallowance' %}" class="btn btn-secondary back-button">← 返回折讓單列表</a>
         {% if request.user.groups.all.0.name == 'keyuser' or request.user.is_superuser %}
-            <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+            {% if allowance.allowance_status == '未開立' %}
+                <!-- ✅ 權限夠、狀態也正確，可以修改 -->
+                <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+            {% else %}
+                <!-- ❌ 權限夠但狀態不對 -->
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#wrongStatusModal">修改</button>
+            {% endif %}
         {% else %}
+            <!-- ❌ 權限不夠 -->
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#noPermissionModal">修改</button>
         {% endif %}
-        </div>
+    </div>
+    
     <h3 calss="mt-3">折讓單詳情</h3>
 
     <p><strong>折讓單號碼:</strong> {{ allowance.allowance_number }}</p>
@@ -72,6 +80,7 @@
         <table class="table table-striped table-hover">
             <thead>
                 <tr>
+                    <th>原發票狀態</th>
                     <th>發票號碼</th>
                     <th>品項</th>
                     <th>數量</th>
@@ -84,6 +93,8 @@
             <tbody>
                 {% for item in allowance.items.all %}
                 <tr>
+
+                    <td class="text-center" >{{ item.line_invoice_cancel_status }}</td>
                     <td>
                         {% if item.linked_invoice %}
                         <a href="{% url 'twb2blineitem' item.linked_invoice.id %}">
@@ -192,6 +203,23 @@
             </div>
         </div>
     </div>
+</div>
+<!-- 狀態錯誤 Modal -->
+<div class="modal fade" id="wrongStatusModal" tabindex="-1" aria-labelledby="wrongStatusModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="wrongStatusModalLabel">狀態不允許修改</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        僅『未開立』狀態的發票或折讓單才可進行修改操作。
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+      </div>
+    </div>
+  </div>
 </div>
 </body>
 </html>
