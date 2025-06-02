@@ -94,11 +94,20 @@
                     </div>
                 {% endif %}
             </div>
+            <!-- Global error message -->
+            {% if error_message %}
+                <div class="form-group">
+                    <div class="error">
+                        <p>{{ error_message }}</p>
+                    </div>
+                </div>
+            {% endif %}
 
             <!-- Submit button -->
             <button type="submit" class="btn-submit">登入</button>
             <p>尚未註冊帳號? <a href="{% url 'register' %}">註冊帳號</a></p>
         </form>
     </div>
+
 </body>
 </html>

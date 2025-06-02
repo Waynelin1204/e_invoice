@@ -126,26 +126,47 @@
                 {% endfor %}
             </tbody>
         </table>
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <td>
+                    <label for="allowance_cancel_reason" class="form-label me-2 mb-0" style="width: 120px;">作廢理由:</label>
+                    <input type="text" class="form-control" id="allowance_cancel_reason" name="allowance_cancel_reason" value="{{ allowance.allowance_cancel_reason|default_if_none:'' }}" disabled style="max-width: 1400px;">
+                </td>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <td>
+                    <label for="allowance_cancel_remark" class="form-label me-2 mb-0" style="width: 120px;">作廢標註:</label>
+                    <input type="text" class="form-control" id="allowance_cancel_remark" name="allowance_cancel_remark" value="{{ allowance.allowance_cancel_reason|default_if_none:'' }}" disabled style="max-width: 1400px;">
+                </td>
+            </div>
+        </div>
         <div class="btn-container">    
-            <button type="submit"  id="save_button" class="btn btn-primary">儲存修改</button>
+            <button type="button" class="btn btn-primary" id="showConfirmModal" disabled>儲存修改</button>
         </div>
     </form>
 </div>
 <script>
-    document.getElementById('edit_button').addEventListener('click', function () {
-        // 隱藏上方 messages 區塊
-        const alertBoxes = document.querySelectorAll('.alert');
-        alertBoxes.forEach(box => box.remove());
+    document.addEventListener('DOMContentLoaded', function () {
 
-        // 把所有 disabled 的 input 打開
-        const inputs = document.querySelectorAll('input[disabled]');
-        inputs.forEach(input => {
-            input.disabled = false;
+        document.getElementById('edit_button').addEventListener('click', function () {
+            // 隱藏上方 messages 區塊
+            const alertBoxes = document.querySelectorAll('.alert');
+            alertBoxes.forEach(box => box.remove());
+
+            // 把所有 disabled 的 input 打開
+            const inputs = document.querySelectorAll('input[disabled]');
+            inputs.forEach(input => {
+                input.disabled = false;
+            });
+            // 同時打開 "儲存修改" 按鈕（如果一開始也被鎖住的話）
+            document.getElementById('showConfirmModal').disabled = false;
         });
     });
 </script>
 <!-- JavaScript 驗證邏輯 -->
-<script>
+<!-- <script>
     document.getElementById('save_button').addEventListener('click', function (event) {
         // 防止表單提交
         event.preventDefault();
@@ -170,6 +191,75 @@
             document.querySelector('form').submit();
         }
     });
+</script> -->
+<!-- <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("form");
+    const saveButton = document.getElementById("save_button");
+
+    const xmlSpecialCharsPattern = /[<>&'"]/;
+
+    form.addEventListener("submit", function (e) {
+        // 檢查主要欄位
+        const allowanceCancelReason = document.getElementById("allowance_cancel_reason")?.value || "";
+        const allowanceCancelRemark = document.getElementById("allowance_cancel_remark")?.value || "";
+
+        let hasInvalidChar = xmlSpecialCharsPattern.test(allowanceCancelReason) || xmlSpecialCharsPattern.test(allowanceCancelRemark);
+
+        if (hasInvalidChar) {
+            e.preventDefault();  // 阻止送出
+            const modal = new bootstrap.Modal(document.getElementById("xmlCharModal"));
+            modal.show();
+        }
+    });
+});
+</script> -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const saveButton = document.getElementById("showConfirmModal");
+    const form = document.querySelector("form");
+    const confirmSaveBtn = document.getElementById("confirmSaveBtn");
+
+    const xmlSpecialCharsPattern = /[<>&'"]/;
+
+    saveButton.addEventListener("click", function (event) {
+        event.preventDefault(); // 阻止預設提交
+
+        // === 檢查 XML 特殊字元 ===
+        const allowanceCancelReason = document.getElementById("allowance_cancel_reason")?.value || "";
+        const allowanceCancelRemark = document.getElementById("allowance_cancel_remark")?.value || "";
+
+        let hasInvalidChar = xmlSpecialCharsPattern.test(allowanceCancelReason) || xmlSpecialCharsPattern.test(allowanceCancelRemark);
+
+        if (hasInvalidChar) {
+            const modal = new bootstrap.Modal(document.getElementById("xmlCharModal"));
+            modal.show();
+            return; // 不繼續往下執行
+        }
+
+        // === 檢查折讓金額總和 ===
+        const allowanceAmount = parseFloat(document.getElementById('allowance_amount')?.value) || 0;
+        let totalLineAllowanceAmount = 0;
+        const lineAllowanceInputs = document.querySelectorAll('input[id$="_line_allowance_amount"]');
+        lineAllowanceInputs.forEach(input => {
+            totalLineAllowanceAmount += parseFloat(input.value) || 0;
+        });
+
+        if (totalLineAllowanceAmount !== allowanceAmount) {
+            const modal = new bootstrap.Modal(document.getElementById("amountMismatchModal"));
+            modal.show();
+            return;
+        
+        }
+            // === 若皆通過，提交表單 ===
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmSaveModal'));
+            confirmModal.show();
+    });
+    // 加上確認儲存按鈕的事件監聽，點擊後提交表單
+    confirmSaveBtn.addEventListener("click", function () {
+        form.submit();
+    });
+});
 </script>
 <div class="modal fade" id="noPermissionModal" tabindex="-1" aria-labelledby="noPermissionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -217,6 +307,39 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="xmlCharModal" tabindex="-1" aria-labelledby="xmlCharModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="xmlCharModalLabel">無效字元警告</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        欄位中含有 XML 禁用的特殊字元（例如：&lt;, &gt;, &amp;, &quot;, &apos;），請移除後再儲存。
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">確定</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="confirmSaveModal" tabindex="-1" aria-labelledby="confirmSaveModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="confirmSaveModalLabel">確認儲存變更</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        您確定要儲存所做的修改嗎？
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">否，取消儲存</button>
+        <button type="button" class="btn btn-primary" id="confirmSaveBtn">是，儲存修改</button>
       </div>
     </div>
   </div>

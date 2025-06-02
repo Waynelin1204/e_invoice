@@ -553,6 +553,98 @@ def twb2bmainitem_export_invoices(request):
     response['Content-Disposition'] = 'attachment; filename="invoices.xlsx"'
     return response
 
+@csrf_exempt
+def twb2bmainitem_export_invoices_wo_number(request):
+    if request.method != 'POST':
+        return HttpResponse("Only POST allowed", status=405)
+
+    raw_ids = request.POST.get("selected_documents", "")
+    selected_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
+    if not selected_ids:
+        return HttpResponse("No invoice IDs provided", status=400)
+
+    # 零稅率欄位不合法的條件
+    zero_tax_invalid = (
+        Q(tax_type='2') & (
+            Q(zerotax_sales_amount__lte=0) |
+            Q(customs_clearance_mark__in=[None, '']) |
+            Q(bonded_area_confirm__in=[None, '']) |
+            Q(zero_tax_rate_reason__in=[None, ''])
+        )
+    )
+
+    # 綜合排除條件
+    invalid_condition = Q(invoice_status='已開立') | zero_tax_invalid
+
+    invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items').exclude(invalid_condition)
+
+    if not invoices.exists():
+        return HttpResponse("No invoices found", status=404)
+
+    # 1️⃣ 載入 Excel 樣板
+    template_path = os.path.join(settings.BASE_DIR, 'export', 'A0101.xlsx')
+    workbook = load_workbook(template_path)
+    sheet = workbook.active
+
+    row = 2  # Excel 開始列
+
+    # 2️⃣ 寫入 Excel
+    for invoice in invoices:
+        invoice.invoice_status = '已開立'
+        invoice.invoice_date = localtime(timezone.now()).replace(tzinfo=None).date()
+        invoice.export_date = localtime(timezone.now()).replace(tzinfo=None).date()
+        invoice.save()
+        for item in invoice.items.all():
+            sheet.cell(row=row, column=1, value=invoice.company.company_id)
+            sheet.cell(row=row, column=2, value=invoice.invoice_number)
+            sheet.cell(row=row, column=3, value=invoice.invoice_date)
+            sheet.cell(row=row, column=4, value=invoice.invoice_time)
+            sheet.cell(row=row, column=5, value=invoice.invoice_type)
+            sheet.cell(row=row, column=6, value=invoice.company.company_identifier)
+            sheet.cell(row=row, column=7, value=invoice.buyer_identifier)
+            sheet.cell(row=row, column=8, value=invoice.buyer_name)
+            sheet.cell(row=row, column=9, value=invoice.buyer_bp_id)
+            sheet.cell(row=row, column=10, value=invoice.buyer_remark)
+            sheet.cell(row=row, column=11, value=invoice.main_remark)
+            sheet.cell(row=row, column=12, value=invoice.customs_clearance_mark)
+            sheet.cell(row=row, column=13, value=invoice.category)
+            sheet.cell(row=row, column=14, value=invoice.relate_number)
+            sheet.cell(row=row, column=15, value=invoice.bonded_area_confirm)
+            sheet.cell(row=row, column=16, value=invoice.zero_tax_rate_reason)
+            sheet.cell(row=row, column=17, value=invoice.reserved1)
+            sheet.cell(row=row, column=18, value=invoice.reserved2)
+            sheet.cell(row=row, column=19, value=invoice.sales_amount)
+            sheet.cell(row=row, column=20, value=invoice.freetax_sales_amount)
+            sheet.cell(row=row, column=21, value=invoice.zerotax_sales_amount)
+            sheet.cell(row=row, column=22, value=invoice.tax_type)
+            sheet.cell(row=row, column=23, value=invoice.tax_rate)
+            sheet.cell(row=row, column=24, value=float(invoice.total_tax_amount))
+            sheet.cell(row=row, column=25, value=float(invoice.total_amount))
+            sheet.cell(row=row, column=26, value=invoice.original_currency_amount)
+            sheet.cell(row=row, column=27, value=invoice.exchange_rate)
+            sheet.cell(row=row, column=28, value=invoice.currency)
+            sheet.cell(row=row, column=29, value=item.line_description)
+            sheet.cell(row=row, column=30, value=item.line_quantity)
+            sheet.cell(row=row, column=31, value=item.line_unit)
+            sheet.cell(row=row, column=32, value=float(item.line_unit_price))
+            sheet.cell(row=row, column=33, value=item.line_tax_type)
+            sheet.cell(row=row, column=34, value=float(item.line_amount))
+            sheet.cell(row=row, column=35, value=item.line_sequence_number)
+            sheet.cell(row=row, column=36, value=item.line_remark)
+            sheet.cell(row=row, column=37, value=item.line_relate_number)
+            row += 1
+
+    # 匯出 Excel
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="invoices.xlsx"'
+    return response
 
 @csrf_exempt
 def twb2bmainitem_delete_selected_invoices(request):

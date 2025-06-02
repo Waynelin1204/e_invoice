@@ -361,10 +361,11 @@
             <form id="exportForm" method="post" action="{% url 'twb2bmainitem_export_invoices' %}">
                 {% csrf_token %}
                 <input type="hidden" name="selected_documents" id="selectedInvoicesExport">
-                <div class="d-flex justify-content-start gap-1 mb-10">
-                    <button type="submit" class="btn btn-success btn-spacing" id="exportExcelBtn">開立發票</button>
+                <div class="d-flex justify-content-start gap-2 mb-10">
+                    <button type="submit" class="btn btn-success btn-spacing" id="btnWithNumber">配號發票</button>
+                    <button type="submit" class="btn btn-success btn-spacing" id="btnWithoutNumber">不配號發票</button>
                 </div>
-            </form> 
+            </form>
                        
             <!-- 傳送發票按鈕，移至上方 -->
 
@@ -933,6 +934,17 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     });
+</script>
+<script>
+document.getElementById('btnWithNumber').addEventListener('click', function(e) {
+    const form = document.getElementById('exportForm');
+    form.action = "{% url 'twb2bmainitem_export_invoices' %}";
+});
+
+document.getElementById('btnWithoutNumber').addEventListener('click', function(e) {
+    const form = document.getElementById('exportForm');
+    form.action = "{% url 'twb2bmainitem_export_invoices_wo_number' %}";
+});
 </script>
 <!-- 刪除確認 Modal -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">

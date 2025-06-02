@@ -60,6 +60,7 @@ def register(request):
 def sign_in(request):
 
     form=LoginForm()
+    error_message = None  # ✅ 初始化
     #form = AuthenticationForm()
 
     if request.method == "POST":
@@ -67,12 +68,17 @@ def sign_in(request):
         password = request.POST.get("password")
         user = authenticate(request, username=username, password=password)
 
+
         if user is not None:
-             login(request, user)
-             return redirect('main')  # ✅ Corrected
+            login(request, user)
+            return redirect('main') # ✅ Corrected
+        else:
+            error_message = "帳號或密碼錯誤，請重新輸入"
+
 
     context = {
-        'form': form
+        'form': form,
+        'error_message': error_message
     }
     return render(request, 'login.html', context)
 @csrf_exempt

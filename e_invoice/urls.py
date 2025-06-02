@@ -32,7 +32,7 @@ from e_invoices.views import dashboard, company_total_amount, tax_type_summary_b
 
 from e_invoices.views import number_distribution, create_number_distribution
 
-from e_invoices.views import number_distribution, twb2bmainitem, twb2blineitem, twb2bmainitem_filter, twb2bmainitem_delete_selected_invoices,twb2bmainitem_export_invoices, twb2bmainitem_update_void_status, twb2blineitem_update
+from e_invoices.views import number_distribution, twb2bmainitem, twb2blineitem, twb2bmainitem_filter, twb2bmainitem_delete_selected_invoices,twb2bmainitem_export_invoices, twb2bmainitem_update_void_status, twb2blineitem_update, twb2bmainitem_export_invoices_wo_number
 
 from e_invoices.views import twallowance, twallowance_filter, twallowance_delete_selected_invoices, twallowance_export_invoices, twallowance_update_void_status, twallowance_detail, twallowance_update
 
@@ -95,6 +95,7 @@ urlpatterns = [
     path('twb2bmainitem/', twb2bmainitem, name='twb2bmainitem'),
     path('twb2bmainitem_filter/', twb2bmainitem_filter, name = 'twb2bmainitem_filter'),
     path("twb2bmainitem_export_invoices/", twb2bmainitem_export_invoices, name="twb2bmainitem_export_invoices"),
+    path("twb2bmainitem_export_invoices_wo_number/", twb2bmainitem_export_invoices_wo_number, name="twb2bmainitem_export_invoices_wo_number"),
     path('twb2bmainitem_delete_selected_invoices/', twb2bmainitem_delete_selected_invoices, name='twb2bmainitem_delete_selected_invoices'),
     path('document/<int:id>/', twb2blineitem, name='twb2blineitem'),
     path('twb2bmainitem_update_void_status/', twb2bmainitem_update_void_status, name='twb2bmainitem_update_void_status'),

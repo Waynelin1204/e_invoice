@@ -121,7 +121,7 @@
                     <td>{{ item.line_sales_amount }}</td>
                     <td>{{ item.line_amount }}</td>
                     <td>
-                        <input type="text" class="form-control" id="{{ item.id }}_line_allowance_tax" name="line_remark_{{ item.id }}" value="{{ item.line_remark }}" disabled>
+                        <input type="text" class="form-control" id="{{ item.id }}_line_remark" name="line_remark_{{ item.id }}" value="{{ item.line_remark }}" disabled>
                     </td>
                 </tr>
                 {% empty %}
@@ -188,7 +188,7 @@
             <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
 
             <div class="btn-container">       
-                <button type="submit"  id="save_button" class="btn btn-primary">儲存修改</button>
+                <button type="button" class="btn btn-primary" id="showConfirmModal" disabled>儲存修改</button>
             </div>
         </div>
     </form>
@@ -209,10 +209,50 @@
             });
 
             // 同時打開 "儲存修改" 按鈕（如果一開始也被鎖住的話）
-            document.getElementById('save_button').disabled = false;
+            document.getElementById('showConfirmModal').disabled = false;
         });
     });
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("form");
+    const saveButton = document.getElementById("showConfirmModal");  // 原本是 showConfirmBtn
+    const confirmSaveBtn = document.getElementById("confirmSaveBtn");
+    
+    const xmlSpecialCharsPattern = /[<>&'"]/;
+
+    saveButton.addEventListener("click", function (e) {
+        // 檢查主要欄位
+        const cancelReason = document.getElementById("cancel_reason")?.value || "";
+        const returnTaxNumber = document.getElementById("returntax_document_number")?.value || "";
+
+        let hasInvalidChar = xmlSpecialCharsPattern.test(cancelReason) || xmlSpecialCharsPattern.test(returnTaxNumber);
+
+        // 檢查每一個 line_remark 欄位
+        const remarkInputs = document.querySelectorAll("input[id$='_line_remark']");
+        remarkInputs.forEach(input => {
+            if (xmlSpecialCharsPattern.test(input.value)) {
+                hasInvalidChar = true;
+            }
+        });
+
+        if (hasInvalidChar) {
+            // 顯示非法字元警告 modal
+            const xmlModal = new bootstrap.Modal(document.getElementById("xmlCharModal"));
+            xmlModal.show();
+        } else {
+            // 顯示確認送出 modal
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmSaveModal'));
+            confirmModal.show();
+        }
+    });
+
+    confirmSaveBtn.addEventListener("click", function () {
+        form.submit();
+    });
+});
+</script>
+
 <div class="modal fade" id="noPermissionModal" tabindex="-1" aria-labelledby="noPermissionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -247,5 +287,40 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="xmlCharModal" tabindex="-1" aria-labelledby="xmlCharModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="xmlCharModalLabel">無效字元警告</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        欄位中含有 XML 禁用的特殊字元（例如：&lt;, &gt;, &amp;, &quot;, &apos;），請移除後再儲存。
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">確定</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 確認儲存 Modal -->
+<div class="modal fade" id="confirmSaveModal" tabindex="-1" aria-labelledby="confirmSaveModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="confirmSaveModalLabel">確認儲存變更</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        您確定要儲存所做的修改嗎？
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">否，取消儲存</button>
+        <button type="button" class="btn btn-primary" id="confirmSaveBtn">是，儲存修改</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -285,8 +285,9 @@ def twallowance_update(request, id):
         buyer_bp_id = request.POST.get('buyer_bp_id', '').strip()
         allowance_amount = request.POST.get('allowance_amount', allowance.allowance_amount)
         allowance_tax = request.POST.get('allowance_tax', allowance.allowance_tax)
-
-
+        allowance_period = request.POST.get('allowance_period', allowance.allowance_period)
+        allowance_cancel_reason = request.POST.get('allowance_cancel_reason', allowance.allowance_cancel_reason)
+        allowance_cancel_remark = request.POST.get('allowance_cancel_remark', allowance.allowance_cancel_remark)
         # 更新主項目資料
 
         allowance.allowance_period = allowance_period
@@ -295,12 +296,15 @@ def twallowance_update(request, id):
         allowance.buyer_bp_id = buyer_bp_id
         allowance.allowance_amount = allowance_amount
         allowance.allowance_tax = allowance_tax
+        allowance.allowance_cancel_reason = allowance_cancel_reason
+        allowance.allowance_cancel_remark = allowance_cancel_remark
 
 
         allowance.save()  # 保存主項目資料
 
         # 更新明細項目資料
         for item in allowance.items.all():
+            update_decimal_field(item, 'line_quantity', request.POST.get(f'line_quantity_{item.id}'))
             update_decimal_field(item, 'line_unit_price', request.POST.get(f'line_unit_price_{item.id}'))
             update_decimal_field(item, 'line_allowance_amount', request.POST.get(f'line_allowance_amount_{item.id}'))
             update_decimal_field(item, 'line_allowance_tax', request.POST.get(f'line_allowance_tax_{item.id}'))
@@ -529,12 +533,20 @@ def twallowance_update_void_status(request):
     allowances = TWAllowance.objects.filter(id__in=selected_ids).prefetch_related('items')
     if not allowances.exists():
         return HttpResponse("No invoices found", status=404)
-
+   
+   
+    #所有選取的發票皆為『未開立』發票或包含『已作廢』發票，無法作廢。
     # 僅篩出「已開立」的折讓單
     to_cancel = [a for a in allowances if a.allowance_status == '已開立']
 
     if not to_cancel:
         return HttpResponse("所有選取的折讓單皆為『未開立』或『已作廢』狀態，無法作廢。", status=400)
+
+    # ✅ 檢查是否每筆作廢發票都有填寫作廢理由
+    missing_reason = [allowance for allowance in to_cancel if not allowance.allowance_cancel_reason or allowance.allowance_cancel_reason.strip() == '']
+    if missing_reason:
+        return HttpResponse("有折讓單未填寫作廢理由，請補齊後再作廢。", status=400)
+    
 
     # 載入 Excel 樣板
     template_path = os.path.join(settings.BASE_DIR, 'export', 'B0201.xlsx')

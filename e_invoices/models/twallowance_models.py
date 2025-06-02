@@ -8,6 +8,13 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import Sum
 from django.db import models
+from django.core.validators import RegexValidator
+
+#xml特殊字元
+no_forbidden_chars_validator = RegexValidator(
+    regex=r'^[^<>"`&]+$',  # 字串中不能有 < > " ` &
+    message='不能包含以下特殊符號：< > ` " &'
+)
 
 class TWAllowance(models.Model):
     company = models.ForeignKey("e_invoices.Company", on_delete=models.CASCADE, related_name="twallowance")  # 公司代碼
@@ -38,11 +45,23 @@ class TWAllowance(models.Model):
     mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
     mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
     creator = models.CharField(max_length=10, blank=True, null=True)       # 建立者
-    creator_remark = models.CharField(max_length=200, blank=True, null=True)     # 平台備註
+    creator_remark = models.CharField(
+        max_length=200,
+        validators=[no_forbidden_chars_validator],
+        blank=True, 
+        null=True)     # 平台備註
     allowance_cancel_date = models.DateField(blank=True, null=True)   # 作廢折讓單日期 (產出轉換8碼)
     allowance_cancel_time = models.TimeField(blank=True, null=True)   # 作廢折讓單時間
-    allowance_cancel_reason = models.CharField(max_length=20, blank=True, null=True)     # 作廢折讓單原因
-    allowance_cancel_remark = models.CharField(max_length=200, blank=True, null=True)     # 作廢折讓單備註
+    allowance_cancel_reason = models.CharField(
+        max_length=20,
+        validators=[no_forbidden_chars_validator],
+        blank=True, 
+        null=True)     # 作廢折讓單原因
+    allowance_cancel_remark = models.CharField(
+        max_length=200,
+        validators=[no_forbidden_chars_validator],
+        blank=True, 
+        null=True)     # 作廢折讓單備註
     cancel_mof_date = models.DateField(blank=True, null=True)     # 稅局回應日
     cancel_mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
     cancel_mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
@@ -56,7 +75,11 @@ class TWAllowanceLineItem(models.Model):
     line_original_invoice_date = models.DateField(blank=True, null=True)    # 發票日期 (產出轉換8碼)
     line_original_invoice_number = models.CharField(max_length=10, blank=True, null=True)     #  發票號碼 
     linked_invoice = models.ForeignKey('TWB2BMainItem',null=True,blank=True,on_delete=models.SET_NULL, related_name='allowance_lineitems')  # 建議加上這一行
-    line_description = models.CharField(max_length=500,blank=True, null=True)     # 品名
+    line_description = models.CharField(
+        max_length=500,
+        validators=[no_forbidden_chars_validator],
+        blank=True,
+        null=True)     # 品名
     line_quantity = models.CharField(max_length=10 ,blank=True, null=True)     # 數量
     line_unit = models.CharField(max_length=4, blank=True, null=True)     # 單位
     line_unit_price = models.DecimalField(max_digits=13, decimal_places=3, blank=True, null=True)     # 單價
