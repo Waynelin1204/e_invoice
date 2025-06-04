@@ -37,6 +37,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 
 # ====== 專案內部 ======
 from e_invoices.services.parse_services import process_data
+from e_invoices.services.parse_response_service import process_all_processresult_xml
 from e_invoices.models.uploadlog_models import UploadLog
 
 def import_log(request):
@@ -133,3 +134,8 @@ def run_script_tw(request):
             return JsonResponse({"success": False, "error": str(e)}, status=500)
 
     return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
+
+@csrf_exempt
+def run_script_response(request):
+    process_all_processresult_xml()
+    return HttpResponse("已處理完畢")

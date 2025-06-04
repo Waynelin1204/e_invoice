@@ -181,12 +181,12 @@ def twb2blineitem(request, id):
         'related_allowances': related_allowances,
     })
 
-
+@csrf_exempt
 def twb2blineitem_update(request, id):
     document = get_object_or_404(TWB2BMainItem, id=id)
     if request.method == 'POST':
         # 處理主項目資料
-        invoice_period = request.POST.get('invoice_period', '').strip()
+        #invoice_period = request.POST.get('invoice_period', '').strip()
         erp_reference = request.POST.get('erp_reference', '').strip()
         seller_bp_id = request.POST.get('seller_bp_id', '').strip()
         buyer_bp_id = request.POST.get('buyer_bp_id', '').strip()
@@ -212,7 +212,7 @@ def twb2blineitem_update(request, id):
         currency = request.POST.get('currency', '').strip()
 
         # 更新主項目資料
-        document.invoice_period = invoice_period
+        #document.invoice_period = invoice_period
         document.erp_reference = erp_reference
         document.seller_bp_id = seller_bp_id
         document.buyer_bp_id = buyer_bp_id
@@ -697,6 +697,26 @@ def twb2bmainitem_update_void_status(request):
     if missing_reason:
         return HttpResponse("有發票未填寫作廢理由，請補齊後再作廢。", status=400)
     
+    now = datetime.now()
+    current_roc_year = now.year - 1911
+    current_roc_month = now.month
+    current_period = current_roc_year * 100 + current_roc_month  # e.g., 11502
+    
+    # ✅ 檢查是否跨期作廢 → 要填 returntax_document_number
+    cross_period_missing = []
+    for invoices in to_cancel:
+        try:
+            invoice_period = int(invoices.invoice_period)  # 確保是整數，如 11412
+        except (ValueError, TypeError):
+            continue  # 如果 invoice_period 不正確就跳過，視情況也可視為錯誤
+
+        if invoice_period < current_period:
+            if not invoices.returntax_document_number or invoices.returntax_document_number.strip() == '':
+                cross_period_missing.append(invoices)
+
+    if cross_period_missing:
+        return HttpResponse("跨期作廢的發票需填寫折讓參考號（returntax_document_number）。", status=400)
+
 
     # 載入 Excel 樣板
     template_path = os.path.join(settings.BASE_DIR, 'export', 'A0201.xlsx')

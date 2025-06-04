@@ -40,6 +40,9 @@
             {% if allowance.allowance_status == '未開立' %}
                 <!-- ✅ 權限夠、狀態也正確，可以修改 -->
                 <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+            {% elif allowance.allowance_status == '已開立' %}
+                <!-- ⚠️ 權限夠，發票已開立，只能修改部分欄位 -->
+                <button type="button" id="partial_edit_button" class="btn btn-warning">填寫作廢理由</button>
             {% else %}
                 <!-- ❌ 權限夠但狀態不對 -->
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#wrongStatusModal">修改</button>
@@ -147,7 +150,7 @@
         </div>
     </form>
 </div>
-<script>
+<!-- <script>
     document.addEventListener('DOMContentLoaded', function () {
 
         document.getElementById('edit_button').addEventListener('click', function () {
@@ -163,6 +166,50 @@
             // 同時打開 "儲存修改" 按鈕（如果一開始也被鎖住的話）
             document.getElementById('showConfirmModal').disabled = false;
         });
+    });
+</script> -->
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fullEditBtn = document.getElementById('edit_button');
+        const partialEditBtn = document.getElementById('partial_edit_button');
+
+        function clearAlertMessages() {
+            const alertBoxes = document.querySelectorAll('.alert');
+            alertBoxes.forEach(box => box.remove());
+        }
+
+        function enableAllInputs() {
+            const allDisabled = document.querySelectorAll('input:disabled, select:disabled, textarea:disabled');
+            allDisabled.forEach(el => el.disabled = false);
+        }
+
+        function enableOnlySpecific(ids) {
+            const allInputs = document.querySelectorAll('input, select, textarea');
+            allInputs.forEach(el => el.disabled = true); // 全部先鎖住
+
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = false;
+            });
+        }
+
+        if (fullEditBtn) {
+            fullEditBtn.addEventListener('click', function () {
+                clearAlertMessages();
+                enableAllInputs();
+                document.getElementById('showConfirmModal').disabled = false;
+            });
+        }
+
+        if (partialEditBtn) {
+            partialEditBtn.addEventListener('click', function () {
+                clearAlertMessages();
+                enableOnlySpecific(['allowance_cancel_reason', 'allowance_cancel_remark']);
+                document.getElementById('showConfirmModal').disabled = false;
+            });
+        }
     });
 </script>
 <!-- JavaScript 驗證邏輯 -->

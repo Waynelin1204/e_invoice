@@ -274,7 +274,7 @@ def twallowance_detail(request, id):
         'allowance': allowance,
         'items': items,
     })
-
+@csrf_exempt
 def twallowance_update(request, id):
     allowance = get_object_or_404(TWAllowance, id=id)
     if request.method == 'POST':

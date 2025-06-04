@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ProcessResult xmlns="urn:GEINV:ProcessResult:4.0"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="urn:GEINV:ProcessResult:4.0 ProcessResult_4.0.xsd">
+
+  <RoutingInfo>
+    <From>
+      <Id>65330715</Id>
+      <Name>安安小舖股份有限公司台北總公司</Name>
+    </From>
+    <To>
+      <Id>87654321</Id>
+      <Name>買家公司名稱</Name>
+    </To>
+  </RoutingInfo>
+
+  <MessageInfo>
+    <Id>A1B2C3D4-E5F6-7890-1234-56789ABCDEF0</Id>
+    <Size>2</Size>
+    <MessageType>A0101、A0102、A0201、A0202、A0301、A0302、B0101</MessageType>
+    <Service>E/S</Service>
+    <Action>B2B、B2C、B2S</Action>
+  </MessageInfo>
+
+  <Result>
+    <Info>
+      <Code>S0001</Code>
+      <Description>作業成功</Description>
+      <Parameter0>AE00000004</Parameter0>
+      <Parameter1>20240519</Parameter1>
+      <Parameter2>安安小舖股份有限公司台北總公司</Parameter2>
+      <Parameter3>公司E</Parameter3>
+
+    </Info>
+    <Info>
+      <Code>E0000</Code>
+      <Description>驗證失敗</Description>
+      <Parameter0>AE00000013</Parameter0>
+      <Parameter1>20240519</Parameter1>
+      <Parameter2>安安小舖股份有限公司台北總公司</Parameter2>
+      <Parameter3>公司G</Parameter3>
+    </Info>
+  </Result>
+</ProcessResult>

@@ -36,19 +36,24 @@
 <div class="container mt-4" style="border: 1px solid black; padding:20px;">
     <div class="d-flex justify-content-between mb-3">
         <a href="{% url 'twb2bmainitem' %}" class="btn btn-secondary back-button">← 返回發票列表</a>
+            {% if request.user.groups.all.0.name == 'keyuser' or request.user.is_superuser %}
+                {% if document.invoice_status == '未開立' %}
+                    <!-- ✅ 權限夠，發票未開立，完整修改 -->
+                    <button type="button" id="edit_button" class="btn btn-primary">修改</button>
 
-        {% if request.user.groups.all.0.name == 'keyuser' or request.user.is_superuser %}
-            {% if document.invoice_status == '未開立' %}
-                <!-- ✅ 權限夠、狀態也正確，可以修改 -->
-                <button type="button" id="edit_button" class="btn btn-primary">修改</button>
+                {% elif document.invoice_status == '已開立' %}
+                    <!-- ⚠️ 權限夠，發票已開立，只能修改部分欄位 -->
+                    <button type="button" id="partial_edit_button" class="btn btn-warning">填寫作廢理由</button>
+
+                {% else %}
+                    <!-- ❌ 權限夠但狀態不允許 -->
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#wrongStatusModal">修改</button>
+                {% endif %}
+
             {% else %}
-                <!-- ❌ 權限夠但發票狀態不對，顯示警告 modal -->
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#wrongStatusModal">修改</button>
+                <!-- ❌ 權限不夠 -->
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#noPermissionModal">修改</button>
             {% endif %}
-        {% else %}
-            <!-- ❌ 權限不夠 -->
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#noPermissionModal">修改</button>
-        {% endif %}
     </div>
 
 
@@ -56,6 +61,7 @@
 
     <p><strong>發票號碼:</strong> {{ document.invoice_number }}</p>
     <p><strong>營業人名稱:</strong> {{ document.company.company_id }}</p>
+    <p><strong>發票期別:</strong> {{ document.invoice_period }}</p>
     <p><strong>發票日期:</strong> {{ document.invoice_date|default:"" }}</p>
     <p><strong>總金額:</strong> {{ document.total_amount }}</p>
     <p><strong>是否已開立折讓單:</strong> {{ document.allowance_status }}</p>
@@ -75,10 +81,10 @@
     <form method="POST" action="{% url 'twb2blineitem_update' document.id %}">
         {% csrf_token %}
 
-        <div class="mb-3 d-flex align-items-center">
+        <!-- <div class="mb-3 d-flex align-items-center">
             <label for="invoice_period" class="form-label me-2 mb-0" style="width: 120px;">發票期別:</label>
             <input type="text" class="form-control" id="invoice_period" name="invoice_period" value="{{ document.invoice_period }}" disabled style="max-width: 100px;">
-        </div>
+        </div> -->
 
         <!-- <div class="mb-3 d-flex align-items-center">
             <label for="erp_reference" class="form-label me-2 mb-0" style="width: 120px;">ERP參考編號:</label>
@@ -187,14 +193,14 @@
         <div class="d-flex justify-content-between mb-3">
             <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
 
-            <div class="btn-container">       
+            <div class="btn-container">     
                 <button type="button" class="btn btn-primary" id="showConfirmModal" disabled>儲存修改</button>
             </div>
         </div>
     </form>
 
 </div>
-<script>
+<!-- <script>
 
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('edit_button').addEventListener('click', function () {
@@ -211,6 +217,48 @@
             // 同時打開 "儲存修改" 按鈕（如果一開始也被鎖住的話）
             document.getElementById('showConfirmModal').disabled = false;
         });
+    });
+</script> -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fullEditBtn = document.getElementById('edit_button');
+        const partialEditBtn = document.getElementById('partial_edit_button');
+
+        function clearAlertMessages() {
+            const alertBoxes = document.querySelectorAll('.alert');
+            alertBoxes.forEach(box => box.remove());
+        }
+
+        function enableAllInputs() {
+            const allDisabled = document.querySelectorAll('input:disabled, select:disabled, textarea:disabled');
+            allDisabled.forEach(el => el.disabled = false);
+        }
+
+        function enableOnlySpecific(ids) {
+            const allInputs = document.querySelectorAll('input, select, textarea');
+            allInputs.forEach(el => el.disabled = true); // 全部先鎖住
+
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = false;
+            });
+        }
+
+        if (fullEditBtn) {
+            fullEditBtn.addEventListener('click', function () {
+                clearAlertMessages();
+                enableAllInputs();
+                document.getElementById('showConfirmModal').disabled = false;
+            });
+        }
+
+        if (partialEditBtn) {
+            partialEditBtn.addEventListener('click', function () {
+                clearAlertMessages();
+                enableOnlySpecific(['cancel_reason', 'returntax_document_number']);
+                document.getElementById('showConfirmModal').disabled = false;
+            });
+        }
     });
 </script>
 <script>

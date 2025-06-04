@@ -411,6 +411,7 @@
                             <th>零稅率檢查</th>
                             <th>付款狀態</th>
                             <th>發票開立狀態</th>
+                            <th>稅局回覆狀態</th>
                             <th>發票詳情</th>
                         </tr>
                     </thead>
@@ -486,7 +487,8 @@
                                 {% else %}
                                     <span class="badge bg-secondary" style="font-size: 1.0em;">未開立</span>
                                 {% endif %}
-                            </td>                            
+                            </td>
+                            <td class="text-left" >{{ document.mof_reason|default:"" }}</td>                           
                             <td class="text-center">
                                 {% if document.id %}
                                     <a href="{% url 'twb2blineitem' document.id %}" class="btn btn-primary btn-sm">查看詳情</a>
