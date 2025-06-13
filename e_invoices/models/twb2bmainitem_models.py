@@ -20,12 +20,13 @@ class TWB2BMainItem(models.Model):
     b2b_b2c = models.CharField(max_length=3, choices=[('B2B', 'B2B'), ('B2C', 'B2C')], blank=True, null=True)  # B2B/B2C
     sys_number = models.CharField(max_length=20,blank=True, null=True) # 平台文件號碼
     sys_date = models.DateTimeField(blank=True, null=True)    #  平台匯入日期
-    export_date = models.DateTimeField(blank=True, null=True)    #  平台匯出日期
+    export_date = models.DateField(blank=True, null=True)    #  平台匯出日期
     invoice_number = models.CharField(max_length=10, blank=True, null=True)     #  發票號碼  
     invoice_date = models.DateField(max_length=8,blank=True, null=True) # 發票日期
     invoice_time = models.CharField(max_length=8, blank=True, null=True) # 發票時間
     invoice_period = models.CharField(max_length=5,blank=True, null=True)  # 期別
     invoice_type = models.CharField(max_length=2,blank=True, null=True)  # 發票類別
+    random_code = models.CharField(max_length=4,blank=True, null=True)  # 隨機碼
 
     erp_number = models.CharField(max_length=10)  # ERP文件號碼
     erp_date = models.DateField(max_length=8)
@@ -40,7 +41,8 @@ class TWB2BMainItem(models.Model):
     buyer_remark = models.CharField(max_length=100, blank=True, null=True)
     main_remark = models.CharField(max_length=200, blank=True, null=True)
     #group_mark = models.CharField(max_length=1, blank=True, null=True)  # 彙開註記
-    #donate_mark = models.CharField(max_length=10,blank=True, null=True)  # 捐贈註記
+    donate_mark = models.CharField(max_length=10,blank=True, null=True)  # 捐贈註記
+    print_mark = models.CharField(max_length=1, choices=[('Y', '是'), ('N', '否')], blank=True, null=True)  # 列印註記
 
 
     customs_clearance_mark = models.CharField(max_length=1, blank=True, null=True)
@@ -75,10 +77,11 @@ class TWB2BMainItem(models.Model):
     allowance_status = models.CharField(max_length=10, blank=True, null=True, default='未開立折讓單')  # 折讓單開立狀態：未開立/已開立/已作廢
     invoice_allowance_amount = models.DecimalField(max_digits=20, decimal_places=0, blank=True, null=True)     #  證明單金額總計
     invoice_allowance_tax = models.DecimalField(max_digits=20, decimal_places=0, blank=True, null=True)     # 折讓單稅額總計
+    NPOBAN = models.CharField(max_length=10, blank=True, null=True)
 
 
     mof_date = models.DateField(blank=True, null=True)     #    稅局回應日
-    mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
+    mof_response = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
     mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
     creator = models.CharField(max_length=10, blank=True, null=True)       # 建立者
     creator_remark = models.CharField(
@@ -106,7 +109,7 @@ class TWB2BMainItem(models.Model):
     cancel_mof_date = models.DateField(blank=True, null=True)     #    稅局回應日
     cancel_mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
     cancel_mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
-    #discount_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)
+    discount_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)
     tax_identifier = models.CharField(max_length=13, blank=True, null=True)
     accurated_allowance_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)  # 累計折讓金額
     remaining_allowance_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)  # 剩餘可折讓金額

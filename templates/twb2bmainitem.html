@@ -409,8 +409,9 @@
                             <th>稅別</th>
                             <th>總計</th>
                             <th>零稅率檢查</th>
-                            <th>付款狀態</th>
                             <th>發票開立狀態</th>
+                            <th>稅局回覆時間</th>                            
+                            <th>稅局回覆代碼</th>
                             <th>稅局回覆狀態</th>
                             <th>發票詳情</th>
                         </tr>
@@ -453,7 +454,6 @@
                                     <span></span>
                                 {% endif %}
                             </td>                            
-                            <td class="text-center">{{ document.payment_status|default:"" }}</td>
                             <!-- <td class="text-center" style="background-color: 
                                 {% if document.invoice_status == '已開立' %}
                                     #28a745;
@@ -488,6 +488,8 @@
                                     <span class="badge bg-secondary" style="font-size: 1.0em;">未開立</span>
                                 {% endif %}
                             </td>
+                            <td class="text-left" >{{ document.mof_date|default:"" }}</td>                           
+                            <td class="text-left" >{{ document.mof_response|default:"" }}</td>                           
                             <td class="text-left" >{{ document.mof_reason|default:"" }}</td>                           
                             <td class="text-center">
                                 {% if document.id %}

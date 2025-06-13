@@ -297,7 +297,9 @@
                 <!-- <button type="submit" class="btn btn-primary">Search</button> -->
             </div>
         </form>
+
         <form method="GET" action="{% url 'twb2bmainitem_filter' %}" id="invoice_filter_form">
+
             <label for="start_date" style="color: black;">開始日期：</label>
             <input type="date" id="start_date" name="start_date" value="{{ start_date }}">
             
@@ -955,6 +957,7 @@ document.getElementById('btnWithoutNumber').addEventListener('click', function(e
     form.action = "{% url 'twb2bmainitem_export_invoices_wo_number' %}";
 });
 </script>
+
 <!-- 刪除確認 Modal -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

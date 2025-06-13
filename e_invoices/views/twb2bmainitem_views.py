@@ -9,6 +9,7 @@ from collections import defaultdict
 import xml.etree.ElementTree as ET
 from django.utils.timezone import localtime
 from decimal import Decimal, InvalidOperation
+import random
 
 # ====== 第三方套件 ======
 import pandas as pd
@@ -43,6 +44,7 @@ from e_invoices.models import (
     NumberDistribution, TWB2BMainItem, TWB2BLineItem, TWAllowanceLineItem, TWAllowance
 )
 from e_invoices.forms import NumberDistributionForm
+from e_invoices.services import generate_invoice_a4, generate_f0401_xml_files
 
 @login_required
 def twb2bmainitem(request):
@@ -360,6 +362,9 @@ def twb2bmainitem_filter(request):
 
 #======================================================B2B發票匯出=======================================================
 
+aes_key = "73BE69AA9826613AFAEC11C215F08302"
+output_path = r"C:\\Users\\waylin\\mydjango\\e_invoice\\print\\"
+
 @csrf_exempt
 def twb2bmainitem_export_invoices(request):
     if request.method != 'POST':
@@ -465,6 +470,7 @@ def twb2bmainitem_export_invoices(request):
     # 6️⃣ 開始配號與寫入 Excel
     with transaction.atomic():
         for invoice in invoices:
+            random_codes = str(random.randint(0, 9999)).zfill(4) # 4碼隨機碼
             #company_obj = company_map.get(invoice.company_id)
             company_obj = company_map.get(invoice.company.company_id)
             if not company_obj:
@@ -487,17 +493,36 @@ def twb2bmainitem_export_invoices(request):
                     invoice.invoice_number = invoice_number
                     invoice.invoice_status = '已開立'
                     invoice.invoice_date = localtime(timezone.now()).replace(tzinfo=None).date()
+                    invoice.invoice_time = localtime(timezone.now()).strftime('%H:%M:%S')
                     invoice.export_date = localtime(timezone.now()).replace(tzinfo=None).date()
+                    invoice.invoice_period = dist.period
+                    invoice.random_code = random_codes
+
                     invoice.save()
 
                     dist.current_number = str(current + 1).zfill(len(dist.start_number))
                     dist.last_used_date = timezone.now().date()
+
                     dist.save()
                     assigned = True
                     break
 
             if not assigned:
                 raise ValueError(f"公司 {company_obj.company_name} 號碼區間不足")
+            
+            #img_path = generate_invoice_image_qrcodes(invoice, aes_key)
+            #output_path = r"C:\Users\waylin\mydjango\e_invoice\print"
+
+            #output_dir = r"C:\Users\waylin\mydjango\e_invoice\print"
+            output_dir_F0401 = r"C:\Users\waylin\mydjango\e_invoice\F0401"
+            xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\F0401.xsd"
+
+            #img_path = generate_invoice_a4(invoice, aes_key, output_dir)
+
+
+            generate_invoice_a4(invoice, aes_key, output_path, random_codes)
+            generate_f0401_xml_files(invoice, output_dir_F0401, xsd_path,random_codes)
+
 
             # 寫入 Excel
             for item in invoice.items.all():
@@ -760,3 +785,4 @@ def twb2bmainitem_update_void_status(request):
     )
     response['Content-Disposition'] = 'attachment; filename="void.xlsx"'
     return response
+
