@@ -44,7 +44,8 @@ from e_invoices.models import (
     NumberDistribution, TWB2BMainItem, TWB2BLineItem, TWAllowanceLineItem, TWAllowance
 )
 from e_invoices.forms import NumberDistributionForm
-from e_invoices.services import generate_invoice_a4, generate_f0401_xml_files
+from e_invoices.services import generate_invoice_B2C_a4, generate_invoice_B2B_a4, generate_F0401_xml_files, generate_invoice_B2B_format25_pdf,  generate_F0501_xml_files
+from e_invoices.services import send_invoice_summary_email, generate_invoice_B2B_format25_pdf_stamp
 
 @login_required
 def twb2bmainitem(request):
@@ -353,6 +354,8 @@ def twb2bmainitem_filter(request):
         "documents": page_obj,  # 傳遞分頁結果
         "company_options": company_options,
         "invoice_status": invoice_status,
+        "tax_type_filter": tax_type_filter,
+        "invoice_status_filter": invoice_status_filter,
         #"void_status": void_status,
         "tax_type": tax_type,
         "display_limit": display_limit,  # 傳遞選擇的筆數
@@ -391,8 +394,6 @@ def twb2bmainitem_export_invoices(request):
 
     invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items').exclude(invalid_condition)
 
-
-
     if not invoices.exists():
          return HttpResponse("No invoices found", status=404)
 
@@ -401,14 +402,12 @@ def twb2bmainitem_export_invoices(request):
 
     # 計算「已開立」的數量
     #excluded_count = all_selected_invoices.filter(invoice_status='已開立').count()
-    excluded_count = invoices.count()
+    #excluded_count = invoices.count()
 
     # 篩選出尚未開立的發票
     #invoices = all_selected_invoices.exclude(invoice_status='已開立').prefetch_related('items')
+    
 
-    # 如果有被排除的，就提示使用者
-    if excluded_count > 0:
-        messages.warning(request, f"{excluded_count} 筆已開立的發票已排除，未匯出。")
 
     # 1️⃣ 統計各公司所需發票數
     #invoice_count_by_company_code = defaultdict(int)
@@ -484,6 +483,8 @@ def twb2bmainitem_export_invoices(request):
                 key=lambda d: int(d.current_number or d.start_number)
             )
 
+            success_invoices = []
+
             # 找一組號碼配給發票
             assigned = False
             for dist in distributions:
@@ -504,6 +505,7 @@ def twb2bmainitem_export_invoices(request):
                     dist.last_used_date = timezone.now().date()
 
                     dist.save()
+                    success_invoices.append(invoice)
                     assigned = True
                     break
 
@@ -516,12 +518,16 @@ def twb2bmainitem_export_invoices(request):
             #output_dir = r"C:\Users\waylin\mydjango\e_invoice\print"
             output_dir_F0401 = r"C:\Users\waylin\mydjango\e_invoice\F0401"
             xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\F0401.xsd"
+            
 
             #img_path = generate_invoice_a4(invoice, aes_key, output_dir)
 
 
-            generate_invoice_a4(invoice, aes_key, output_path, random_codes)
-            generate_f0401_xml_files(invoice, output_dir_F0401, xsd_path,random_codes)
+            generate_invoice_B2C_a4(invoice, aes_key, output_path, random_codes)
+            generate_invoice_B2B_a4(invoice, aes_key, output_path)
+            generate_F0401_xml_files(invoice, output_dir_F0401, xsd_path,random_codes)
+            generate_invoice_B2B_format25_pdf(invoice, output_path)
+            generate_invoice_B2B_format25_pdf_stamp(invoice, output_path)
 
 
             # 寫入 Excel
@@ -576,6 +582,49 @@ def twb2bmainitem_export_invoices(request):
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     response['Content-Disposition'] = 'attachment; filename="invoices.xlsx"'
+
+    # 先找出所有選取的發票
+    all_selected_invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items')
+    
+    # 被排除發票
+    
+    excluded_invoices = []
+
+    for inv in all_selected_invoices:
+        reasons = []
+        if inv.tax_type == '2':
+            if inv.zerotax_sales_amount <= 0:
+                reasons.append("零稅率金額為 0")
+            if not inv.customs_clearance_mark:
+                reasons.append("缺少報關註記")
+            if not inv.bonded_area_confirm:
+                reasons.append("缺少保稅註記")
+            if not inv.zero_tax_rate_reason:
+                reasons.append("缺少零稅率原因")
+
+        if reasons:
+            excluded_invoices.append({
+                "company_name": inv.company.company_name,
+                "invoice_number": inv.invoice_number or "(尚未配號)",
+                "reasons": reasons
+            })
+
+        # 這裡才正確
+        success_count = len(success_invoices)
+        excluded_count = len(excluded_invoices)
+
+        success_list = [
+            f"{inv.company.company_name} - {inv.invoice_number}"
+            for inv in success_invoices
+        ]
+        excluded_list = [
+            f"{e['company_name']} - {e['invoice_number']}：{', '.join(e['reasons'])}"
+            for e in excluded_invoices
+        ]
+        to_email = "waylin@deloitte.com.tw"
+
+    send_invoice_summary_email(to_email, success_count, excluded_count,success_list, excluded_list)
+    
     return response
 
 @csrf_exempt
@@ -605,6 +654,9 @@ def twb2bmainitem_export_invoices_wo_number(request):
 
     if not invoices.exists():
         return HttpResponse("No invoices found", status=404)
+    
+
+
 
     # 1️⃣ 載入 Excel 樣板
     template_path = os.path.join(settings.BASE_DIR, 'export', 'A0101.xlsx')
@@ -742,9 +794,13 @@ def twb2bmainitem_update_void_status(request):
     if cross_period_missing:
         return HttpResponse("跨期作廢的發票需填寫折讓參考號（returntax_document_number）。", status=400)
 
-
+    output_dir_F0501 = r"C:\Users\waylin\mydjango\e_invoice\F0401"
+    xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\F0401.xsd"
+    random_codes = invoice.random_code
+    generate_F0501_xml_files(invoice, output_dir_F0501, xsd_path)
+    
     # 載入 Excel 樣板
-    template_path = os.path.join(settings.BASE_DIR, 'export', 'A0201.xlsx')
+    template_path = os.path.join(settings.BASE_DIR, 'export', 'F0501.xlsx')
     workbook = load_workbook(template_path)
     sheet = workbook.active
 

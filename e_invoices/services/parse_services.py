@@ -137,8 +137,9 @@ def allowance_validate_row(row, company_id, allowance_amount_dict, allowance_tax
     
     # === E02: 格式錯誤或無效 ===
     format_error_fields = []
-    
+
     buyer_identifier = str(row.get("buyer_identifier")).strip()
+    
     if buyer_identifier and not validateUniformNumberTW(buyer_identifier):
         format_error_fields.append("buyer_identifier")
     
@@ -280,6 +281,8 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
 
     
 
+    
+
     # 如果有錯誤，產生錯誤Excel
     error_excel_path = None
     if error_rows:
@@ -295,6 +298,7 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
                 if sys_number in main_item_cache:
                     main_item = main_item_cache[sys_number]
                 else:
+                    
                     main_item, created = TWB2BMainItem.objects.get_or_create(
                         sys_number=sys_number,
                         defaults={

@@ -1,3 +1,4 @@
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -57,6 +58,11 @@
             border-radius: 8px;
             box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.1); /* 內容區域也有陰影 */
             margin-left: 20px;
+            max-width: calc(100% - 240px); /* 確保內容區不會超過剩餘空間 */
+            /* display: flex; */
+            flex-direction: column; /* 垂直排列內容 */
+            /* max-height: calc(100vh - 100px); /*根據頁面其他元素調整*/
+            overflow: auto; /*同時處理水平和垂直超出*/
         }
         
         .table-wrapper {
@@ -126,7 +132,6 @@
             padding: 0 20px;
             z-index: 1000; /* 確保橫條在最上層 */
         }
-
         .top-bar .top-buttons {
             display: flex;
             align-items: center;
@@ -177,13 +182,13 @@
         </div>
     {% endfor %}
 {% endif %} -->
-{% if messages %}
+<!-- {% if messages %}
   <ul class="messages">
     {% for message in messages %}
       <li class="alert alert-{{ message.tags }}">{{ message }}</li>
     {% endfor %}
   </ul>
-{% endif %}
+{% endif %} -->
 <div class="top-bar">
     <div class="logo">
         <h5 class="m-0" style="font-weight: 900;">Deloitte</h5>
@@ -193,8 +198,8 @@
         <button class="btn">&#128276;</button> <!-- 🔔 -->
         <button class="btn">&#9881;</button>   <!-- ⚙️ -->
         <button class="btn" id="profileButton">&#128100;</button> <!-- 👤 -->
+        <!-- 權限等級區塊：直接展開 -->
         <div class="dropdown-menu" id="profileMenu">
-            <!-- 權限等級區塊：直接展開 -->
                      <!-- 使用者名稱 -->
             <div class="px-3 pt-2 pb-1">
                 <small class="text-muted">使用者：</small><br>
@@ -290,6 +295,60 @@
         <div class="title-section mt-3">
             <h3 class="fw-bold mb-4" style="color: black;" >發票列表</h3>
         </div>
+        <!-- 公司發票狀態總覽 Card -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <!-- <h3 class="card-title" style="color: black;">公司發票狀態總覽（本期 vs 前期）</h3> -->
+
+                <div class="row mt-3">
+                    <!-- 左側：本期 -->
+                    <div class="col-md-6 border-end">
+                        <h5 id="currentTitle" class="mb-3">📅 本期</h5>
+                        <div id="invoiceStatusCurrent">
+                            <p>
+                                未開立：<span id="currentNotIssued">0</span> 筆｜
+                                金額：<span id="currentNotIssuedAmount">0</span>
+                            </p>
+                            <p>
+                                已開立：<span id="currentIssued">0</span> 筆｜
+                                金額：<span id="currentIssuedAmount">0</span>｜
+                                已折讓：<span id="currentAllowance">0</span> 筆｜
+                                金額：<span id="currentAllowanceAmount">0</span>
+                            </p>
+                            <p>
+                                已作廢：<span id="currentVoided">0</span> 筆｜
+                                金額：<span id="currentVoidedAmount">0</span>｜
+                                已作廢折讓：<span id="currentVoidedAllowance">0</span> 筆｜
+                                金額：<span id="currentVoidedAllowanceAmount">0</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 右側：前期 -->
+                    <div class="col-md-6 ps-md-4">
+                        <h5 id="previousTitle" class="mb-3">📅 前期</h5>
+                        <div id="invoiceStatusPrevious">
+                            <p>
+                                未開立：<span id="previousNotIssued">0</span> 筆｜
+                                金額：<span id="previousNotIssuedAmount">0</span>
+                            </p>
+                            <p>
+                                已開立：<span id="previousIssued">0</span> 筆｜
+                                金額：<span id="previousIssuedAmount">0</span>｜
+                                已折讓：<span id="previousAllowance">0</span> 筆｜
+                                金額：<span id="previousAllowanceAmount">0</span>
+                            </p>
+                            <p>
+                                已作廢：<span id="previousVoided">0</span> 筆｜
+                                金額：<span id="previousVoidedAmount">0</span>｜
+                                已作廢折讓：<span id="previousVoidedAllowance">0</span> 筆｜
+                                金額：<span id="previousVoidedAllowanceAmount">0</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
             <!-- 搜尋表單 -->
         <form method="get" class="mb-3">
             <div class="input-group">
@@ -308,7 +367,8 @@
             <select name="company_id" id="company_id">
                 <option value="">--請選擇公司</option>
                 {% for company in company_options %}
-                    <option value="{{ company.company_id }}" {% if form_data.company_id == company.company_id|stringformat:"s" %}selected{% endif %}>
+                    <!-- <option value="{{ company.company_id }}" {% if form_data.company_id == company.company_id|stringformat:"s" %}selected{% endif %}> -->
+                    <option value="{{ company.company_id }}" {% if company_id_filter == company.company_id|stringformat:"s" %}selected{% endif %}>
                         {{ company.company_id }} - {{ company.company_name }}
                     </option>
                 {% endfor %}
@@ -322,15 +382,15 @@
 
             <select name="invoice_status" id="invoice_status">
                 <option value="">--請選擇發票狀態</option>
-                <option value="未開立">未開立</option>
-                <option value="已開立">已開立</option>
-                <option value="已作廢">已作廢</option>
+                <option value="未開立" {% if invoice_status_filter == "未開立" %}selected{% endif %}>未開立</option>
+                <option value="已開立" {% if invoice_status_filter == "已開立" %}selected{% endif %}>已開立</option>
+                <option value="已作廢" {% if invoice_status_filter == "已作廢" %}selected{% endif %}>已作廢</option>
             </select>
             <select name="tax_type" id="tax_type">
                 <option value="">--請選擇稅種</option>
-                <option value="1">應稅</option>
-                <option value="2">零稅</option>
-                <option value="3">免稅</option>
+                <option value="1"{% if tax_type_filter == "1" %}selected{% endif %}>應稅</option>
+                <option value="2"{% if tax_type_filter == "2" %}selected{% endif %}>零稅</option>
+                <option value="3"{% if tax_type_filter == "3" %}selected{% endif %}>免稅</option>
             </select>
             <!-- <select name="void_status" id="void_status">
                 <option value="">--請選擇作廢狀態</option>
@@ -403,8 +463,10 @@
                             <th>稅別</th>
                             <th>總計</th>
                             <th>零稅率檢查</th>
-                            <th>付款狀態</th>
                             <th>發票開立狀態</th>
+                            <th>稅局回覆時間</th>                            
+                            <th>稅局回覆代碼</th>
+                            <th>稅局回覆狀態</th>
                             <th>發票詳情</th>
                         </tr>
                     </thead>
@@ -419,15 +481,15 @@
                             </td>
                             <td class="text-center" >{{ document.erp_number }}</td>
                             <td class="text-center" >{{ document.erp_date }}</td>
-                            <td class="text-left" >{{ document.company }}</td>
+                            <td class="text-center" >{{ document.company }}</td>
                             <td class="text-center" >{{ document.buyer_name }}</td>
-                            <td class="text-left" >{{ document.buyer_identifier }}</td>
-                            <td class="text-center">{{ document.invoice_number }}</td>
+                            <td class="text-center" >{{ document.buyer_identifier }}</td>
+                            <td class="text-center">{{ document.invoice_number}}</td>
                             <td class="text-center">{{ document.invoice_date|default:"" }}</td>
                             <td class="text-center">{{ document.export_date|default:"" }}</td>
                             <td class="text-center">{{ document.invoice_period }}</td>
                             <td class="text-center">{{ document.get_tax_type_display }}</td>
-                            <td class="text-center">{{ document.total_amount }}</td>
+                            <td class="text-center">{{ document.total_amount|floatformat:2|intcomma }}</td>
                             <td class="text-center">
                                 {% if document.tax_type == '2' %}
                                     {% if document.zerotax_sales_amount|default:0 <= 0 %}
@@ -446,7 +508,6 @@
                                     <span></span>
                                 {% endif %}
                             </td>                            
-                            <td class="text-center">{{ document.payment_status|default:"" }}</td>
                             <!-- <td class="text-center" style="background-color: 
                                 {% if document.invoice_status == '已開立' %}
                                     #28a745;
@@ -480,7 +541,10 @@
                                 {% else %}
                                     <span class="badge bg-secondary" style="font-size: 1.0em;">未開立</span>
                                 {% endif %}
-                            </td>                            
+                            </td>
+                            <td class="text-left" >{{ document.mof_date|default:"" }}</td>                           
+                            <td class="text-left" >{{ document.mof_response|default:"" }}</td>                           
+                            <td class="text-left" >{{ document.mof_reason|default:"" }}</td>                           
                             <td class="text-center">
                                 {% if document.id %}
                                     <a href="{% url 'twb2blineitem' document.id %}" class="btn btn-primary btn-sm">查看詳情</a>
@@ -488,6 +552,7 @@
                                     <span class="text-muted">無可用資料</span>
                                 {% endif %}
                             </td>
+                            <td></td>
 
                         </tr>
                         {% empty %}
@@ -947,16 +1012,77 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 </script>
 <script>
-document.getElementById('btnWithNumber').addEventListener('click', function(e) {
-    const form = document.getElementById('exportForm');
-    form.action = "{% url 'twb2bmainitem_export_invoices' %}";
-});
-
-document.getElementById('btnWithoutNumber').addEventListener('click', function(e) {
-    const form = document.getElementById('exportForm');
-    form.action = "{% url 'twb2bmainitem_export_invoices_wo_number' %}";
-});
+    function formatNumber(value) {
+    if (value == null) return '0';
+    const number = parseFloat(value);
+    return number.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    });
+}
 </script>
+<script>
+    let invoiceStatusData = { current: [], previous: [] };
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const companySelect = document.getElementById("company_id");
+        const filterForm = document.getElementById("invoice_filter_form");
+
+        // 載入發票狀態資料
+        fetch('/api/invoice_status/')
+            .then(res => res.json())
+            .then(data => {
+                invoiceStatusData = data;
+                // 動態更新期別月份
+                document.getElementById("currentTitle").textContent = `📅 本期 (${data.period_range.current})`;
+                document.getElementById("previousTitle").textContent = `📅 前期 (${data.period_range.previous})`;
+
+                // 若一開始就有選公司，預設顯示
+                const selectedCompany = companySelect.value;
+                if (selectedCompany) {
+                    updateInvoiceCards(selectedCompany);
+                }
+            })
+            .catch(error => console.error('載入發票狀態資料失敗:', error));
+
+        // 表單送出時更新卡片（選完公司再按篩選才會觸發）
+        if (filterForm) {
+            filterForm.addEventListener("submit", function () {
+                const selectedCompany = companySelect.value;
+                if (selectedCompany) {
+                    updateInvoiceCards(selectedCompany);
+                }
+            });
+        }
+    });
+
+    function updateInvoiceCards(companyId) {
+        updateInvoiceStatusByPeriod(invoiceStatusData.current, companyId, 'current');
+        updateInvoiceStatusByPeriod(invoiceStatusData.previous, companyId, 'previous');
+    }
+
+    function updateInvoiceStatusByPeriod(data, companyId, prefix) {
+        const filtered = data.filter(item => item.company_id === companyId);
+        const get = (status, field) =>
+            filtered.find(item => item.invoice_status === status)?.[field] || 0;
+
+        document.getElementById(`${prefix}NotIssued`).textContent = get('未開立', 'invoice_count');
+        document.getElementById(`${prefix}NotIssuedAmount`).textContent = formatNumber(get('未開立', 'total_amount'));
+
+        document.getElementById(`${prefix}Issued`).textContent = get('已開立', 'invoice_count');
+        document.getElementById(`${prefix}IssuedAmount`).textContent = formatNumber(get('已開立', 'total_amount'));
+        document.getElementById(`${prefix}Allowance`).textContent = get('已開立', 'allowance_count');
+        document.getElementById(`${prefix}AllowanceAmount`).textContent = formatNumber(get('已開立', 'allowance_amount'));
+
+        document.getElementById(`${prefix}Voided`).textContent = get('已作廢', 'invoice_count');
+        document.getElementById(`${prefix}VoidedAmount`).textContent = formatNumber(get('已作廢', 'total_amount'));
+        document.getElementById(`${prefix}VoidedAllowance`).textContent = get('已作廢', 'allowance_count');
+        document.getElementById(`${prefix}VoidedAllowanceAmount`).textContent = formatNumber(get('已作廢', 'allowance_amount'));
+        
+    }
+</script>
+
+
 
 <!-- 刪除確認 Modal -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">

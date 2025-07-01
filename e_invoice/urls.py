@@ -36,7 +36,7 @@ from e_invoices.views import number_distribution, twb2bmainitem, twb2blineitem, 
 
 from e_invoices.views import twallowance, twallowance_filter, twallowance_delete_selected_invoices, twallowance_export_invoices, twallowance_update_void_status, twallowance_detail, twallowance_update
 
-from e_invoices.views import upload_file_tw, upload, run_script_tw, import_log, run_script_response
+from e_invoices.views import upload_file_tw, upload, run_script_tw, import_log, run_script_response, auto_send_invoice_summary_email
 
 from e_invoices.views import upload_file, upload, run_script, invoice_list, invoice_detail, update_invoice_status
 
@@ -125,6 +125,7 @@ urlpatterns = [
     path('upload_file_tw/', upload_file_tw, name='upload_file_tw'),
     path('run_script_tw/', run_script_tw, name='run_script_tw'),
     path('run_script_response/', run_script_response, name='run_script_response'),
+    path('auto_send_invoice_summary_email/',auto_send_invoice_summary_email, name='auto_send_invoice_summary_email' ),
 
 #-------------------for OCR-------------------
 

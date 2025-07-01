@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>發票開立通知</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: #ffffff;
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #888;
+            padding: 20px;
+            width: 100px;
+            margin: auto;
+            background-color: #ffffff;
+            overflow-wrap: break-word;   /* 讓長字元換行 */
+            word-wrap: break-word;       /* 兼容舊瀏覽器 */
+        }
+        .title {
+            font-size: 1.2em;
+            color: #000000;
+            margin-bottom: 10px;
+        }
+        .highlight {
+            color: #ff4081;
+        }
+        .momo-logo {
+            font-size: 2em;
+            font-weight: bold;
+            color: yellow;
+        }
+        table {
+            width: auto;
+            border-collapse: collapse;
+            margin-top: 10px;
+            color: rgb(0, 0, 0);
+            table-layout: fixed; /* 固定表格布局避免撐開 */
+        }
+        th, td {
+            border-bottom: 1px solid #444;
+            padding: 8px;
+            text-align: left;
+            word-break: break-word;
+        }
+        .barcode {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .small {
+            font-size: 0.8em;
+            color: #aaa;
+        }
+        .link {
+            color: #81d4fa;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p class="title">親愛的 <strong>{{ buyer_name }}</strong> 您好，以下是您訂購商品的發票開立通知。詳情請參閱「電子發票流程說明」。</p>
+
+        <div class="momo-logo">AWS</div>
+        <p class="highlight">*此為發票開立通知，非正式發票*</p>
+
+        <table>
+            <tr><td>發票年月：</td><td>{{ invoice_year }}年 {{ invoice_month }}月</td></tr>
+            <tr><td>發票號碼：</td><td>{{ invoice_number }}</td></tr>
+            <tr><td>開立時間：</td><td>{{ invoice_date }} {{ invoice_time }}</td></tr>
+            <tr><td>隨機碼：</td><td>{{ random_code }}</td></tr>
+            <tr><td>總計：</td><td>{{ total_amount }}</td></tr>
+        </table>
+
+        <hr>
+
+        <h3>銷貨明細</h3>
+        <table>
+            <thead>
+                <tr><th>品名</th><th>數量</th><th>單價</th><th>金額</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ description }}</td>
+                    <td>{{ quantity }}</td>
+                    <td>{{ unit_price }}</td>
+                    <td>{{ total_amount }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>總計：<strong>{{ total_amount }}</strong></p>
+
+        <table>
+            <tr><td>營業人：</td><td>{{ company_name }}</td></tr>
+            <tr><td>營業地址：</td><td>{{ company_address }}</td></tr>
+        </table>
+
+        <!-- <div class="barcode">
+            <img src="{{ barcode_image_url }}" alt="條碼" height="50">
+            <br>
+            <img src="{{ qrcode_image_url }}" alt="QRCode" height="120">
+        </div> -->
+
+        <!-- <p class="small -->
+    </div>
+</body>
+</html>

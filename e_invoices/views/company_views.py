@@ -198,6 +198,9 @@ def company_add(request):
 
 # 統一編號檢查碼邏輯
 def validateUniformNumberTW(value: str) -> bool:
+    if value == '00000000':
+        return True
+
     if not re.fullmatch(r'^\d{8}$', value):
         return False
 

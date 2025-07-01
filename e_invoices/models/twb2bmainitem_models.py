@@ -38,6 +38,11 @@ class TWB2BMainItem(models.Model):
     buyer_identifier = models.CharField(max_length=10,blank=True, null=True) #買方統編
     buyer_name = models.CharField(max_length=60,blank=True, null=True)
     buyer_bp_id = models.CharField(max_length=20, blank=True, null=True)
+    buyer_email = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
     buyer_remark = models.CharField(max_length=100, blank=True, null=True)
     main_remark = models.CharField(max_length=200, blank=True, null=True)
     #group_mark = models.CharField(max_length=1, blank=True, null=True)  # 彙開註記

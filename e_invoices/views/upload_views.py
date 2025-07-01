@@ -40,6 +40,10 @@ from e_invoices.services.parse_services import process_data
 from e_invoices.services.parse_response_service import process_all_processresult_xml
 from e_invoices.models.uploadlog_models import UploadLog
 
+from datetime import datetime, timedelta
+from e_invoices.models import TWB2BMainItem
+from e_invoices.services import send_invoice_summary_to_customer_email
+
 def import_log(request):
     # 從資料庫中查詢匯入記錄
     logs = UploadLog.objects.all().order_by('-upload_time')  # 根據上傳時間排序
@@ -138,4 +142,48 @@ def run_script_tw(request):
 @csrf_exempt
 def run_script_response(request):
     process_all_processresult_xml()
+    return HttpResponse("已處理完畢")
+@csrf_exempt
+def auto_send_invoice_summary_email(request):
+    """
+    搜尋 TWB2BMainItem 符合條件的資料並自動寄信
+    """
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=2)
+
+    # 查詢兩天內 mof_reason = 'S0001' 的主表資料
+    queryset = TWB2BMainItem.objects.filter(
+        mof_response="S0001",
+        invoice_date__range=(start_date, end_date)
+    )
+    print(queryset)
+
+    for invoice in queryset:
+        items = invoice.items.all()
+        if not items.exists():
+            print(f"ID {invoice.id} 無明細資料，已跳過")
+            continue
+
+        item = items.first()
+
+        # 呼叫寄信函式
+        send_invoice_summary_to_customer_email(
+            to_email=invoice.buyer_email,
+            invoice = invoice,
+            company_name = invoice.company.company_name,
+            company_identifier = invoice.company.company_identifier,
+            company_address = invoice.company.company_address,
+            buyer_name=invoice.buyer_name,
+            invoice_number = invoice.invoice_number,
+            invoice_date=invoice.invoice_date,
+            invoice_time=invoice.invoice_time if invoice.invoice_time else '',
+            random_code=invoice.random_code,
+            total_amount=invoice.total_amount,
+            buyer_identifier=invoice.buyer_identifier,
+            line_description=item.line_description,
+            line_quantity=item.line_quantity,
+            unit_price=item.line_unit_price
+        )
+
+        print(f"已寄出發票通知給 {invoice.buyer_email}")
     return HttpResponse("已處理完畢")

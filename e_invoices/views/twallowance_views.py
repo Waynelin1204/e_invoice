@@ -46,7 +46,8 @@ from e_invoices.models import (
 from e_invoices.forms import NumberDistributionForm
 from e_invoices.services.validate_allowance import validate_allowance
 from decimal import Decimal, InvalidOperation
-
+from e_invoices.services import generate_G0401_xml_files, generate_G0501_xml_files, generate_allowance_pdf
+output_path = r"C:\\Users\\waylin\\mydjango\\e_invoice\\print\\"
 def update_decimal_field(obj, field_name, raw_val):
     """
     如果 raw_val 有值且為合法 Decimal，更新 obj 的指定欄位。
@@ -460,6 +461,12 @@ def twallowance_export_invoices(request):
                             original_invoice.save()
                     except TWB2BMainItem.DoesNotExist:
                         pass  # 如找不到可記錄 log 或忽略
+            
+
+            output_dir_G0401 = r"C:\Users\waylin\mydjango\e_invoice\G0401"
+            xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\G0401.xsd"
+            generate_G0401_xml_files(allowance, output_dir_G0401, xsd_path)
+            generate_allowance_pdf(allowance, output_path)
 
             for item in allowance.items.all():
                 sheet.cell(row=row, column=1, value=allowance.company.company_id)
@@ -566,6 +573,12 @@ def twallowance_update_void_status(request):
             allowance.allowance_cancel_date = localtime(timezone.now()).replace(tzinfo=None).date()
             allowance.allowance_cancel_time = localtime(timezone.now()).replace(tzinfo=None).time()
             allowance.save()
+
+            output_dir_G0501 = r"C:\Users\waylin\mydjango\e_invoice\G0501"
+            xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\G0501.xsd"
+            generate_G0501_xml_files(allowance, output_dir_G0501, xsd_path)
+
+            # 生成 XML 檔案
 
 
             sheet.cell(row=row, column=1, value=allowance.company.company_identifier)

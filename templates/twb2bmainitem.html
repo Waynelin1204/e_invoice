@@ -1,3 +1,4 @@
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -146,7 +147,6 @@
         .top-bar .top-buttons .btn:hover {
             color: #ccc;
         }
-
         /* 右上角按鈕 */
         .top-buttons {
             position: absolute;
@@ -427,15 +427,15 @@
                             </td>
                             <td class="text-center" >{{ document.erp_number }}</td>
                             <td class="text-center" >{{ document.erp_date }}</td>
-                            <td class="text-left" >{{ document.company }}</td>
+                            <td class="text-center" >{{ document.company }}</td>
                             <td class="text-center" >{{ document.buyer_name }}</td>
-                            <td class="text-left" >{{ document.buyer_identifier }}</td>
+                            <td class="text-center" >{{ document.buyer_identifier }}</td>
                             <td class="text-center">{{ document.invoice_number}}</td>
                             <td class="text-center">{{ document.invoice_date|default:"" }}</td>
                             <td class="text-center">{{ document.export_date|default:"" }}</td>
                             <td class="text-center">{{ document.invoice_period }}</td>
                             <td class="text-center">{{ document.get_tax_type_display }}</td>
-                            <td class="text-center">{{ document.total_amount }}</td>
+                            <td class="text-center">{{ document.total_amount|floatformat:2|intcomma }}</td>
                             <td class="text-center">
                                 {% if document.tax_type == '2' %}
                                     {% if document.zerotax_sales_amount|default:0 <= 0 %}
