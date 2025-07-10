@@ -1,0 +1,20 @@
+<html>
+<body>
+    <p>您好：</p>
+    <p>✅ 本次已成功作廢 <strong>{{ success_count }}</strong> 張折讓單：</p>
+    <ul>
+        {% for line in success_list %}
+        <li>{{ line }}</li>
+        {% endfor %}
+    </ul>
+
+    <p>⚠️ 共排除 <strong>{{ excluded_count }}</strong> 張未作廢的折讓單：</p>
+    <ul>
+        {% for line in excluded_list %}
+        <li>{{ line }}</li>
+        {% endfor %}
+    </ul>
+
+    <p>請確認相關狀況後再次匯出。</p>
+</body>
+</html>

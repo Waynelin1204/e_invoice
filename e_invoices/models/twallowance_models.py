@@ -38,11 +38,11 @@ class TWAllowance(models.Model):
     buyer_name = models.CharField(max_length=60, blank=True, null=True)   # 買方名稱
     buyer_bp_id = models.CharField(max_length=20, blank=True, null=True)    # 買方客戶編號
 
-    allowance_amount = models.DecimalField(max_digits=13, decimal_places=7, blank=True, null=True)     # 未稅總計
-    allowance_tax = models.DecimalField(max_digits=20, decimal_places=0, blank=True, null=True)     # 營業稅額總計
+    allowance_amount = models.DecimalField(max_digits=20, decimal_places=1, blank=True, null=True)     # 未稅總計
+    allowance_tax = models.DecimalField(max_digits=20, decimal_places=1, blank=True, null=True)     # 營業稅額總計
     allowance_status = models.CharField(max_length=6, default='未開立',blank=True, null=True)     # 折讓單開立狀態：未開立/已開立/已作廢
     mof_date = models.DateField(blank=True, null=True)     #    稅局回應日
-    mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
+    mof_response = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
     mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
     creator = models.CharField(max_length=10, blank=True, null=True)       # 建立者
     creator_remark = models.CharField(
@@ -89,8 +89,8 @@ class TWAllowanceLineItem(models.Model):
         ('3', '免稅')       
     ]    
     line_tax_type = models.CharField(max_length=1, choices=LINE_TAX_TYPE_CHOICES,blank=True, null=True)     # 課稅別 (1：應稅；2：零稅率；3：免稅)
-    line_allowance_amount = models.DecimalField(max_digits=13, decimal_places=3,blank=True, null=True)     # 金額 (未稅)
-    line_allowance_tax = models.DecimalField(max_digits=20, decimal_places=3,blank=True, null=True)     # 營業稅額
+    line_allowance_amount = models.DecimalField(max_digits=13, decimal_places=1,blank=True, null=True)     # 金額 (未稅)
+    line_allowance_tax = models.DecimalField(max_digits=20, decimal_places=1,blank=True, null=True)     # 營業稅額
     INVOICE_CANCEL_STATUS_CHOICES = [
         ('0', '未作廢'),
         ('1', '已作廢')       

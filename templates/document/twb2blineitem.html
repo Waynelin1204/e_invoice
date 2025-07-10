@@ -1,3 +1,4 @@
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -35,7 +36,7 @@
 <!-- 發票詳情 -->
 <div class="container mt-4" style="border: 1px solid black; padding:20px;">
     <div class="d-flex justify-content-between mb-3">
-        <a href="{% url 'twb2bmainitem' %}" class="btn btn-secondary back-button">← 返回發票列表</a>
+        <!-- <a href="{% url 'twb2bmainitem' %}" class="btn btn-secondary back-button">← 返回發票列表</a> -->
             {% if request.user.groups.all.0.name == 'keyuser' or request.user.is_superuser %}
                 {% if document.invoice_status == '未開立' %}
                     <!-- ✅ 權限夠，發票未開立，完整修改 -->
@@ -63,7 +64,7 @@
     <p><strong>營業人名稱:</strong> {{ document.company.company_id }}</p>
     <p><strong>發票期別:</strong> {{ document.invoice_period }}</p>
     <p><strong>發票日期:</strong> {{ document.invoice_date|default:"" }}</p>
-    <p><strong>總金額:</strong> {{ document.total_amount }}</p>
+    <p><strong>總金額:</strong> {{ document.total_amount|floatformat:1|intcomma }}</p>
     <p><strong>是否已開立折讓單:</strong> {{ document.allowance_status }}</p>
     <p><strong>已開立的折讓單號:</strong>
     {% for allowance in related_allowances %}
@@ -72,9 +73,9 @@
         無
       {% endfor %}
     </p>
-    <p><strong>累計折讓金額:</strong> {{ total_allowanced_amount|default:"0" }}</p>
-    <p><strong>剩餘可折讓金額:</strong> {{ available_amount }}</p>
-    <p><strong>剩餘可折讓稅額:</strong> {{ available_tax }}</p>
+    <p><strong>累計折讓金額:</strong> {{ total_allowanced_amount|default:"0"|floatformat:1|intcomma }}</p>
+    <p><strong>剩餘可折讓金額:</strong> {{ available_amount|floatformat:1|intcomma }}</p>
+    <p><strong>剩餘可折讓稅額:</strong> {{ available_tax|floatformat:1|intcomma }}</p>
 
 
 
@@ -112,7 +113,7 @@
                 <tr>
                     <td>{{ item.line_description }}</td>
                     <td>{{ item.line_quantity }}</td>
-                    <td>{{ item.line_unit_price }}</td>
+                    <td>{{ item.line_unit_price|floatformat:1|intcomma }}</td>
                     <td>
                         {% if item.line_tax_type == 1 %}
                             應稅
@@ -123,9 +124,9 @@
                         {% endif %}
                     </td>
                     <td>{{ item.tax_rate }}</td>
-                    <td>{{ item.line_tax_amount }}</td>
-                    <td>{{ item.line_sales_amount }}</td>
-                    <td>{{ item.line_amount }}</td>
+                    <td>{{ item.line_tax_amount|floatformat:1|intcomma }}</td>
+                    <td>{{ item.line_sales_amount|floatformat:1|intcomma }}</td>
+                    <td>{{ item.line_amount|floatformat:1|intcomma }}</td>
                     <td>
                         <input type="text" class="form-control" id="{{ item.id }}_line_remark" name="line_remark_{{ item.id }}" value="{{ item.line_remark }}" disabled>
                     </td>
@@ -191,7 +192,7 @@
                     </div>
                 </div>
         <div class="d-flex justify-content-between mb-3">
-            <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a>
+            <!-- <a href="javascript:history.back()" class="btn btn-secondary back-button">← 返回上一頁</a> -->
 
             <div class="btn-container">     
                 <button type="button" class="btn btn-primary" id="showConfirmModal" disabled>儲存修改</button>

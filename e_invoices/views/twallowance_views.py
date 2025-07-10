@@ -46,7 +46,7 @@ from e_invoices.models import (
 from e_invoices.forms import NumberDistributionForm
 from e_invoices.services.validate_allowance import validate_allowance
 from decimal import Decimal, InvalidOperation
-from e_invoices.services import generate_G0401_xml_files, generate_G0501_xml_files, generate_allowance_pdf
+from e_invoices.services import generate_G0401_xml_files, generate_G0501_xml_files, generate_allowance_pdf, send_allowance_summary_email, send_allowance_canceled_email
 output_path = r"C:\\Users\\waylin\\mydjango\\e_invoice\\print\\"
 def update_decimal_field(obj, field_name, raw_val):
     """
@@ -181,7 +181,7 @@ def twallowance_filter(request):
     if line_tax_type_filter:
         filters &= Q(line_tax_type=line_tax_type_filter)
     if company_id_filter:
-        filters &= Q(company__id=company_id_filter)
+        filters &= Q(company__company_id=company_id_filter)
     if b2b_b2c_filter:
         filters &= Q(b2b_b2c=b2b_b2c_filter)
 
@@ -221,7 +221,7 @@ def twallowance_filter(request):
     
 
     # 檢查公司ID篩選是否有效
-    if company_id_filter and int(company_id_filter) not in viewable_company_codes:
+    if company_id_filter and company_id_filter not in viewable_company_codes:
         messages.error(request, "您無權限查看該公司資料")
         return redirect('twallowance')
 
@@ -414,6 +414,7 @@ def twallowance_export_invoices(request):
     # 6️⃣ 開始配號與寫入 Excel
     with transaction.atomic():
         for allowance in allowances:
+            success_allowances = []
             validation_results = validate_allowance([allowance])
             validation_result = validation_results[0]
             is_valid_allowance = validation_result.get("is_allowance_valid", True)
@@ -447,6 +448,8 @@ def twallowance_export_invoices(request):
             allowance.allowance_time = now 
             allowance.export_date = now.date()
             allowance.save()
+            success_allowances.append(allowance)
+            
             for item in allowance.items.all():
                 # 🟡 這裡是你要的邏輯：根據原始發票號碼與公司找發票，並更新其 allowance_status
                 original_number = item.line_original_invoice_number
@@ -502,6 +505,47 @@ def twallowance_export_invoices(request):
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     response['Content-Disposition'] = 'attachment; filename="allowance.xlsx"'
+    
+    # 先找出所有選取的發票
+    
+
+    success_list = []
+    excluded_list = []
+
+    success_count = 0
+    excluded_count = 0
+
+    # 將 queryset 包進 list 傳入驗證函數
+    validation_results = validate_allowance(allowances)
+
+    for result in validation_results:
+        allowance = result['allowance']
+        allowance_number = getattr(allowance, 'allowance_number', f'ID {allowance.id}')
+
+        if result['is_allowance_valid']:
+            success_count += 1
+            success_list.append(allowance_number)
+        else:
+            excluded_count += 1
+            excluded_list.append({
+                'allowance_number': allowance_number,
+                'is_valid_amount': result['is_valid_amount'],
+                'is_valid_tax': result['is_valid_tax'],
+            })
+
+    # 輸出結果（可改為寄信或 render template）
+    print(f"✅ 成功數量: {success_count}")
+    print(f"成功折讓單號: {', '.join(success_list)}")
+    print(f"❌ 失敗數量: {excluded_count}")
+    print("失敗明細：")
+    for item in excluded_list:
+        print(f"- 折讓單號: {item['allowance_number']}, 金額合法: {item['is_valid_amount']}, 稅額合法: {item['is_valid_tax']}")
+
+    to_email = "waylin@deloitte.com.tw"
+
+    send_allowance_summary_email(to_email, success_count, excluded_count,success_list, excluded_list)
+    
+    
     return response
 
 
@@ -527,83 +571,156 @@ def twallowance_delete_selected_invoices(request):
     else:
         return redirect('twallowance')
         
+# @csrf_exempt
+# def twallowance_update_void_status(request):
+#     if request.method != 'POST':
+#         return HttpResponse("Only POST allowed", status=405)
+
+#     raw_ids = request.POST.get("selected_documents", "")
+#     selected_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
+#     if not selected_ids:
+#         return HttpResponse("No invoice IDs provided", status=400)
+    
+#     allowances = TWAllowance.objects.filter(id__in=selected_ids).prefetch_related('items')
+#     if not allowances.exists():
+#         return HttpResponse("No invoices found", status=404)
+   
+   
+#     #所有選取的發票皆為『未開立』發票或包含『已作廢』發票，無法作廢。
+#     # 僅篩出「已開立」的折讓單
+#     to_cancel = [a for a in allowances if a.allowance_status == '已開立']
+
+#     if not to_cancel:
+#         return HttpResponse("所有選取的折讓單皆為『未開立』或『已作廢』狀態，無法作廢。", status=400)
+
+#     # ✅ 檢查是否每筆作廢發票都有填寫作廢理由
+#     missing_reason = [allowance for allowance in to_cancel if not allowance.allowance_cancel_reason or allowance.allowance_cancel_reason.strip() == '']
+#     if missing_reason:
+#         return HttpResponse("有折讓單未填寫作廢理由，請補齊後再作廢。", status=400)
+    
+
+#     # 載入 Excel 樣板
+#     template_path = os.path.join(settings.BASE_DIR, 'export', 'B0201.xlsx')
+#     workbook = load_workbook(template_path)
+#     sheet = workbook.active
+
+#     row = 2  # Excel 開始列
+
+#     with transaction.atomic():
+#          for allowance in to_cancel:
+#                         # 新增條件：只處理已開立的折讓單
+#             if allowance.allowance_status != '已開立':
+#                 # 可選擇跳過此筆或回傳錯誤訊息，這裡我先用 continue 跳過
+#                 continue
+#             # 更新作廢狀態與時間
+#             allowance.allowance_status = '已作廢'
+#             allowance.allowance_cancel_date = localtime(timezone.now()).replace(tzinfo=None).date()
+#             allowance.allowance_cancel_time = localtime(timezone.now()).replace(tzinfo=None).time()
+#             allowance.save()
+
+#             output_dir_G0501 = r"C:\Users\waylin\mydjango\e_invoice\G0501"
+#             xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\G0501.xsd"
+#             generate_G0501_xml_files(allowance, output_dir_G0501, xsd_path)
+
+#             # 生成 XML 檔案
+
+
+#             sheet.cell(row=row, column=1, value=allowance.company.company_identifier)
+#             sheet.cell(row=row, column=2, value=allowance.buyer_identifier)
+#             sheet.cell(row=row, column=3, value=allowance.allowance_number)
+#             sheet.cell(row=row, column=4, value=allowance.allowance_date)
+#             sheet.cell(row=row, column=5, value=allowance.allowance_type)
+#             sheet.cell(row=row, column=6, value=allowance.allowance_cancel_date)
+#             sheet.cell(row=row, column=7, value=allowance.allowance_cancel_time)
+#             sheet.cell(row=row, column=8, value=allowance.allowance_cancel_reason)
+#             sheet.cell(row=row, column=9, value=allowance.allowance_cancel_remark)
+#             row += 1
+
+#     # 匯出 Excel
+#     output = BytesIO()
+#     workbook.save(output)
+#     output.seek(0)
+
+#     response = HttpResponse(
+#         output,
+#         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+#     )
+#     response['Content-Disposition'] = 'attachment; filename="B0201.xlsx"'
+#     return response
+
 @csrf_exempt
-def twallowance_update_void_status(request):
+def twallowance_update_cancel_status(request):
     if request.method != 'POST':
-        return HttpResponse("Only POST allowed", status=405)
+        return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
 
-    raw_ids = request.POST.get("selected_documents", "")
-    selected_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
-    if not selected_ids:
-        return HttpResponse("No invoice IDs provided", status=400)
-    
-    allowances = TWAllowance.objects.filter(id__in=selected_ids).prefetch_related('items')
-    if not allowances.exists():
-        return HttpResponse("No invoices found", status=404)
-   
-   
-    #所有選取的發票皆為『未開立』發票或包含『已作廢』發票，無法作廢。
-    # 僅篩出「已開立」的折讓單
-    to_cancel = [a for a in allowances if a.allowance_status == '已開立']
+    try:
+        data = json.loads(request.body)
+        allowance_id = data.get("allowance_id")
+        cancel_reason = data.get("allowance_cancel_reason", "").strip()
+        cancel_remark = data.get("allowance_cancel_remark", "").strip()
 
-    if not to_cancel:
-        return HttpResponse("所有選取的折讓單皆為『未開立』或『已作廢』狀態，無法作廢。", status=400)
+        if not allowance_id:
+            return JsonResponse({"success": False, "message": "缺少折讓單 ID"}, status=400)
+        if not cancel_reason:
+            return JsonResponse({"success": False, "message": "請輸入作廢理由"}, status=400)
 
-    # ✅ 檢查是否每筆作廢發票都有填寫作廢理由
-    missing_reason = [allowance for allowance in to_cancel if not allowance.allowance_cancel_reason or allowance.allowance_cancel_reason.strip() == '']
-    if missing_reason:
-        return HttpResponse("有折讓單未填寫作廢理由，請補齊後再作廢。", status=400)
-    
+        try:
+            allowance= TWAllowance.objects.select_related('company').get(id=allowance_id)
+        except TWAllowance.DoesNotExist:
+            return JsonResponse({"success": False, "message": "找不到該折讓單"}, status=404)
 
-    # 載入 Excel 樣板
-    template_path = os.path.join(settings.BASE_DIR, 'export', 'B0201.xlsx')
-    workbook = load_workbook(template_path)
-    sheet = workbook.active
+        if allowance.allowance_status == '未開立':
+            return JsonResponse({"success": False, "message": "該折讓單為未開立狀態，無法作廢"}, status=400)
+        if allowance.allowance_status == '已開立折讓單':
+            return JsonResponse({"success": False, "message": "該折讓單已開立折讓單，無法作廢"}, status=400)
+        if allowance.mof_response != 'S0001':
+            return JsonResponse({"success": False, "message": "該折讓單稅局未認證，無法作廢"}, status=400)
 
-    row = 2  # Excel 開始列
+        
+        
+        now = localtime()
 
-    with transaction.atomic():
-         for allowance in to_cancel:
-                        # 新增條件：只處理已開立的折讓單
-            if allowance.allowance_status != '已開立':
-                # 可選擇跳過此筆或回傳錯誤訊息，這裡我先用 continue 跳過
-                continue
-            # 更新作廢狀態與時間
-            allowance.allowance_status = '已作廢'
-            allowance.allowance_cancel_date = localtime(timezone.now()).replace(tzinfo=None).date()
-            allowance.allowance_cancel_time = localtime(timezone.now()).replace(tzinfo=None).time()
-            allowance.save()
+        allowance.allowance_cancel_date = now.date()
+        allowance.allowance_cancel_time = now.time()
+        allowance.allowance_cancel_reason = cancel_reason
+        allowance.allowance_cancel_remark = cancel_remark
+        allowance.allowance_status = "已作廢"
+        allowance.save()
 
-            output_dir_G0501 = r"C:\Users\waylin\mydjango\e_invoice\G0501"
-            xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\G0501.xsd"
-            generate_G0501_xml_files(allowance, output_dir_G0501, xsd_path)
+        # current_roc_year = now.year - 1911
+        # current_roc_month = now.month
+        # current_period = current_roc_year * 100 + current_roc_month  # e.g., 11502
+        
+        # ✅ 檢查是否跨期作廢 → 要填 returntax_document_number
+        # try:
+        #     invoice_period = int(invoice.invoice_period)  # 確保是整數，如 11412
+        # except (ValueError, TypeError):
+        #     return JsonResponse({"success": False, "message": "發票期別資料異常"}, status=400)
+        
+        # if invoice_period < current_period:
+        #     if not invoice.returntax_document_number or invoice.returntax_document_number.strip() == '':
+        #         return JsonResponse({
+        #             "success": False,
+        #             "message": "跨期作廢的發票需填寫折讓參考號（returntax_document_number）。"
+        #         }, status=400)
 
-            # 生成 XML 檔案
+        # 產生 G0501 XML
+        output_dir_F0501 = r"C:\Users\waylin\mydjango\e_invoice\G0501"
+        xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\G0501.xsd"
+        generate_G0501_xml_files(allowance, output_dir_F0501, xsd_path)
 
+        to_email = "waylin@deloitte.com.tw"
+        success_list = [f"{allowance.company.company_name} - {allowance.allowance_number}"]
+        excluded_list = []
+        send_allowance_canceled_email(to_email, success_count=1, excluded_count=0, success_list=success_list, excluded_list=excluded_list)
 
-            sheet.cell(row=row, column=1, value=allowance.company.company_identifier)
-            sheet.cell(row=row, column=2, value=allowance.buyer_identifier)
-            sheet.cell(row=row, column=3, value=allowance.allowance_number)
-            sheet.cell(row=row, column=4, value=allowance.allowance_date)
-            sheet.cell(row=row, column=5, value=allowance.allowance_type)
-            sheet.cell(row=row, column=6, value=allowance.allowance_cancel_date)
-            sheet.cell(row=row, column=7, value=allowance.allowance_cancel_time)
-            sheet.cell(row=row, column=8, value=allowance.allowance_cancel_reason)
-            sheet.cell(row=row, column=9, value=allowance.allowance_cancel_remark)
-            row += 1
+        allowance.save()
+        return JsonResponse({"success": True, "message": "作廢成功並產出 G0501.xml"})
 
-    # 匯出 Excel
-    output = BytesIO()
-    workbook.save(output)
-    output.seek(0)
-
-    response = HttpResponse(
-        output,
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="B0201.xlsx"'
-    return response
-
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "資料格式錯誤"}, status=400)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
 #======================================================驗證發票明細=======================================================
 
 

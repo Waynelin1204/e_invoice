@@ -211,7 +211,8 @@ def invoice_status(request):
             .values('company_id', 'invoice_status')
             .annotate(
                 invoice_count=Count('id'),
-                total_amount=Sum('total_amount')
+                total_amount=Sum('total_amount'),
+                total_tax_amount=Sum('total_tax_amount')
             )
         )
 
@@ -221,7 +222,8 @@ def invoice_status(request):
             .annotate(
                 invoice_status=F('allowance_status'),
                 allowance_count=Count('id'),
-                allowance_amount=Sum('allowance_amount')
+                allowance_amount=Sum('allowance_amount'),
+                allowance_tax=Sum('allowance_tax')
             )
         )
 
@@ -234,8 +236,10 @@ def invoice_status(request):
                 'invoice_status': inv['invoice_status'],
                 'invoice_count': inv['invoice_count'],
                 'total_amount': inv['total_amount'],
+                'total_tax_amount': inv['total_tax_amount'],
                 'allowance_count': 0,
                 'allowance_amount': 0,
+                'allowance_tax': 0,
                 'company_name': company_name_map.get(inv['company_id'], '')
             }
 
@@ -249,11 +253,13 @@ def invoice_status(request):
                     'total_amount': 0,
                     'allowance_count': allow['allowance_count'],
                     'allowance_amount': allow['allowance_amount'],
+                    'allowance_tax': allow['allowance_tax'],
                     'company_name': company_name_map.get(allow['company_id'], '')
                 }
             else:
                 combined_stats[key]['allowance_count'] = allow['allowance_count']
                 combined_stats[key]['allowance_amount'] = allow['allowance_amount']
+                combined_stats[key]['allowance_tax'] = allow['allowance_tax'] 
 
         return list(combined_stats.values())
 

@@ -11,6 +11,9 @@ from barcode import Code39
 from barcode.writer import ImageWriter
 from decimal import Decimal
 import io
+import qrcode
+from qrcode.exceptions import DataOverflowError
+
 
 # def aes_encrypt_hex(key: bytes, data: bytes) -> str:
 #     cipher = AES.new(key, AES.MODE_ECB)
@@ -93,6 +96,24 @@ def generate_invoice_B2C_a4(invoice, aes_key: bytes, output_dir: str, random_cod
         font = get_font(font_cm, bold)
         draw.text((cm_to_px(left_cm), cm_to_px(top_cm)), text, font=font, fill='black')
 
+    def can_fit_in_qr(data):
+        try:
+            qr = qrcode.QRCode(
+                version=6,
+                error_correction=ERROR_CORRECT_L,
+                box_size=10,
+                border=4
+            )        
+            qr.add_data(data)
+            qr.make(fit=False)
+            # 實際 bit 長度檢查
+            return True
+
+        except DataOverflowError:
+            print("[Debug] DataOverflowError 被觸發")
+            return False
+
+        
     y = invoice.invoice_date.year - 1911
     date_code = f"{y:03d}{invoice.invoice_date.month:02d}{invoice.invoice_date.day:02d}"
     buyer_id = (getattr(invoice, "buyer_identifier", "") or "00000000").ljust(8, '0')[:8]
@@ -115,9 +136,7 @@ def generate_invoice_B2C_a4(invoice, aes_key: bytes, output_dir: str, random_cod
         sales_hex + total_hex + buyer_id + company_id + encrypted +
         ':' + '*' * 10  
     )
-
-
-
+    
     items = []
     if hasattr(invoice, "items"):
         for item in invoice.items.all():
@@ -125,29 +144,86 @@ def generate_invoice_B2C_a4(invoice, aes_key: bytes, output_dir: str, random_cod
             items += [item.line_description, str(item.line_quantity), line_unit_price]
 
     grouped_items = [items[i:i+3] for i in range(0, len(items), 3)]
-
-    max_left_len = 128
-    room_for_items = max_left_len - len(left_part)
-    left_items = []
-    right_items = []
-    current_len = 0
-
+    
+    
     # 計算 group 數量
     group_count = str(len(grouped_items))  # ✅ 重點在這行
     left_part_countinue = f"{left_part}:{group_count}:{group_count}:3:"
 
+    # 基本資料
+    left_items = []
+    right_items = []
+    trigger_right = False
+    
+    #動態拼接測試
     for group in grouped_items:
         group_str = ':'.join(group) + ':'
-        if current_len + len(group_str) <= room_for_items:
-            left_items.append(group_str)
-            current_len += len(group_str)
+        if not trigger_right:
+            trial = left_part_countinue + ''.join(left_items) + group_str
+            print(trial)
+            if can_fit_in_qr(trial):
+                left_items.append(group_str)
+                print(left_items)
+                print(can_fit_in_qr(trial))
+            else:
+                # 爆掉，這個 group 及剩下的都丟右邊
+                right_items.append(group_str)
+                trigger_right = True
         else:
             right_items.append(group_str)
 
-    items_str = ':'.join(items) + ':'
-    left_qr = left_part_countinue +''.join(left_items)
+    # 最終組裝
+    left_qr = left_part_countinue + ''.join(left_items)
+    if not can_fit_in_qr(left_qr):
+        # 如果 left_qr 還是爆掉，全部 group 丟右邊
+        right_items = left_items + right_items
+        left_items = []
+        left_qr = left_part_countinue
+
     right_qr = '**' + ''.join(right_items).rstrip(':')
 
+    # 最終組裝
+    left_qr = left_part_countinue + ''.join(left_items)
+    if not can_fit_in_qr(left_qr):
+        # 如果 left_qr 還是爆掉，全部 item 丟右邊
+        right_items = left_items + right_items
+        left_items = []
+        left_qr = left_part_countinue
+
+    right_qr = '**' + ''.join(right_items).rstrip(':')
+
+
+    # ----------------------  舊版用字串長度判別 ----------------------------
+    # items = []
+    # if hasattr(invoice, "items"):
+    #     for item in invoice.items.all():
+    #         line_unit_price = decimal_to_str_trimmed(item.line_unit_price)
+    #         items += [item.line_description, str(item.line_quantity), line_unit_price]
+
+    # grouped_items = [items[i:i+3] for i in range(0, len(items), 3)]
+
+    # max_left_len = 128
+    # room_for_items = max_left_len - len(left_part)
+    # left_items = []
+    # right_items = []
+    # current_len = 0
+
+    # # 計算 group 數量
+    # group_count = str(len(grouped_items))  # ✅ 重點在這行
+    # left_part_countinue = f"{left_part}:{group_count}:{group_count}:3:"
+
+    # for group in grouped_items:
+    #     group_str = ':'.join(group) + ':'
+    #     if current_len + len(group_str) <= room_for_items:
+    #         left_items.append(group_str)
+    #         current_len += len(group_str)
+    #     else:
+    #         right_items.append(group_str)
+
+    # items_str = ':'.join(items) + ':'
+    # left_qr = left_part_countinue +''.join(left_items)
+    # right_qr = '**' + ''.join(right_items).rstrip(':')
+    # --------------------------------------------------------------------------
     def generate_code39_barcode(data, width_px, height_px):
         buffer = io.BytesIO()
         barcode = Code39(data, writer=ImageWriter(), add_checksum=False)
@@ -190,7 +266,7 @@ def generate_invoice_B2C_a4(invoice, aes_key: bytes, output_dir: str, random_cod
     print(f"buyer_id: {buyer_id}")
     print(f"company_id: {company_id}")
     print(f"encrypted: {encrypted}")
-    print(f"items_str: {items_str}")
+    #print(f"items_str: {items_str}")
     print(f"left_qr: {left_qr}")
     print(f"right_qr: {right_qr}")
     #draw_text_left(f"單號: {invoice.order_number}", 8.6, 0.35)
@@ -444,7 +520,23 @@ def generate_invoice_B2B_a4(invoice, aes_key: bytes, output_dir: str):
     def draw_text_left(text, top_cm, font_cm, left_cm=0.3, bold=False):
         font = get_font(font_cm, bold)
         draw.text((cm_to_px(left_cm), cm_to_px(top_cm)), text, font=font, fill='black')
+    
+    def can_fit_in_qr(data):
+        try:
+            qr = qrcode.QRCode(
+                version=6,
+                error_correction=ERROR_CORRECT_L,
+                box_size=10,
+                border=4
+            )        
+            qr.add_data(data)
+            qr.make(fit=False)
+            # 實際 bit 長度檢查
+            return True
 
+        except DataOverflowError:
+            print("[Debug] DataOverflowError 被觸發")
+            return False
     y = invoice.invoice_date.year - 1911
     date_code = f"{y:03d}{invoice.invoice_date.month:02d}{invoice.invoice_date.day:02d}"
     buyer_id = (getattr(invoice, "buyer_identifier", "") or "00000000").ljust(8, '0')[:8]
@@ -477,28 +569,84 @@ def generate_invoice_B2B_a4(invoice, aes_key: bytes, output_dir: str):
             items += [item.line_description, str(item.line_quantity), line_unit_price]
 
     grouped_items = [items[i:i+3] for i in range(0, len(items), 3)]
-
-    max_left_len = 128
-    room_for_items = max_left_len - len(left_part)
-    left_items = []
-    right_items = []
-    current_len = 0
-
+    
+    
     # 計算 group 數量
     group_count = str(len(grouped_items))  # ✅ 重點在這行
-    left_part_countinue = f"{left_part}:{group_count}:{group_count}:3:"
+    left_part_countinue = f"{left_part}:{group_count}:{group_count}:1:" # 0:Big5編碼, 1:UTF-8編碼, 2:Base64編碼
 
+    left_items = []
+    right_items = []
+    trigger_right = False
+    
+    #動態拼接測試
     for group in grouped_items:
         group_str = ':'.join(group) + ':'
-        if current_len + len(group_str) <= room_for_items:
-            left_items.append(group_str)
-            current_len += len(group_str)
+        if not trigger_right:
+            trial = left_part_countinue + ''.join(left_items) + group_str
+            print(trial)
+            if can_fit_in_qr(trial):
+                left_items.append(group_str)
+                print(left_items)
+                print(can_fit_in_qr(trial))
+            else:
+                # 爆掉，這個 group 及剩下的都丟右邊
+                right_items.append(group_str)
+                trigger_right = True
         else:
             right_items.append(group_str)
 
-    items_str = ':'.join(items) + ':'
-    left_qr = left_part_countinue +''.join(left_items)
+    # 最終組裝
+    left_qr = left_part_countinue + ''.join(left_items)
+    if not can_fit_in_qr(left_qr):
+        # 如果 left_qr 還是爆掉，全部 group 丟右邊
+        right_items = left_items + right_items
+        left_items = []
+        left_qr = left_part_countinue
+
     right_qr = '**' + ''.join(right_items).rstrip(':')
+
+    # 最終組裝
+    left_qr = left_part_countinue + ''.join(left_items)
+    if not can_fit_in_qr(left_qr):
+        # 如果 left_qr 還是爆掉，全部 item 丟右邊
+        right_items = left_items + right_items
+        left_items = []
+        left_qr = left_part_countinue
+
+    right_qr = '**' + ''.join(right_items).rstrip(':')
+
+    # ----------------------  舊版用字串長度判別 ----------------------------
+    # items = []
+    # if hasattr(invoice, "items"):
+    #     for item in invoice.items.all():
+    #         line_unit_price = decimal_to_str_trimmed(item.line_unit_price)
+    #         items += [item.line_description, str(item.line_quantity), line_unit_price]
+
+    # grouped_items = [items[i:i+3] for i in range(0, len(items), 3)]
+
+    # max_left_len = 128
+    # room_for_items = max_left_len - len(left_part)
+    # left_items = []
+    # right_items = []
+    # current_len = 0
+
+    # # 計算 group 數量
+    # group_count = str(len(grouped_items))  # ✅ 重點在這行
+    # left_part_countinue = f"{left_part}:{group_count}:{group_count}:3:"
+
+    # for group in grouped_items:
+    #     group_str = ':'.join(group) + ':'
+    #     if current_len + len(group_str) <= room_for_items:
+    #         left_items.append(group_str)
+    #         current_len += len(group_str)
+    #     else:
+    #         right_items.append(group_str)
+
+    # items_str = ':'.join(items) + ':'
+    # left_qr = left_part_countinue +''.join(left_items)
+    # right_qr = '**' + ''.join(right_items).rstrip(':')
+    # --------------------------------------------------------------------------
 
     def generate_code39_barcode(data, width_px, height_px):
         buffer = io.BytesIO()
@@ -544,7 +692,7 @@ def generate_invoice_B2B_a4(invoice, aes_key: bytes, output_dir: str):
     print(f"buyer_id: {buyer_id}")
     print(f"company_id: {company_id}")
     print(f"encrypted: {encrypted}")
-    print(f"items_str: {items_str}")
+    #print(f"items_str: {items_str}")
     print(f"left_qr: {left_qr}")
     print(f"right_qr: {right_qr}")
     #draw_text_left(f"單號: {invoice.order_number}", 8.6, 0.35)

@@ -11,6 +11,7 @@ from django.utils.timezone import localtime
 from decimal import Decimal, InvalidOperation
 import random
 
+
 # ====== 第三方套件 ======
 import pandas as pd
 from openpyxl import load_workbook
@@ -44,8 +45,8 @@ from e_invoices.models import (
     NumberDistribution, TWB2BMainItem, TWB2BLineItem, TWAllowanceLineItem, TWAllowance
 )
 from e_invoices.forms import NumberDistributionForm
-from e_invoices.services import generate_invoice_B2C_a4, generate_invoice_B2B_a4, generate_F0401_xml_files, generate_invoice_B2B_format25_pdf,  generate_F0501_xml_files
-from e_invoices.services import send_invoice_summary_email, generate_invoice_B2B_format25_pdf_stamp
+from e_invoices.services import generate_invoice_B2C_a4, generate_invoice_B2B_a4, generate_F0401_xml_files,generate_F0701_xml_files,generate_invoice_B2B_format25_pdf,  generate_F0501_xml_files
+from e_invoices.services import send_invoice_summary_email, generate_invoice_B2B_format25_pdf_stamp, send_invoice_canceled_email
 
 @login_required
 def twb2bmainitem(request):
@@ -489,22 +490,31 @@ def twb2bmainitem_export_invoices(request):
             assigned = False
             for dist in distributions:
                 current = int(dist.current_number or dist.start_number)
+                invoice_number = f"{dist.initial_char}{str(current).zfill(len(dist.start_number))}"
+
                 if current <= int(dist.end_number):
-                    invoice_number = f"{dist.initial_char}{str(current).zfill(len(dist.start_number))}"
-                    invoice.invoice_number = invoice_number
-                    invoice.invoice_status = '已開立'
-                    invoice.invoice_date = localtime(timezone.now()).replace(tzinfo=None).date()
-                    invoice.invoice_time = localtime(timezone.now()).strftime('%H:%M:%S')
+                    if invoice.invoice_number:
+                        invoice.invoice_number = invoice.invoice_number
+                        invoice.invoice_date = invoice.invoice_date
+                        invoice.invoice_time = invoice.invoice_time
+                        invoice.invoice_period = invoice.invoice_period
+                        invoice.random_code = invoice.random_code
+                        invoice.invoice_status = '註銷後重開'
+                    else:    
+                        invoice.invoice_number = invoice_number
+                        invoice.invoice_date = localtime(timezone.now()).replace(tzinfo=None).date()
+                        invoice.invoice_time = localtime(timezone.now()).strftime('%H:%M:%S')
+                        invoice.invoice_period = dist.period
+                        invoice.random_code = random_codes
+                        dist.current_number = str(current + 1).zfill(len(dist.start_number))
+                        dist.last_used_date = timezone.now().date()
+                        dist.save()
+                        invoice.invoice_status = '已開立'
+
+                    
                     invoice.export_date = localtime(timezone.now()).replace(tzinfo=None).date()
-                    invoice.invoice_period = dist.period
-                    invoice.random_code = random_codes
-
+                    
                     invoice.save()
-
-                    dist.current_number = str(current + 1).zfill(len(dist.start_number))
-                    dist.last_used_date = timezone.now().date()
-
-                    dist.save()
                     success_invoices.append(invoice)
                     assigned = True
                     break
@@ -746,99 +756,231 @@ def twb2bmainitem_delete_selected_invoices(request):
     else:
         return redirect('twb2bmainitem')
         
+# @csrf_exempt
+# def twb2bmainitem_update_void_status(request):
+#     if request.method != 'POST':
+#         return HttpResponse("Only POST allowed", status=405)
+
+#     raw_ids = request.POST.get("selected_documents", "")
+#     selected_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
+#     if not selected_ids:
+#         return HttpResponse("No invoice IDs provided", status=400)
+
+#     invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items')
+#     if not invoices.exists():
+#         return HttpResponse("No invoices found", status=404)
+
+
+#     # ✅ 排除未開立的發票
+#     #not_issued = invoices.filter(invoice_status='未開立')
+#     to_cancel = invoices.exclude(Q(invoice_status='未開立') | Q(allowance_status='已開立折讓單'))
+
+
+#     if not to_cancel.exists():
+#         return HttpResponse("所有選取的發票皆為『未開立』發票或包含『已開立折讓單』發票，故無法作廢。", status=400)
+    
+#     # ✅ 檢查是否每筆作廢發票都有填寫作廢理由
+#     missing_reason = [inv for inv in to_cancel if not inv.cancel_reason or inv.cancel_reason.strip() == '']
+#     if missing_reason:
+#         return HttpResponse("有發票未填寫作廢理由，請補齊後再作廢。", status=400)
+    
+#     now = datetime.now()
+#     current_roc_year = now.year - 1911
+#     current_roc_month = now.month
+#     current_period = current_roc_year * 100 + current_roc_month  # e.g., 11502
+    
+#     # ✅ 檢查是否跨期作廢 → 要填 returntax_document_number
+#     cross_period_missing = []
+#     for invoices in to_cancel:
+#         try:
+#             invoice_period = int(invoices.invoice_period)  # 確保是整數，如 11412
+#         except (ValueError, TypeError):
+#             continue  # 如果 invoice_period 不正確就跳過，視情況也可視為錯誤
+
+#         if invoice_period < current_period:
+#             if not invoices.returntax_document_number or invoices.returntax_document_number.strip() == '':
+#                 cross_period_missing.append(invoices)
+
+#     if cross_period_missing:
+#         return HttpResponse("跨期作廢的發票需填寫折讓參考號（returntax_document_number）。", status=400)
+
+#     output_dir_F0501 = r"C:\Users\waylin\mydjango\e_invoice\F0501"
+#     xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\F0501.xsd"
+
+    
+#     # 載入 Excel 樣板
+#     template_path = os.path.join(settings.BASE_DIR, 'export', 'F0501.xlsx')
+#     workbook = load_workbook(template_path)
+#     sheet = workbook.active
+
+#     row = 2  # Excel 開始列
+
+#     with transaction.atomic():
+#         for invoice in to_cancel:
+#             # 更新作廢狀態與時間
+#             invoice.invoice_status = '已作廢'
+#             invoice.cancel_date = localtime(timezone.now()).replace(tzinfo=None).date()
+#             invoice.cancel_time = localtime(timezone.now()).replace(tzinfo=None).time()
+#             invoice.original_invoice_date = invoice.invoice_date
+#             invoice.original_invoice_number = invoice.invoice_number
+#             invoice.save()
+
+#             generate_F0501_xml_files(invoices, output_dir_F0501, xsd_path)
+
+
+#             sheet.cell(row=row, column=1, value=invoice.company.company_identifier)
+#             sheet.cell(row=row, column=2, value=invoice.buyer_identifier)
+#             sheet.cell(row=row, column=3, value=invoice.invoice_date)
+#             sheet.cell(row=row, column=4, value=invoice.invoice_number)
+#             sheet.cell(row=row, column=5, value=invoice.invoice_period)
+#             sheet.cell(row=row, column=6, value=invoice.cancel_date)
+#             sheet.cell(row=row, column=7, value=invoice.cancel_time)
+#             sheet.cell(row=row, column=8, value=invoice.cancel_period)
+#             sheet.cell(row=row, column=9, value=invoice.cancel_reason)
+#             sheet.cell(row=row, column=10, value=invoice.returntax_document_number)
+#             sheet.cell(row=row, column=11, value=invoice.cancel_remark)
+#             row += 1
+
+#     # 匯出 Excel
+#     output = BytesIO()
+#     workbook.save(output)
+#     output.seek(0)
+
+#     response = HttpResponse(
+#         output,
+#         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+#     )
+#     response['Content-Disposition'] = 'attachment; filename="cancel.xlsx"'
+#     return response
+
+
+
+
+
 @csrf_exempt
-def twb2bmainitem_update_void_status(request):
+def twb2bmainitem_update_cancel_status(request):
     if request.method != 'POST':
-        return HttpResponse("Only POST allowed", status=405)
+        return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
 
-    raw_ids = request.POST.get("selected_documents", "")
-    selected_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
-    if not selected_ids:
-        return HttpResponse("No invoice IDs provided", status=400)
+    try:
+        data = json.loads(request.body)
+        invoice_id = data.get("invoice_id")
+        cancel_reason = data.get("cancel_reason", "").strip()
+        cancel_remark = data.get("cancel_remark", "").strip()
 
-    invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items')
-    if not invoices.exists():
-        return HttpResponse("No invoices found", status=404)
+        if not invoice_id:
+            return JsonResponse({"success": False, "message": "缺少發票 ID"}, status=400)
+        if not cancel_reason:
+            return JsonResponse({"success": False, "message": "請輸入作廢理由"}, status=400)
 
-
-    # ✅ 排除未開立的發票
-    #not_issued = invoices.filter(invoice_status='未開立')
-    to_cancel = invoices.exclude(Q(invoice_status='未開立') | Q(allowance_status='已開立折讓單'))
-
-
-    if not to_cancel.exists():
-        return HttpResponse("所有選取的發票皆為『未開立』發票或包含『已開立折讓單』發票，故無法作廢。", status=400)
-    
-    # ✅ 檢查是否每筆作廢發票都有填寫作廢理由
-    missing_reason = [inv for inv in to_cancel if not inv.cancel_reason or inv.cancel_reason.strip() == '']
-    if missing_reason:
-        return HttpResponse("有發票未填寫作廢理由，請補齊後再作廢。", status=400)
-    
-    now = datetime.now()
-    current_roc_year = now.year - 1911
-    current_roc_month = now.month
-    current_period = current_roc_year * 100 + current_roc_month  # e.g., 11502
-    
-    # ✅ 檢查是否跨期作廢 → 要填 returntax_document_number
-    cross_period_missing = []
-    for invoices in to_cancel:
         try:
-            invoice_period = int(invoices.invoice_period)  # 確保是整數，如 11412
+            invoice = TWB2BMainItem.objects.select_related('company').get(id=invoice_id)
+        except TWB2BMainItem.DoesNotExist:
+            return JsonResponse({"success": False, "message": "找不到該發票"}, status=404)
+
+        if invoice.invoice_status == '未開立':
+            return JsonResponse({"success": False, "message": "該發票為未開立狀態，無法作廢"}, status=400)
+        if invoice.allowance_status == '已開立折讓單':
+            return JsonResponse({"success": False, "message": "該發票已開立折讓單，無法作廢"}, status=400)
+        if invoice.mof_response != 'S0001':
+            return JsonResponse({"success": False, "message": "該發票稅局未認證，無法作廢"}, status=400)
+        
+        try:
+            invoice_period = int(invoice.invoice_period)  # 確保是整數，如 11412
         except (ValueError, TypeError):
-            continue  # 如果 invoice_period 不正確就跳過，視情況也可視為錯誤
-
+            return JsonResponse({"success": False, "message": "發票期別資料異常"}, status=400)
+        
+        now = localtime()
+        current_roc_year = now.year - 1911
+        current_roc_month = now.month
+        current_period = current_roc_year * 100 + current_roc_month  # e.g., 11502
+        
         if invoice_period < current_period:
-            if not invoices.returntax_document_number or invoices.returntax_document_number.strip() == '':
-                cross_period_missing.append(invoices)
+            if not invoice.returntax_document_number or invoice.returntax_document_number.strip() == '':
+                return JsonResponse({
+                    "success": False,
+                    "message": "跨期作廢的發票需填寫專案作廢核准文號(returntax_document_number)。"
+                }, status=400)
 
-    if cross_period_missing:
-        return HttpResponse("跨期作廢的發票需填寫折讓參考號（returntax_document_number）。", status=400)
 
-    output_dir_F0501 = r"C:\Users\waylin\mydjango\e_invoice\F0401"
-    xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\F0401.xsd"
-    random_codes = invoice.random_code
-    generate_F0501_xml_files(invoice, output_dir_F0501, xsd_path)
+        invoice.cancel_date = now.date()
+        invoice.cancel_time = now.time()
+        invoice.cancel_reason = cancel_reason
+        invoice.cancel_remark = cancel_remark
+        invoice.invoice_status = "已作廢"
+        invoice.save()
+
+
+        
+        # ✅ 檢查是否跨期作廢 → 要填 returntax_document_number
+
+
+        # 產生 F0501 XML
+        output_dir_F0501 = r"C:\Users\waylin\mydjango\e_invoice\F0501"
+        xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\F0501.xsd"
+        generate_F0501_xml_files(invoice, output_dir_F0501, xsd_path)
+
+        # ✅ 發送作廢成功通知信
+        to_email = "waylin@deloitte.com.tw"
+        success_list = [f"{invoice.company.company_name} - {invoice.invoice_number}"]
+        excluded_list = []
+        send_invoice_canceled_email(to_email, success_count=1, excluded_count=0, success_list=success_list, excluded_list=excluded_list)
+
+        invoice.save()
+        
+        return JsonResponse({"success": True, "message": "作廢成功並產出 F0501.xml"})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "資料格式錯誤"}, status=400)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
     
-    # 載入 Excel 樣板
-    template_path = os.path.join(settings.BASE_DIR, 'export', 'F0501.xlsx')
-    workbook = load_workbook(template_path)
-    sheet = workbook.active
+    
+    
 
-    row = 2  # Excel 開始列
+# @csrf_exempt
+# def twb2bmainitem_update_cancel_status(request):
+#     if request.method != 'POST':
+#         return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
 
-    with transaction.atomic():
-        for invoice in to_cancel:
-            # 更新作廢狀態與時間
-            invoice.invoice_status = '已作廢'
-            invoice.cancel_date = localtime(timezone.now()).replace(tzinfo=None).date()
-            invoice.cancel_time = localtime(timezone.now()).replace(tzinfo=None).time()
-            invoice.original_invoice_date = invoice.invoice_date
-            invoice.original_invoice_number = invoice.invoice_number
-            invoice.save()
+#     try:
+#         data = json.loads(request.body)
+#         invoice_id = data.get("invoice_id")
+#         void_reason = data.get("void_reason", "").strip()
+#         void_remark = data.get("void_remark", "").strip()
 
+#         if not invoice_id:
+#             return JsonResponse({"success": False, "message": "缺少發票 ID"}, status=400)
+#         if not void_reason:
+#             return JsonResponse({"success": False, "message": "請輸入註銷理由"}, status=400)
 
-            sheet.cell(row=row, column=1, value=invoice.company.company_identifier)
-            sheet.cell(row=row, column=2, value=invoice.buyer_identifier)
-            sheet.cell(row=row, column=3, value=invoice.invoice_date)
-            sheet.cell(row=row, column=4, value=invoice.invoice_number)
-            sheet.cell(row=row, column=5, value=invoice.invoice_period)
-            sheet.cell(row=row, column=6, value=invoice.cancel_date)
-            sheet.cell(row=row, column=7, value=invoice.cancel_time)
-            sheet.cell(row=row, column=8, value=invoice.cancel_period)
-            sheet.cell(row=row, column=9, value=invoice.cancel_reason)
-            sheet.cell(row=row, column=10, value=invoice.returntax_document_number)
-            sheet.cell(row=row, column=11, value=invoice.cancel_remark)
-            row += 1
+#         try:
+#             invoice = TWB2BMainItem.objects.select_related('company').get(id=invoice_id)
+#         except TWB2BMainItem.DoesNotExist:
+#             return JsonResponse({"success": False, "message": "找不到該發票"}, status=404)
 
-    # 匯出 Excel
-    output = BytesIO()
-    workbook.save(output)
-    output.seek(0)
+#         if invoice.invoice_status == '未開立':
+#             return JsonResponse({"success": False, "message": "該發票為未開立狀態，無法註銷"}, status=400)
+#         if invoice.allowance_status == '已開立折讓單':
+#             return JsonResponse({"success": False, "message": "該發票已開立折讓單，無法註銷"}, status=400)
 
-    response = HttpResponse(
-        output,
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="void.xlsx"'
-    return response
+#         now = localtime()
+#         invoice.void_date = now.date()
+#         invoice.void_time = now.time()
+#         invoice.void_reason = void_reason
+#         invoice.void_remark = void_remark
+#         invoice.invoice_status = "已註銷"
+#         invoice.save()
+
+#         # 產生 F0701 XML
+#         output_dir_F0701 = r"C:\Users\waylin\mydjango\e_invoice\F0701"
+#         xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\F0701.xsd"
+#         generate_F0701_xml_files(invoice, output_dir_F0701, xsd_path)
+
+#         return JsonResponse({"success": True, "message": "註銷成功並產出 F0701.xml"})
+
+#     except json.JSONDecodeError:
+#         return JsonResponse({"success": False, "message": "資料格式錯誤"}, status=400)
+#     except Exception as e:
+#         return JsonResponse({"success": False, "message": str(e)}, status=500)
 

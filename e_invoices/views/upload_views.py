@@ -149,14 +149,23 @@ def auto_send_invoice_summary_email(request):
     搜尋 TWB2BMainItem 符合條件的資料並自動寄信
     """
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=2)
+    start_date = end_date - timedelta(days=3)
 
     # 查詢兩天內 mof_reason = 'S0001' 的主表資料
     queryset = TWB2BMainItem.objects.filter(
         mof_response="S0001",
         invoice_date__range=(start_date, end_date)
     )
-    print(queryset)
+    
+
+    def format_number(value):
+        if value is None:
+            return ""
+        if float(value) == int(value):
+            return str(int(value))
+        else:
+            return str(value).rstrip('0').rstrip('.')  # 去掉右側無效 0 與點
+
 
     for invoice in queryset:
         items = invoice.items.all()
@@ -178,11 +187,12 @@ def auto_send_invoice_summary_email(request):
             invoice_date=invoice.invoice_date,
             invoice_time=invoice.invoice_time if invoice.invoice_time else '',
             random_code=invoice.random_code,
-            total_amount=invoice.total_amount,
+            total_amount=format_number(invoice.total_amount),
             buyer_identifier=invoice.buyer_identifier,
             line_description=item.line_description,
             line_quantity=item.line_quantity,
-            unit_price=item.line_unit_price
+            unit_price=format_number(item.line_unit_price),
+            line_amount=format_number(item.line_amount)
         )
 
         print(f"已寄出發票通知給 {invoice.buyer_email}")

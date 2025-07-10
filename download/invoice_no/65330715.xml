@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InvoiceAssignNo xmlns="urn:GEINV:E0501:4.0">
+    <Ban>65330715</Ban>
+    <InvoiceType>07</InvoiceType>
+    <YearMonth>11407</YearMonth>
+    <InvoiceTrack>AB</InvoiceTrack>
+    <InvoiceBeginNo>00000001</InvoiceBeginNo>
+    <InvoiceEndNo>00001500</InvoiceEndNo>
+    <InvoiceBooklet>30</InvoiceBooklet>
+</InvoiceAssignNo>

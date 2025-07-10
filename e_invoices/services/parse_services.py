@@ -9,7 +9,8 @@ from django.db import transaction
 from datetime import datetime
 import os
 import math
-from pandas._libs.tslibs.nattype import NaTType
+from pandas._libs.tslibs.nattype import NaTType    
+from collections import defaultdict
 
 def safe_datetime(value):
     if isinstance(value, datetime):
@@ -173,15 +174,35 @@ def allowance_validate_row(row, company_id, allowance_amount_dict, allowance_tax
         #     if abs(total_allowance_tax - expected_tax) >= 1:
         #         errors.append("E04-金額完整性：營業稅 total_allowance_tax 誤差過大")
         
-    erp_number = str(row.get("erp_number"))
-    original_invoices = original_invoice_dict.get(erp_number, [])
-    for inv_num in original_invoices:
-        status = invoice_status_map.get(inv_num)
-        print(status)
+    line_original_invoice_number = str(row.get("line_original_invoice_number")).strip()
+    seq_num = safe_int(row.get("line_sequence_number"))
+    current_description = str(row.get("line_description")).strip()
+    print(line_original_invoice_number)
+    print(current_description)
+
+    if line_original_invoice_number:
+        status = invoice_status_map.get(line_original_invoice_number)
+
         if not status:
-            errors.append(f"E05-原發票號碼 {inv_num} 查無發票資料")
+            errors.append(f"E05-原發票號碼 {line_original_invoice_number} 查無發票資料")
         elif status != "已開立":
-            errors.append(f"E05-原發票號碼 {inv_num} 為「{status}」，不允許折讓")
+            errors.append(f"E05-原發票號碼 {line_original_invoice_number} 為「{status}」，不允許折讓")
+        else:
+            linked_invoice = TWB2BMainItem.objects.filter(
+                invoice_number=line_original_invoice_number
+            ).prefetch_related('items').first()
+            print(linked_invoice)
+
+            if linked_invoice:
+                original_descriptions = [
+                    (item.line_description or "").strip()
+                    for item in linked_invoice.items.all()
+                ]
+
+                if current_description not in original_descriptions:
+                    errors.append(
+                        f"E06-折讓品名「{current_description}」在原發票中找不到對應品名"
+                    )
 
     return errors
 
@@ -244,40 +265,63 @@ def process_data(file_path, company_id, b2b_b2c, import_type, username):
             i.invoice_number: i.invoice_status
             for i in invoice_qs
         }
-        print(invoice_qs)
-        print(invoice_status_map)
+        #print(invoice_qs)
+        #print(invoice_status_map)
 
     valid_rows = []
     error_rows = []
-
+    grouped_rows = defaultdict(list)
     # 清理資料並驗證
+    # 先清理＆分組資料
     for _, row in df.iterrows():
         cleaned_row = {k: (v.strip() if isinstance(v, str) else v) for k, v in row.items()}
         cleaned_row["erp_date"] = safe_datetime(cleaned_row.get("erp_date"))
-
-        erp_date_str = cleaned_row.get("erp_date").strftime("%Y%m%d") if cleaned_row.get("erp_date") else ""
-        cleaned_row["sys_number"] = f"{company_id}{erp_date_str}{cleaned_row.get('erp_number')}"
+        erp_number = str(cleaned_row.get("erp_number")).strip()
+        erp_date_str = cleaned_row["erp_date"].strftime("%Y%m%d") if cleaned_row["erp_date"] else ""
+        cleaned_row["sys_number"] = f"{company_id}{erp_date_str}{erp_number}"
         cleaned_row["company_identifier"] = company_identifier
         cleaned_row["tax_rate"] = 0.05 if safe_int(cleaned_row.get("tax_type")) == 1 else 0
-        
+        grouped_rows[erp_number].append(cleaned_row)
+
+    # 再根據類型驗證整組
+    for erp_number, group in grouped_rows.items():
         if import_type == "invoice":
-            # 驗證
-            error_list = validate_row(cleaned_row, company_id, line_grouped_dict)
-            if error_list:
-                cleaned_row["errors"] = "; ".join(error_list)
-                error_rows.append(cleaned_row)
-            else:
-                valid_rows.append(cleaned_row)
+            for row in group:
+                error_list = validate_row(row, company_id, line_grouped_dict)
+                if error_list:
+                    row["errors"] = "; ".join(error_list)
+                    error_rows.append(row)
+                else:
+                    valid_rows.append(row)
 
         elif import_type == "allowance":
+            group_has_errors = False
+            for row in group:
+                allowance_error_list = allowance_validate_row(
+                    row, company_id,
+                    allowance_amount_dict,
+                    allowance_tax_dict,
+                    invoice_status_map,
+                    original_invoice_dict
+                )
+                if allowance_error_list:
+                    group_has_errors = True
+                    row["errors"] = "; ".join(allowance_error_list)
+            if group_has_errors:
+                error_rows.extend(group)
+            else:
+                valid_rows.extend(group)
+
 
             #驗證allowance
-            allowance_error_list = allowance_validate_row(cleaned_row, company_id, allowance_amount_dict, allowance_tax_dict, invoice_status_map, original_invoice_dict)
-            if allowance_error_list:
-                cleaned_row["errors"] = "; ".join(allowance_error_list)
-                error_rows.append(cleaned_row)
-            else:
-                valid_rows.append(cleaned_row)
+            # allowance_error_list = allowance_validate_row(cleaned_row, company_id, allowance_amount_dict, allowance_tax_dict, invoice_status_map, original_invoice_dict)
+            # if allowance_error_list:
+            #     cleaned_row["errors"] = "; ".join(allowance_error_list)
+            #     error_rows.append(cleaned_row)
+            #     print(error_rows)
+            # else:
+            #     valid_rows.append(cleaned_row)
+            #     print(valid_rows)
 
     
 

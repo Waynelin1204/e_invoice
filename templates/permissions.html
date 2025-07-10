@@ -194,7 +194,7 @@
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#importMenu">
                         資料匯入
                     </a>
-                    <div class="collapse" id="importMenu">
+                    <div class="show" id="importMenu">
                         <ul class="nav flex-column text-end">
                             <li><a class="nav-link" href="{% url 'upload_invoice' %}">匯入檔案</a></li>
                             <li><a class="nav-link" href="{% url 'import_log' %}">歷史記錄</a></li>
@@ -206,7 +206,7 @@
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#invoiceMenu">
                         發票管理
                     </a>
-                    <div class="collapse" id="invoiceMenu">
+                    <div class="show" id="invoiceMenu">
                         <ul class="nav flex-column text-end">
                             <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
                             <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
@@ -221,7 +221,7 @@
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#numberMenu">
                         字軌管理
                     </a>
-                    <div class="collapse" id="numberMenu">
+                    <div class="show" id="numberMenu">
                         <ul class="nav flex-column text-end">
                             <li><a class="nav-link" href="{% url 'number_distribution' %}">字軌列表</a></li>
                             <li><a class="nav-link" href="{% url 'create_number_distribution' %}">新增字軌</a></li>
@@ -232,7 +232,7 @@
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#settingMenu">
                         設定
                     </a>
-                    <div class="collapse" id="settingMenu">
+                    <div class="show" id="settingMenu">
                         <ul class="nav flex-column text-end">
                             <li><a class="nav-link" href="{% url 'manage_permissions' %}">權限管理</a></li>
                             <li><a class="nav-link" href="{% url 'company_detail' %}">營業人管理</a></li>

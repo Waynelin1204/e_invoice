@@ -7,6 +7,48 @@ from decimal import Decimal
 output_folder = r"C:\\Users\\waylin\\mydjango\\e_invoice\\print\\"
 
 # 轉換金額為中文大寫
+# def number_to_chinese(amount_str):
+#     amount_str = str(amount_str)
+#     digits = "零壹貳參肆伍陸柒捌玖"
+#     units = ["", "拾", "佰", "仟"]
+#     big_units = ["", "萬", "億", "兆"]
+
+#     integer_part, dot, decimal_part = amount_str.partition(".")
+#     integer_part = integer_part.zfill(1)
+
+#     result = ""
+#     int_len = len(integer_part)
+#     zero = False
+#     for i in range(int_len):
+#         num = int(integer_part[i])
+#         pos = int_len - i - 1
+#         unit = units[pos % 4]
+#         big_unit = big_units[pos // 4]
+#         if num == 0:
+#             zero = True
+#         else:
+#             if zero:
+#                 result += "零"
+#                 zero = False
+#             result += digits[num] + unit
+#         if pos % 4 == 0 and pos != 0:
+#             result += big_unit
+
+#     result += "元"
+
+#     if decimal_part:
+#         jiao = int(decimal_part[0]) if len(decimal_part) > 0 else 0
+#         fen = int(decimal_part[1]) if len(decimal_part) > 1 else 0
+#         if jiao:
+#             result += digits[jiao] + "角"
+#         if fen:
+#             result += digits[fen] + "分"
+#         if jiao == 0 and fen == 0:
+#             result += "整"
+#     else:
+#         result += "整"
+
+#     return result
 def number_to_chinese(amount_str):
     amount_str = str(amount_str)
     digits = "零壹貳參肆伍陸柒捌玖"
@@ -14,41 +56,62 @@ def number_to_chinese(amount_str):
     big_units = ["", "萬", "億", "兆"]
 
     integer_part, dot, decimal_part = amount_str.partition(".")
-    integer_part = integer_part.zfill(1)
+    integer_part = integer_part.lstrip('0') or '0'
 
     result = ""
-    int_len = len(integer_part)
-    zero = False
-    for i in range(int_len):
-        num = int(integer_part[i])
-        pos = int_len - i - 1
-        unit = units[pos % 4]
-        big_unit = big_units[pos // 4]
-        if num == 0:
-            zero = True
-        else:
-            if zero:
-                result += "零"
-                zero = False
-            result += digits[num] + unit
-        if pos % 4 == 0 and pos != 0:
-            result += big_unit
+    group_count = (len(integer_part) + 3) // 4
+    integer_part = integer_part.zfill(group_count * 4)
 
+    prev_group_zero = False
+    has_output = False  # 標記是否已有數字輸出（防止開頭補零）
+
+    for group_idx in range(group_count):
+        group = integer_part[group_idx * 4: (group_idx + 1) * 4]
+        group_result = ""
+        local_zero_flag = False
+
+        for i, ch in enumerate(group):
+            num = int(ch)
+            unit = units[len(group) - i - 1]
+            if num == 0:
+                local_zero_flag = True
+            else:
+                if local_zero_flag:
+                    if has_output:  # 只有在已輸出過數字後才補零
+                        group_result += "零"
+                    local_zero_flag = False
+                group_result += digits[num] + unit
+                has_output = True
+
+        if group_result:
+            if prev_group_zero and has_output:
+                result += "零"
+                prev_group_zero = False
+            result += group_result + big_units[group_count - group_idx - 1]
+        else:
+            if has_output:  # 組全零，後續組還有數字時需補零
+                prev_group_zero = True
+
+    result = result.rstrip("零")
     result += "元"
 
+    # 小數部分
     if decimal_part:
         jiao = int(decimal_part[0]) if len(decimal_part) > 0 else 0
         fen = int(decimal_part[1]) if len(decimal_part) > 1 else 0
-        if jiao:
-            result += digits[jiao] + "角"
-        if fen:
-            result += digits[fen] + "分"
         if jiao == 0 and fen == 0:
             result += "整"
+        else:
+            if jiao != 0:
+                result += digits[jiao] + "角"
+            if fen != 0:
+                result += digits[fen] + "分"
     else:
         result += "整"
 
     return result
+
+
     
 def cm_to_px(cm, dpi=300):
     return int(cm / 2.54 * dpi)

@@ -136,10 +136,10 @@ def generate_F0501_xml_files(invoice, output_dir, xsd_path):
     LET.SubElement(root, "CancelTime").text = invoice.cancel_time.strftime("%H:%M:%S")
     LET.SubElement(root, "CancelReason").text = invoice.cancel_reason
 
-    if invoice.return_tax_document_number:
-        LET.SubElement(root, "ReturnTaxDocumentNumber").text = invoice.return_tax_document_number
-    if invoice.remark:
-        LET.SubElement(root, "Remark").text = invoice.remark
+    if invoice.returntax_document_number:
+        LET.SubElement(root, "ReturnTaxDocumentNumber").text = invoice.returntax_document_number
+    if invoice.cancel_remark:
+        LET.SubElement(root, "Remark").text = invoice.cancel_remark
 
     # Convert XML tree to bytes
     xml_bytes = LET.tostring(root, encoding="utf-8", xml_declaration=True, pretty_print=True)
@@ -157,6 +157,48 @@ def generate_F0501_xml_files(invoice, output_dir, xsd_path):
 
     return full_path
 
+def generate_F0701_xml_files(invoice, output_dir, xsd_path):
+    output_paths = []
+
+    # Load XSD schema once
+    with open(xsd_path, 'rb') as f:
+        schema_doc = LET.parse(f)
+        schema = LET.XMLSchema(schema_doc)
+
+    nsmap = {
+        None: "urn:GEINV:eInvoiceMessage:F0701:4.0",
+        "xsi": "http://www.w3.org/2001/XMLSchema-instance",
+        
+    }
+    root = LET.Element("VoidInvoice", nsmap=nsmap)
+    root.set("{http://www.w3.org/2001/XMLSchema-instance}schemaLocation", "urn:GEINV:eInvoiceMessage:F0701:4.0 F0701.xsd")
+
+    
+    LET.SubElement(root, "VoidInvoiceNumber").text = invoice.invoice_number
+    LET.SubElement(root, "InvoiceDate").text = invoice.invoice_date.strftime("%Y%m%d")
+    LET.SubElement(root, "BuyerId").text = invoice.buyer_identifier.zfill(8)
+    LET.SubElement(root, "SellerId").text = invoice.company.company_identifier.zfill(8)
+    LET.SubElement(root, "VoidDate").text = invoice.void_date.strftime("%Y%m%d")
+    LET.SubElement(root, "VoidTime").text = invoice.void_time.strftime("%H:%M:%S")
+    LET.SubElement(root, "VoidReason").text = invoice.void_reason
+    if invoice.void_remark:
+        LET.SubElement(root, "Remark").text = invoice.void_reason
+
+    # Convert XML tree to bytes
+    xml_bytes = LET.tostring(root, encoding="utf-8", xml_declaration=True, pretty_print=True)
+
+    doc = LET.fromstring(xml_bytes)
+    if not schema.validate(doc):
+        errors = "\n".join([str(e) for e in schema.error_log])
+        raise ValueError(f"XSD validation failed for cancel invoice {invoice.invoice_number}:\n{errors}")
+
+    # Write validated XML to file
+    filename = f"F0701_{invoice.invoice_number}.xml"
+    full_path = os.path.join(output_dir, filename)
+    with open(full_path, "wb") as f:
+        f.write(xml_bytes)
+
+    return full_path
 
 def generate_G0401_xml_files(allowance, output_dir, xsd_path):
     output_paths = []
@@ -274,13 +316,14 @@ def generate_G0501_xml_files(allowance, output_dir, xsd_path):
 
     LET.SubElement(root, "CancelAllowanceNumber").text = allowance.allowance_number
     LET.SubElement(root, "AllowanceType").text = allowance.allowance_type
+    LET.SubElement(root, "AllowanceDate").text = allowance.allowance_date.strftime("%Y%m%d")  # Format fixed
     LET.SubElement(root, "BuyerId").text = allowance.buyer_identifier.zfill(8)
     LET.SubElement(root, "SellerId").text = allowance.company.company_identifier.zfill(8)
-    LET.SubElement(root, "CancelDate").text = allowance.cancel_date.strftime("%Y%m%d")
-    LET.SubElement(root, "CancelTime").text = allowance.cancel_time.strftime("%H:%M:%S")
-    LET.SubElement(root, "CancelReason").text = allowance.cancel_reason
-    if allowance.remark:
-        LET.SubElement(root, "Remark").text = allowance.remark
+    LET.SubElement(root, "CancelDate").text = allowance.allowance_cancel_date.strftime("%Y%m%d")
+    LET.SubElement(root, "CancelTime").text = allowance.allowance_cancel_time.strftime("%H:%M:%S")
+    LET.SubElement(root, "CancelReason").text = allowance.allowance_cancel_reason
+    if allowance.allowance_cancel_remark:
+        LET.SubElement(root, "Remark").text = allowance.allowance_cancel_remark
 
     # Convert XML tree to bytes
     xml_bytes = LET.tostring(root, encoding="utf-8", xml_declaration=True, pretty_print=True)

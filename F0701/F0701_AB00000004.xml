@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<VoidInvoice xmlns="urn:GEINV:eInvoiceMessage:F0701:4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:GEINV:eInvoiceMessage:F0701:4.0 F0701.xsd">
+  <VoidInvoiceNumber>AB00000004</VoidInvoiceNumber>
+  <InvoiceDate>20250703</InvoiceDate>
+  <BuyerId>90618235</BuyerId>
+  <SellerId>65330715</SellerId>
+  <VoidDate>20250703</VoidDate>
+  <VoidTime>10:14:38</VoidTime>
+  <VoidReason>test</VoidReason>
+</VoidInvoice>

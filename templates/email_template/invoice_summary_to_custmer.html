@@ -1,110 +1,73 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <title>發票開立通知</title>
-    <style>
-        body {
-            font-family: "Microsoft JhengHei", sans-serif;
-            background-color: #ffffff;
-            color: white;
-            padding: 20px;
-        }
-        .container {
-            border: 1px solid #888;
-            padding: 20px;
-            width: 100px;
-            margin: auto;
-            background-color: #ffffff;
-            overflow-wrap: break-word;   /* 讓長字元換行 */
-            word-wrap: break-word;       /* 兼容舊瀏覽器 */
-        }
-        .title {
-            font-size: 1.2em;
-            color: #000000;
-            margin-bottom: 10px;
-        }
-        .highlight {
-            color: #ff4081;
-        }
-        .momo-logo {
-            font-size: 2em;
-            font-weight: bold;
-            color: yellow;
-        }
-        table {
-            width: auto;
-            border-collapse: collapse;
-            margin-top: 10px;
-            color: rgb(0, 0, 0);
-            table-layout: fixed; /* 固定表格布局避免撐開 */
-        }
-        th, td {
-            border-bottom: 1px solid #444;
-            padding: 8px;
-            text-align: left;
-            word-break: break-word;
-        }
-        .barcode {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .small {
-            font-size: 0.8em;
-            color: #aaa;
-        }
-        .link {
-            color: #81d4fa;
-            text-decoration: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>發票開立通知</title>
 </head>
-<body>
-    <div class="container">
-        <p class="title">親愛的 <strong>{{ buyer_name }}</strong> 您好，以下是您訂購商品的發票開立通知。詳情請參閱「電子發票流程說明」。</p>
+<body style="margin:0; padding:0; background-color:#ffffff;">
+  親愛的{{buyer_name}} 您好，以下是您訂購商品的發票開立通知，詳情也可參閱『電子發票流程說明』。
+   <br>
+   <br>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff">
+    <tr>
+      <td align="left">
+        <!-- 外層固定寬度框 -->
+        <table width="300" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="border:1px solid #888;">
+          <tr>
+            <td style="padding:10px; font-family:Microsoft JhengHei, sans-serif; font-size:14px; color:#000000; line-height:1.5;">
+              <!-- 信件內容開始 -->
+              <div style="font-weight: bold; font-size: 16px; text-align: center;">發票開立通知</div>
 
-        <div class="momo-logo">AWS</div>
-        <p class="highlight">*此為發票開立通知，非正式發票*</p>
-
-        <table>
-            <tr><td>發票年月：</td><td>{{ invoice_year }}年 {{ invoice_month }}月</td></tr>
-            <tr><td>發票號碼：</td><td>{{ invoice_number }}</td></tr>
-            <tr><td>開立時間：</td><td>{{ invoice_date }} {{ invoice_time }}</td></tr>
-            <tr><td>隨機碼：</td><td>{{ random_code }}</td></tr>
-            <tr><td>總計：</td><td>{{ total_amount }}</td></tr>
-        </table>
-
-        <hr>
-
-        <h3>銷貨明細</h3>
-        <table>
-            <thead>
-                <tr><th>品名</th><th>數量</th><th>單價</th><th>金額</th></tr>
-            </thead>
-            <tbody>
+              <div style="color:#ff4081; font-size: 12px; text-align: center; margin-bottom:5px;">*此為發票開立通知，非正式發票*</div>
+              <strong>營業人：</strong>{{ company_name }}<br>
+              <strong>賣方統編：</strong>{{ company_identifier }}<br>
+              <strong>地址：</strong>{{ company_address }}<br>
+              <strong>發票號碼：</strong>{{ invoice_number }}<br>
+              <strong>開立時間：</strong>{{ invoice_date }} {{ invoice_time }}<br>
+              <strong>隨機碼：</strong>{{ random_code }}<br>
+              
+                <!-- 分隔線 -->
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                    <td>{{ description }}</td>
-                    <td>{{ quantity }}</td>
-                    <td>{{ unit_price }}</td>
-                    <td>{{ total_amount }}</td>
+                    <td style="border-top:1px solid #888; line-height:1px; font-size:1px;">&nbsp;</td>
                 </tr>
-            </tbody>
+                </table>
+              <strong>銷貨明細</strong>
+              <!-- 銷貨明細表格 -->
+              <table width="100%" cellpadding="3" cellspacing="0" border="1" style="border-collapse:collapse; font-size:12px;">
+              <tr bgcolor="#f0f0f0">
+                  <th align="left">品名</th>
+                  <th align="left">數量</th>
+                  <th align="left">單價</th>
+                  <th align="left">金額</th>
+              </tr>
+              <tr>
+                  <td>{{ description }}</td>
+                  <td>{{ quantity }}</td>
+                  <td>{{ unit_price }}</td>
+                  <td>{{ line_amount }}</td>
+              </tr>
+              <tr>
+                  <td colspan="3" align="right" style="font-weight:bold;">總計：</td>
+                  <td style="font-weight:bold;">{{ total_amount }}</td>
+              </tr>
+              </table>
+              <!-- 在表格和分隔線間加空白間距 -->
+              <!-- 條碼可加在這 -->
+              <!-- 信件內容結束 -->
+            </td>
+          </tr>
         </table>
-
-        <p>總計：<strong>{{ total_amount }}</strong></p>
-
-        <table>
-            <tr><td>營業人：</td><td>{{ company_name }}</td></tr>
-            <tr><td>營業地址：</td><td>{{ company_address }}</td></tr>
-        </table>
-
-        <!-- <div class="barcode">
-            <img src="{{ barcode_image_url }}" alt="條碼" height="50">
-            <br>
-            <img src="{{ qrcode_image_url }}" alt="QRCode" height="120">
-        </div> -->
-
-        <!-- <p class="small -->
-    </div>
+      </td>
+    </tr>
+        <tr>
+            <td style="padding:10px; font-family:Microsoft JhengHei, sans-serif; font-size:13px; color:#000000; line-height:1.5;">
+              ● 依財政部令此副本僅供參考，不可直接兌獎。<br>
+              ● 統一發票給獎辦法第11條規定，發票金額為0，不能兌換。<br>
+              ● 根據財政部「電子發票實施作業要點」，{{ company_name }}將為您的發票檔案儲存於您的訂單資料中，<br>
+                且將您的電子發票檔上傳到政府的「電子發票整合服務平台」，詳情請參考「電子發票流程說明」。
+            </td>
+        </tr>
+  </table>
 </body>
 </html>

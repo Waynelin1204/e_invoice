@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CancelInvoice xmlns="urn:GEINV:eInvoiceMessage:F0501:4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:GEINV:eInvoiceMessage:F0501:4.0 F0501.xsd">
+  <CancelInvoiceNumber>AB00000012</CancelInvoiceNumber>
+  <InvoiceDate>20250709</InvoiceDate>
+  <BuyerId>23578306</BuyerId>
+  <SellerId>65330715</SellerId>
+  <CancelDate>20250709</CancelDate>
+  <CancelTime>08:34:37</CancelTime>
+  <CancelReason>TT</CancelReason>
+</CancelInvoice>

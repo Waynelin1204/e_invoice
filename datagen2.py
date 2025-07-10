@@ -6,11 +6,16 @@ import random
 # 賣方與買方資訊
 
 buyer_info = {
-    "公司E": "8888",
-    "公司F": "7777",
-    "公司G": "6666",
-    "公司H": "9999",
+    "公司A": {"identifier": "90618235", "email": "waylin@deloitte.com.tw"},
+    "公司B": {"identifier": "12345705", "email": "waylin@deloitte.com.tw"},
+    "公司C": {"identifier": "74238514", "email": "waylin@deloitte.com.tw"},
+    "公司D": {"identifier": "56890372", "email": "aichia@deloitte.com.tw"},
+    "公司E": {"identifier": "23578306", "email": "waylin@deloitte.com.tw"},
+    "公司F": {"identifier": "13145257", "email": "waylin@deloitte.com.tw"},
+    "公司G": {"identifier": "85491329", "email": "waylin@deloitte.com.tw"},
+    "公司H": {"identifier": "73094856", "email": "tachou@deloitte.com.tw"},
 }
+
 descriptions = ["商品X", "商品Y", "商品Z", "商品W", "商品V", "商品U"]
 # B2BC_info = {
 #     "B2B": "三聯式",
@@ -22,11 +27,12 @@ line_items = []
 # 取得所有 company 資料作為亂數來源
 companies = list(Company.objects.all())
 
-for i in range(100):
+for i in range(10000):
     # ✅ 隨機選一個公司 instance
 
     buyer_name = random.choice(list(buyer_info.keys()))
-    buyer_identifier = buyer_info[buyer_name]
+    buyer_identifier = buyer_info[buyer_name]["identifier"]
+    buyer_email = buyer_info[buyer_name]["email"]
 
     #invoice_type = B2BC_info[b2b_b2c]
     sys_number = f"2025SYS{str(i+1).zfill(5)}"
@@ -82,13 +88,13 @@ for i in range(100):
         invoice_status="未開立",
     )
 
-    for j in range(4):  # 每張發票有4個明細
+    for j in range(6):  # 每張發票有6個明細
         line_quantity = random.randint(1, 10)
-        line_unit_price = Decimal(random.uniform(10, 5000)).quantize(Decimal(".001"))
-        line_amount = (line_quantity * line_unit_price).quantize(Decimal(".001"))
+        line_unit_price = Decimal(random.randint(10, 500)) #.quantize(Decimal(".001"))
+        line_amount = (line_quantity * line_unit_price) #.quantize(Decimal(".001"))
 
         # 稅額計算
-        line_tax_amount = (line_amount * tax_rate).quantize(Decimal(".001"))
+        line_tax_amount = (line_amount * tax_rate).quantize(Decimal("1"))
 
         # 累加發票總額
         if tax_type == "1" :
@@ -126,4 +132,4 @@ for i in range(100):
 # 寫入所有明細
 TWB2BLineItem.objects.bulk_create(line_items)
 
-print("✅ 已成功插入 100 張發票，每張使用相同稅別、含 4 個明細，稅額與免稅邏輯正確！")
+print("✅ 已成功插入 10000 張發票，每張使用相同稅別、含 4 個明細，稅額與免稅邏輯正確！")

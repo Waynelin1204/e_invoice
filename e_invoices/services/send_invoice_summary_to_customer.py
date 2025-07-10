@@ -3,7 +3,7 @@
 from e_invoices.services.auto_send_email_service import send_email_to_customer_outlook
 from django.template.loader import render_to_string
 
-def send_invoice_summary_to_customer_email(to_email, invoice, company_name, company_identifier, company_address, buyer_name,invoice_number, invoice_date,invoice_time, random_code, total_amount, buyer_identifier, line_description,line_quantity, unit_price):
+def send_invoice_summary_to_customer_email(to_email, invoice, company_name, company_identifier, company_address, buyer_name,invoice_number, invoice_date,invoice_time, random_code, total_amount, buyer_identifier, line_description,line_quantity, unit_price, line_amount):
     """
     寄送發票開立摘要報告郵件
 
@@ -32,7 +32,8 @@ def send_invoice_summary_to_customer_email(to_email, invoice, company_name, comp
         "company_name": company_name,
         "company_identifier":company_identifier,
         "company_address":company_address,
-        "invoice_number":invoice_number 
+        "invoice_number":invoice_number,
+        "line_amount":line_amount 
     }
 
     html_body = render_to_string(r"C:\Users\waylin\mydjango\e_invoice\templates\email_template\invoice_summary_to_custmer.html", context)

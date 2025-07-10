@@ -42,6 +42,9 @@ from e_invoices.models import (
     NumberDistribution, TWB2BMainItem, TWB2BLineItem
 )
 from e_invoices.forms import NumberDistributionForm
+from e_invoices.services import process_all_e0501_xml, generate_e0401_xml
+
+
 
 def number_distribution(request):
     # 取得所有發票號碼的狀態
@@ -83,3 +86,20 @@ def get_next_invoice_number(distribution):
         raise e
     except Exception:
         raise ValueError("發號時發生非預期錯誤")
+    
+@csrf_exempt
+def run_script_invoice_no_parse(request):
+    process_all_e0501_xml()
+    return HttpResponse("已處理完畢")
+
+@csrf_exempt
+def run_script_blank_invoice_no(request):
+    output_path = r"C:\\Users\\waylin\\mydjango\\e_invoice\\E0401\\"
+    now = datetime.now()
+    
+    current_roc_year = now.year - 1911
+    current_roc_month = now.month
+    current_period = "11408" #current_roc_year * 100 + current_roc_month  # e.g., 11502
+    period = current_period
+    generate_e0401_xml(output_path, period)
+    return HttpResponse("已處理完畢")

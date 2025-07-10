@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Allowance xmlns="urn:GEINV:eInvoiceMessage:G0401:4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:GEINV:eInvoiceMessage:G0401:4.0 G0401.xsd">
+  <Main>
+    <AllowanceNumber>AL202507020001</AllowanceNumber>
+    <AllowanceDate>20250709</AllowanceDate>
+    <Seller>
+      <Identifier>65330715</Identifier>
+      <Name>安安小舖台北</Name>
+      <Address>台北市信義區松仁路101號</Address>
+    </Seller>
+    <Buyer>
+      <Identifier>12345705</Identifier>
+      <Name>公司B</Name>
+    </Buyer>
+    <AllowanceType>2</AllowanceType>
+  </Main>
+  <Details>
+    <ProductItem>
+      <OriginalInvoiceDate>20250702</OriginalInvoiceDate>
+      <OriginalInvoiceNumber>AB00000001</OriginalInvoiceNumber>
+      <OriginalSequenceNumber>0001</OriginalSequenceNumber>
+      <OriginalDescription>商品Y</OriginalDescription>
+      <Quantity>10</Quantity>
+      <UnitPrice>250.000</UnitPrice>
+      <Amount>2500.000</Amount>
+      <AllowanceSequenceNumber>0001</AllowanceSequenceNumber>
+      <Tax>0.000</Tax>
+      <TaxType>2</TaxType>
+    </ProductItem>
+    <ProductItem>
+      <OriginalInvoiceDate>20250702</OriginalInvoiceDate>
+      <OriginalInvoiceNumber>AB00000001</OriginalInvoiceNumber>
+      <OriginalSequenceNumber>0002</OriginalSequenceNumber>
+      <OriginalDescription>商品Y</OriginalDescription>
+      <Quantity>7</Quantity>
+      <UnitPrice>83.000</UnitPrice>
+      <Amount>581.000</Amount>
+      <AllowanceSequenceNumber>0002</AllowanceSequenceNumber>
+      <Tax>0.000</Tax>
+      <TaxType>2</TaxType>
+    </ProductItem>
+  </Details>
+  <Amount>
+    <TaxAmount>0</TaxAmount>
+    <TotalAmount>3081</TotalAmount>
+  </Amount>
+</Allowance>
