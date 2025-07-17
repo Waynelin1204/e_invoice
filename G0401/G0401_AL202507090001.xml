@@ -2,7 +2,7 @@
 <Allowance xmlns="urn:GEINV:eInvoiceMessage:G0401:4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:GEINV:eInvoiceMessage:G0401:4.0 G0401.xsd">
   <Main>
     <AllowanceNumber>AL202507090001</AllowanceNumber>
-    <AllowanceDate>20250709</AllowanceDate>
+    <AllowanceDate>20250716</AllowanceDate>
     <Seller>
       <Identifier>65330715</Identifier>
       <Name>安安小舖台北</Name>
@@ -23,9 +23,9 @@
       <Unit>個</Unit>
       <Quantity>6</Quantity>
       <UnitPrice>210.000</UnitPrice>
-      <Amount>1260.000</Amount>
+      <Amount>1260.0</Amount>
       <AllowanceSequenceNumber>1</AllowanceSequenceNumber>
-      <Tax>63.000</Tax>
+      <Tax>63.0</Tax>
       <TaxType>1</TaxType>
     </ProductItem>
     <ProductItem>
@@ -36,9 +36,9 @@
       <Unit>個</Unit>
       <Quantity>2</Quantity>
       <UnitPrice>104.000</UnitPrice>
-      <Amount>208.000</Amount>
+      <Amount>208.0</Amount>
       <AllowanceSequenceNumber>2</AllowanceSequenceNumber>
-      <Tax>10.000</Tax>
+      <Tax>10.0</Tax>
       <TaxType>1</TaxType>
     </ProductItem>
   </Details>

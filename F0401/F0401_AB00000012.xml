@@ -2,89 +2,87 @@
 <Invoice xmlns="urn:GEINV:eInvoiceMessage:F0401:4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:GEINV:eInvoiceMessage:F0401:4.0 F0401.xsd">
   <Main>
     <InvoiceNumber>AB00000012</InvoiceNumber>
-    <InvoiceDate>20250709</InvoiceDate>
-    <InvoiceTime>08:27:05</InvoiceTime>
+    <InvoiceDate>20250714</InvoiceDate>
+    <InvoiceTime>10:18:33</InvoiceTime>
     <Seller>
       <Identifier>65330715</Identifier>
       <Name>安安小舖台北</Name>
       <Address>台北市信義區松仁路101號</Address>
     </Seller>
     <Buyer>
-      <Identifier>23578306</Identifier>
-      <Name>公司E</Name>
+      <Identifier>85491329</Identifier>
+      <Name>公司G</Name>
     </Buyer>
     <InvoiceType>07</InvoiceType>
     <DonateMark>0</DonateMark>
     <PrintMark>Y</PrintMark>
-    <RandomNumber>8209</RandomNumber>
+    <RandomNumber>1905</RandomNumber>
   </Main>
   <Details>
     <ProductItem>
-      <Description>商品V</Description>
-      <Quantity>4</Quantity>
-      <Unit>公斤</Unit>
-      <UnitPrice>455.0000000</UnitPrice>
+      <Description>商品X</Description>
+      <Quantity>10</Quantity>
+      <Unit>個</Unit>
+      <UnitPrice>373.0</UnitPrice>
       <TaxType>1</TaxType>
-      <Amount>1820.0000000</Amount>
+      <Amount>3730.0000000</Amount>
       <SequenceNumber>0001</SequenceNumber>
-      <Remark>商品備註</Remark>
     </ProductItem>
     <ProductItem>
       <Description>商品X</Description>
       <Quantity>7</Quantity>
-      <Unit>箱</Unit>
-      <UnitPrice>371.0000000</UnitPrice>
+      <Unit>公斤</Unit>
+      <UnitPrice>383.0</UnitPrice>
       <TaxType>1</TaxType>
-      <Amount>2597.0000000</Amount>
+      <Amount>2681.0000000</Amount>
       <SequenceNumber>0002</SequenceNumber>
+    </ProductItem>
+    <ProductItem>
+      <Description>商品W</Description>
+      <Quantity>8</Quantity>
+      <Unit>公斤</Unit>
+      <UnitPrice>328.0</UnitPrice>
+      <TaxType>1</TaxType>
+      <Amount>2624.0000000</Amount>
+      <SequenceNumber>0003</SequenceNumber>
       <Remark>商品備註</Remark>
     </ProductItem>
     <ProductItem>
-      <Description>商品Z</Description>
-      <Quantity>6</Quantity>
-      <Unit>公斤</Unit>
-      <UnitPrice>216.0000000</UnitPrice>
-      <TaxType>1</TaxType>
-      <Amount>1296.0000000</Amount>
-      <SequenceNumber>0003</SequenceNumber>
-    </ProductItem>
-    <ProductItem>
-      <Description>商品Z</Description>
-      <Quantity>3</Quantity>
+      <Description>商品V</Description>
+      <Quantity>7</Quantity>
       <Unit>個</Unit>
-      <UnitPrice>366.0000000</UnitPrice>
+      <UnitPrice>500.0</UnitPrice>
       <TaxType>1</TaxType>
-      <Amount>1098.0000000</Amount>
+      <Amount>3500.0000000</Amount>
       <SequenceNumber>0004</SequenceNumber>
     </ProductItem>
     <ProductItem>
-      <Description>商品U</Description>
-      <Quantity>8</Quantity>
+      <Description>商品V</Description>
+      <Quantity>4</Quantity>
       <Unit>個</Unit>
-      <UnitPrice>282.0000000</UnitPrice>
+      <UnitPrice>286.0</UnitPrice>
       <TaxType>1</TaxType>
-      <Amount>2256.0000000</Amount>
+      <Amount>1144.0000000</Amount>
       <SequenceNumber>0005</SequenceNumber>
-      <Remark>商品備註</Remark>
     </ProductItem>
     <ProductItem>
-      <Description>商品X</Description>
-      <Quantity>1</Quantity>
-      <Unit>箱</Unit>
-      <UnitPrice>443.0000000</UnitPrice>
+      <Description>商品W</Description>
+      <Quantity>6</Quantity>
+      <Unit>公斤</Unit>
+      <UnitPrice>386.0</UnitPrice>
       <TaxType>1</TaxType>
-      <Amount>443.0000000</Amount>
+      <Amount>2316.0000000</Amount>
       <SequenceNumber>0006</SequenceNumber>
       <Remark>商品備註</Remark>
     </ProductItem>
   </Details>
   <Amount>
-    <SalesAmount>9510</SalesAmount>
+    <SalesAmount>15995</SalesAmount>
     <FreeTaxSalesAmount>0</FreeTaxSalesAmount>
     <ZeroTaxSalesAmount>0</ZeroTaxSalesAmount>
     <TaxType>1</TaxType>
     <TaxRate>0.0</TaxRate>
-    <TaxAmount>476</TaxAmount>
-    <TotalAmount>9986</TotalAmount>
+    <TaxAmount>799</TaxAmount>
+    <TotalAmount>16794</TotalAmount>
   </Amount>
 </Invoice>

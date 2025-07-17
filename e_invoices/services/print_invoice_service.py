@@ -113,7 +113,6 @@ def generate_invoice_B2C_a4(invoice, aes_key: bytes, output_dir: str, random_cod
             print("[Debug] DataOverflowError 被觸發")
             return False
 
-        
     y = invoice.invoice_date.year - 1911
     date_code = f"{y:03d}{invoice.invoice_date.month:02d}{invoice.invoice_date.day:02d}"
     buyer_id = (getattr(invoice, "buyer_identifier", "") or "00000000").ljust(8, '0')[:8]
@@ -245,12 +244,12 @@ def generate_invoice_B2C_a4(invoice, aes_key: bytes, output_dir: str, random_cod
         return cropped_img
     
 
-
     # 發票基本文字
     draw_text_centered(invoice.company.company_name, 0.7, 0.8, bold=False) #1.3->0.7
     draw_text_centered("電子發票證明聯", 1.8, 1.0, bold=False) #2.2->1.6
     draw_text_centered(f"{y}年{invoice.invoice_date.month:02d}-{invoice.invoice_date.month+1:02d}月", 2.6, 0.8, bold=False) #2.7->2.1
-    draw_text_centered(f"{invoice.invoice_number[:2]}-{invoice.invoice_number[2:]}", 3.2, 0.8, bold=False) #3.2->2.6
+    #draw_text_centered(f"{invoice.invoice_number[:2]}-{invoice.invoice_number[2:]}", 3.2, 0.8, bold=False) #3.2->2.6 2013年後新申請電子發票樣張不可有"-""
+    draw_text_centered(f"{invoice.invoice_number[:2]}{invoice.invoice_number[2:]}", 3.2, 0.8, bold=False) #3.2->2.6
     draw_text_left(f"{invoice.invoice_date.strftime('%Y-%m-%d')} {invoice.invoice_time}", 3.9, 0.4)
     draw_text_left(f"隨機碼: {random_code}", 4.3, 0.4)
 

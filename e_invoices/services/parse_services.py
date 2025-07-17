@@ -185,24 +185,27 @@ def allowance_validate_row(row, company_id, allowance_amount_dict, allowance_tax
 
         if not status:
             errors.append(f"E05-原發票號碼 {line_original_invoice_number} 查無發票資料")
+            
         elif status != "已開立":
             errors.append(f"E05-原發票號碼 {line_original_invoice_number} 為「{status}」，不允許折讓")
-        else:
-            linked_invoice = TWB2BMainItem.objects.filter(
-                invoice_number=line_original_invoice_number
-            ).prefetch_related('items').first()
-            print(linked_invoice)
+            
+        # 檢查description是否在原發票中
+        # else:
+        #     linked_invoice = TWB2BMainItem.objects.filter(
+        #         invoice_number=line_original_invoice_number
+        #     ).prefetch_related('items').first()
+        #     print(linked_invoice)
 
-            if linked_invoice:
-                original_descriptions = [
-                    (item.line_description or "").strip()
-                    for item in linked_invoice.items.all()
-                ]
+        #     if linked_invoice:
+        #         original_descriptions = [
+        #             (item.line_description or "").strip()
+        #             for item in linked_invoice.items.all()
+        #         ]
 
-                if current_description not in original_descriptions:
-                    errors.append(
-                        f"E06-折讓品名「{current_description}」在原發票中找不到對應品名"
-                    )
+        #         if current_description not in original_descriptions:
+        #             errors.append(
+        #                 f"E06-折讓品名「{current_description}」在原發票中找不到對應品名"
+        #             )
 
     return errors
 

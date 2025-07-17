@@ -16,14 +16,14 @@
     <InvoiceType>07</InvoiceType>
     <DonateMark>0</DonateMark>
     <PrintMark>Y</PrintMark>
-    <RandomNumber>3438</RandomNumber>
+    <RandomNumber>5373</RandomNumber>
   </Main>
   <Details>
     <ProductItem>
       <Description>商品Z</Description>
       <Quantity>8</Quantity>
       <Unit>箱</Unit>
-      <UnitPrice>377.0000000</UnitPrice>
+      <UnitPrice>377.0</UnitPrice>
       <TaxType>1</TaxType>
       <Amount>3016.0000000</Amount>
       <SequenceNumber>0001</SequenceNumber>
@@ -33,7 +33,7 @@
       <Description>商品Y</Description>
       <Quantity>7</Quantity>
       <Unit>個</Unit>
-      <UnitPrice>88.0000000</UnitPrice>
+      <UnitPrice>88.0</UnitPrice>
       <TaxType>1</TaxType>
       <Amount>616.0000000</Amount>
       <SequenceNumber>0002</SequenceNumber>
@@ -42,7 +42,7 @@
       <Description>商品Y</Description>
       <Quantity>1</Quantity>
       <Unit>個</Unit>
-      <UnitPrice>224.0000000</UnitPrice>
+      <UnitPrice>224.0</UnitPrice>
       <TaxType>1</TaxType>
       <Amount>224.0000000</Amount>
       <SequenceNumber>0003</SequenceNumber>
@@ -51,7 +51,7 @@
       <Description>商品W</Description>
       <Quantity>1</Quantity>
       <Unit>箱</Unit>
-      <UnitPrice>99.0000000</UnitPrice>
+      <UnitPrice>99.0</UnitPrice>
       <TaxType>1</TaxType>
       <Amount>99.0000000</Amount>
       <SequenceNumber>0004</SequenceNumber>
@@ -61,7 +61,7 @@
       <Description>商品W</Description>
       <Quantity>5</Quantity>
       <Unit>公斤</Unit>
-      <UnitPrice>416.0000000</UnitPrice>
+      <UnitPrice>416.0</UnitPrice>
       <TaxType>1</TaxType>
       <Amount>2080.0000000</Amount>
       <SequenceNumber>0005</SequenceNumber>
@@ -70,7 +70,7 @@
       <Description>商品Z</Description>
       <Quantity>8</Quantity>
       <Unit>公斤</Unit>
-      <UnitPrice>460.0000000</UnitPrice>
+      <UnitPrice>460.0</UnitPrice>
       <TaxType>1</TaxType>
       <Amount>3680.0000000</Amount>
       <SequenceNumber>0006</SequenceNumber>

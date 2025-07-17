@@ -1,3 +1,5 @@
+{% load humanize %}
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -255,8 +257,8 @@
                     <ul class="nav flex-column text-end">
                         <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
                         <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
-                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單B2B</a></li>
-                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2C">折讓證明單B2C</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}">折讓證明單B2B</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}">折讓證明單B2C</a></li>
                         <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
                     </ul>
                 </div>
@@ -451,6 +453,8 @@
                 <input type="hidden" name="selected_documents" id="selectedInvoicesExport">
                 <div class="d-flex justify-content-start gap-1 mb-10">
                     <button type="submit" class="btn btn-success btn-spacing" id="exportExcelBtn">開立折讓單</button>
+                    <input type="hidden" name="return_querystring" value="{{ request.GET.urlencode }}">
+
                 </div>
             </form> 
                        
@@ -461,6 +465,8 @@
                     {% if request.user.groups.all.0.name == 'keyuser' or request.user.is_superuser %}
                         <button type="submit" class="btn btn-danger btn-spacing" id="deleteButton">刪除發票</button>
                         <input type="hidden" name="selected_documents" id="selectedInvoicesDelete">
+                        <input type="hidden" name="return_querystring" value="{{ request.GET.urlencode }}">
+
                     {% else %}
                         <button type="button" class="btn btn-danger btn-spacing" data-bs-toggle="modal" data-bs-target="#noPermissionModal">刪除發票</button>
                     {% endif %}
@@ -495,10 +501,11 @@
                             <th>稅額檢查</th>
                             <th>折讓單開立狀態</th>
                             <th>稅局回覆時間</th>                            
-                            <th>稅局回覆代碼</th>
+                            <!-- <th>稅局回覆代碼</th> -->
                             <th>稅局回覆狀態</th>
                             <th>折讓單詳情</th>
                             <th>作廢折讓單</th>
+                            <th>作廢回覆</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -558,7 +565,7 @@
                                 {% endif %}
                             </td>
                             <td class="text-left" >{{ allowance.mof_date|default:"" }}</td>                           
-                            <td class="text-left" >{{ allowance.mof_response|default:"" }}</td>                           
+                            <!-- <td class="text-left" >{{ allowance.mof_response|default:"" }}</td>                            -->
                             <td class="text-left" >{{ allowance.mof_reason|default:"" }}</td>  
                             <!-- <td class="text-center" >
                                 發票作廢狀態下拉選單
@@ -587,6 +594,7 @@
                                     {% endif %}
                                 {% endif %}
                             </td>
+                            <td class="text-left" >{{ allowance.cancel_mof_reason|default:"" }}</td> 
                         </tr>
                         {% empty %}
                         <tr>
@@ -636,6 +644,7 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- 全選/取消全選功能 script -->
 <script>
     // 全選/取消全選功能
     document.getElementById('selectAll').addEventListener('change', function() {
@@ -659,6 +668,7 @@
     //    window.location.href = url;
     //});
 </script>
+<!-- 登出確認 script -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const logoutLink = document.getElementById('logoutLink');
@@ -690,6 +700,7 @@
         });
     });
 </script>
+<!-- 彈出發票詳情 script -->
 <script>
 function openPopup(url, position = 'center') {
     const w = 800;
@@ -810,6 +821,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("exportForm");
     const confirmExportModal = new bootstrap.Modal(document.getElementById("confirmExportModal"));
     const confirmExportBtn = document.getElementById("confirmExportBtn");
+    const emptySelectionModal = new bootstrap.Modal(document.getElementById("emptySelectionModal"));
+
 
 
     // 更新選取的發票清單
@@ -844,7 +857,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // 確保選擇了至少一張發票
         if (selectedInvoicesInput.value === "") {
-            alert("請選擇至少一張發票再傳送！");
+            emptySelectionModal.show();
         } else {
             console.log("Displaying Modal...");
             confirmExportModal.show(); // 顯示 Bootstrap Modal
@@ -863,6 +876,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 </script>
+<!-- 限定篩選時間範圍 script -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const startInput = document.getElementById("start_date");
@@ -919,6 +933,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("deleteForm");
     const confirmDeleteModal = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
     const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+    const emptySelectionModal_delete = new bootstrap.Modal(document.getElementById("emptySelectionModaldelete"));
 
     function updateSelectedInvoices() {
         let selected = [];
@@ -949,7 +964,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // 確保選擇了至少一張發票
         if (selectedInvoicesInput.value === "") {
-            alert("請選擇至少一張發票再刪除！");
+            emptySelectionModal_delete.show();
         } else {
             console.log("Displaying Modal...");
             confirmDeleteModal.show(); // 顯示 Bootstrap Modal
@@ -1026,7 +1041,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     
 });
-</script> 
+</script>
+<!-- 搜尋功能 script--> 
 <script>
     // 搜尋功能
     document.querySelector('input[name="search"]').addEventListener('input', function () {
@@ -1053,6 +1069,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 </script>
+<!-- 使用者個人資料選單 script-->
 <script>
     // 用來控制按鈕點擊時展開選單
     $(document).ready(function() {
@@ -1069,6 +1086,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 </script>
+<!-- 格式化數字顯示 script-->
 <script>
     function formatNumber(value) {
     if (value == null) return '0';
@@ -1079,6 +1097,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 }
 </script>
+<!-- 發票狀態資料 sciprt-->
 <script>
     let invoiceStatusData = { current: [], previous: [] };
 
@@ -1159,7 +1178,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let currentCancelReason = "";
     let currentCancelRemark = "";
 
-    // 點擊註銷發票按鈕
+    // 點擊作廢發票按鈕
     document.querySelectorAll(".cancel-btn").forEach(btn => {
         btn.addEventListener("click", function () {
             currentAllowanceId = this.dataset.id;
@@ -1221,6 +1240,19 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 </script>
+<!-- 系統訊息傳送到modal -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    {% if messages %}
+        let msg = "";
+        {% for message in messages %}
+            msg += "{{ message|escapejs }}\n";
+        {% endfor %}
+        document.getElementById("modalMessage").innerText = msg.trim();
+        new bootstrap.Modal(document.getElementById("resultModal")).show();
+    {% endif %}
+});
+</script>
 <!-- 刪除確認 Modal -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -1239,6 +1271,41 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
     </div>
 </div>
+<!-- 開立折讓單沒有勾選直接按開立按鈕的提示 Modal -->
+<div class="modal fade" id="emptySelectionModal" tabindex="-1" aria-labelledby="emptySelectionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="emptySelectionModalLabel">提醒</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body text-dark">
+        請選擇至少一張折讓單！
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 刪除折讓單沒有勾選直接按刪除按鈕的提示 Modal -->
+<div class="modal fade" id="emptySelectionModaldelete" tabindex="-1" aria-labelledby="emptySelectionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="emptySelectionModalLabel">提醒</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body text-dark">
+        請選擇至少一張折讓單！
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 作廢折讓單確認 Modal -->
 <div class="modal fade" id="confirmVoidModal" tabindex="-1" aria-labelledby="confirmVoidModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -1256,23 +1323,7 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
     </div>
 </div>
-<div class="modal fade" id="confirmExportModal" tabindex="-1" aria-labelledby="confirmExportModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="confirmExportModalLabel">確認送出</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-dark">
-                您確定要送出所選的折讓證明單嗎？此操作無法復原。
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" id="confirmExportBtn">確定送出</button>
-            </div>
-        </div>
-    </div>
-</div>
+
 <div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content text-dark">
@@ -1331,6 +1382,58 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
   </div>
 </div>
+<div class="modal fade" id="confirmFinalCancelModal" tabindex="-1" aria-labelledby="confirmFinalCancelModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="confirmFinalCancelModalLabel">最終確認作廢</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-dark">
+        您確定要作廢該發票嗎？此操作無法復原。
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button class="btn btn-danger" id="finalCancelBtn">確定作廢</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 開立折讓單確認New Modal -->
+<div class="modal fade" id="confirmExportModal" tabindex="-1" aria-labelledby="confirmExportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmExportModalLabel">確認送出</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-dark">
+                您確定要送出所選的折讓證明單嗎？此操作無法復原。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmExportBtn">確定送出</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 系統訊息 Modal -->
+<div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content fs-5">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="resultModalLabel">提示訊息</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-dark">
+        <pre id="modalMessage" class="mb-0"></pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">確定</button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- 註銷功能未實裝 -->
 <!-- <div class="modal fade" id="confirmFinalVoidModal" tabindex="-1" aria-labelledby="confirmFinalVoidModalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -1349,22 +1452,6 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
   </div>
 </div> -->
-<div class="modal fade" id="confirmFinalCancelModal" tabindex="-1" aria-labelledby="confirmFinalCancelModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title" id="confirmFinalCancelModalLabel">最終確認作廢</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body text-dark">
-        您確定要作廢該發票嗎？此操作無法復原。
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-        <button class="btn btn-danger" id="finalCancelBtn">確定作廢</button>
-      </div>
-    </div>
-  </div>
-</div>
+
 </body>
 </html>

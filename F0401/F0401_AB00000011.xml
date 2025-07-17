@@ -2,87 +2,86 @@
 <Invoice xmlns="urn:GEINV:eInvoiceMessage:F0401:4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:GEINV:eInvoiceMessage:F0401:4.0 F0401.xsd">
   <Main>
     <InvoiceNumber>AB00000011</InvoiceNumber>
-    <InvoiceDate>20250709</InvoiceDate>
-    <InvoiceTime>02:36:15</InvoiceTime>
+    <InvoiceDate>20250714</InvoiceDate>
+    <InvoiceTime>10:14:28</InvoiceTime>
     <Seller>
       <Identifier>65330715</Identifier>
       <Name>安安小舖台北</Name>
       <Address>台北市信義區松仁路101號</Address>
     </Seller>
     <Buyer>
-      <Identifier>56890372</Identifier>
-      <Name>公司D</Name>
+      <Identifier>85491329</Identifier>
+      <Name>公司G</Name>
     </Buyer>
     <InvoiceType>07</InvoiceType>
     <DonateMark>0</DonateMark>
     <PrintMark>Y</PrintMark>
-    <RandomNumber>8414</RandomNumber>
+    <RandomNumber>2712</RandomNumber>
   </Main>
   <Details>
-    <ProductItem>
-      <Description>商品V</Description>
-      <Quantity>8</Quantity>
-      <Unit>公斤</Unit>
-      <UnitPrice>73.0000000</UnitPrice>
-      <TaxType>3</TaxType>
-      <Amount>584.0000000</Amount>
-      <SequenceNumber>0001</SequenceNumber>
-      <Remark>商品備註</Remark>
-    </ProductItem>
-    <ProductItem>
-      <Description>商品U</Description>
-      <Quantity>3</Quantity>
-      <Unit>公斤</Unit>
-      <UnitPrice>206.0000000</UnitPrice>
-      <TaxType>3</TaxType>
-      <Amount>618.0000000</Amount>
-      <SequenceNumber>0002</SequenceNumber>
-    </ProductItem>
     <ProductItem>
       <Description>商品W</Description>
       <Quantity>4</Quantity>
       <Unit>箱</Unit>
-      <UnitPrice>494.0000000</UnitPrice>
-      <TaxType>3</TaxType>
-      <Amount>1976.0000000</Amount>
-      <SequenceNumber>0003</SequenceNumber>
-      <Remark>商品備註</Remark>
+      <UnitPrice>326.0</UnitPrice>
+      <TaxType>1</TaxType>
+      <Amount>1304.0000000</Amount>
+      <SequenceNumber>0001</SequenceNumber>
     </ProductItem>
     <ProductItem>
       <Description>商品W</Description>
       <Quantity>1</Quantity>
-      <Unit>公斤</Unit>
-      <UnitPrice>194.0000000</UnitPrice>
-      <TaxType>3</TaxType>
-      <Amount>194.0000000</Amount>
-      <SequenceNumber>0004</SequenceNumber>
+      <Unit>箱</Unit>
+      <UnitPrice>152.0</UnitPrice>
+      <TaxType>1</TaxType>
+      <Amount>152.0000000</Amount>
+      <SequenceNumber>0002</SequenceNumber>
     </ProductItem>
     <ProductItem>
-      <Description>商品V</Description>
-      <Quantity>10</Quantity>
+      <Description>商品Y</Description>
+      <Quantity>2</Quantity>
+      <Unit>公斤</Unit>
+      <UnitPrice>143.0</UnitPrice>
+      <TaxType>1</TaxType>
+      <Amount>286.0000000</Amount>
+      <SequenceNumber>0003</SequenceNumber>
+    </ProductItem>
+    <ProductItem>
+      <Description>商品W</Description>
+      <Quantity>8</Quantity>
       <Unit>個</Unit>
-      <UnitPrice>144.0000000</UnitPrice>
-      <TaxType>3</TaxType>
-      <Amount>1440.0000000</Amount>
+      <UnitPrice>253.0</UnitPrice>
+      <TaxType>1</TaxType>
+      <Amount>2024.0000000</Amount>
+      <SequenceNumber>0004</SequenceNumber>
+      <Remark>商品備註</Remark>
+    </ProductItem>
+    <ProductItem>
+      <Description>商品U</Description>
+      <Quantity>5</Quantity>
+      <Unit>個</Unit>
+      <UnitPrice>233.0</UnitPrice>
+      <TaxType>1</TaxType>
+      <Amount>1165.0000000</Amount>
       <SequenceNumber>0005</SequenceNumber>
     </ProductItem>
     <ProductItem>
       <Description>商品Y</Description>
-      <Quantity>7</Quantity>
+      <Quantity>9</Quantity>
       <Unit>公斤</Unit>
-      <UnitPrice>227.0000000</UnitPrice>
-      <TaxType>3</TaxType>
-      <Amount>1589.0000000</Amount>
+      <UnitPrice>232.0</UnitPrice>
+      <TaxType>1</TaxType>
+      <Amount>2088.0000000</Amount>
       <SequenceNumber>0006</SequenceNumber>
     </ProductItem>
   </Details>
   <Amount>
-    <SalesAmount>0</SalesAmount>
-    <FreeTaxSalesAmount>6401</FreeTaxSalesAmount>
+    <SalesAmount>7019</SalesAmount>
+    <FreeTaxSalesAmount>0</FreeTaxSalesAmount>
     <ZeroTaxSalesAmount>0</ZeroTaxSalesAmount>
-    <TaxType>3</TaxType>
+    <TaxType>1</TaxType>
     <TaxRate>0.0</TaxRate>
-    <TaxAmount>0</TaxAmount>
-    <TotalAmount>6401</TotalAmount>
+    <TaxAmount>350</TaxAmount>
+    <TotalAmount>7369</TotalAmount>
   </Amount>
 </Invoice>

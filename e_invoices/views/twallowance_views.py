@@ -24,6 +24,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.urls import reverse
 
 # ====== Django DB 操作 ======
 from django.db import connection
@@ -48,6 +49,7 @@ from e_invoices.services.validate_allowance import validate_allowance
 from decimal import Decimal, InvalidOperation
 from e_invoices.services import generate_G0401_xml_files, generate_G0501_xml_files, generate_allowance_pdf, send_allowance_summary_email, send_allowance_canceled_email
 output_path = r"C:\\Users\\waylin\\mydjango\\e_invoice\\print\\"
+to_email = "waylin@deloitte.com.tw"
 def update_decimal_field(obj, field_name, raw_val):
     """
     如果 raw_val 有值且為合法 Decimal，更新 obj 的指定欄位。
@@ -68,7 +70,6 @@ def twallowance(request):
     
     # 取得該使用者可查看的公司名稱列表
     viewable_company_codes = user_profile.viewable_companies.values_list('company_id', flat=True)
-
     # 取得B2B或B2C列表
     b2b_b2c_filter =  request.GET.get("b2b_b2c")
     
@@ -192,14 +193,14 @@ def twallowance_filter(request):
     filters &= Q(company__in=viewable_company_codes)
 
     # 查詢所有符合條件的發票資料
-    invoices_list = TWAllowance.objects.filter(filters).order_by('-erp_date')
+    allowances_list = TWAllowance.objects.filter(filters).order_by('-erp_date')
 
     # 獲取篩選條件的選項
     allowance_status = TWAllowance.objects.values_list('allowance_status', flat=True).distinct()
     b2b_b2c = TWAllowance.objects.values_list('b2b_b2c', flat=True).distinct()
 
     # 分頁
-    paginator = Paginator(invoices_list, display_limit)  # 每頁顯示的資料筆數
+    paginator = Paginator(allowances_list, display_limit)  # 每頁顯示的資料筆數
     page_number = request.GET.get('page')  # 獲取當前頁碼
     page_obj = paginator.get_page(page_number)  # 根據頁碼獲取相應的頁面資料
 
@@ -332,24 +333,41 @@ def twallowance_update(request, id):
 @csrf_exempt
 def twallowance_export_invoices(request):
     if request.method != 'POST':
-        return HttpResponse("Only POST allowed", status=405)
+        #return HttpResponse("Only POST allowed", status=405)
+        return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
 
     raw_ids = request.POST.get("selected_documents", "")
     selected_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
+    return_querystring = request.POST.get('return_querystring', '')  # ⬅️ 關鍵步驟
+
+    #if not selected_ids:
+    #    return HttpResponse("No invoice IDs provided", status=400)
+
     if not selected_ids:
-        return HttpResponse("No invoice IDs provided", status=400)
+        messages.error(request, "開立失敗：未選擇任何折讓單。")
+        redirect_url = reverse('twallowance')
+        if return_querystring:
+            redirect_url += '?' + return_querystring
+        return redirect(redirect_url)
+    
+
 
     #invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items')
     allowances = TWAllowance.objects.filter(id__in=selected_ids).exclude(allowance_status='已開立')
+    #if not allowances.exists():
+    #    return HttpResponse("No invoices found", status=404)
     if not allowances.exists():
-        return HttpResponse("No invoices found", status=404)
-    
-    all_selected_allowances = TWAllowance.objects.filter(id__in=selected_ids)
+        messages.error(request, "找不到折讓單，請確認是否重複或資料不完整")
+        redirect_url = reverse('twallowance')
+        if return_querystring:
+            redirect_url += '?' + return_querystring
+        return redirect(redirect_url)
+    #all_selected_allowances = TWAllowance.objects.filter(id__in=selected_ids)
 
-    allowances = all_selected_allowances.exclude(allowance_status='已開立')
+    #allowances = all_selected_allowances.exclude(allowance_status='已開立')
 
-    if not allowances.exists():
-        return HttpResponse("No valid allowances found", status=404)    
+    #if not allowances.exists():
+    #    return HttpResponse("No valid allowances found", status=404)    
 
     # # 先找出所有選取的發票
     # all_selected_invoices = TWAllowance.objects.filter(id__in=selected_ids)
@@ -455,10 +473,7 @@ def twallowance_export_invoices(request):
                 original_number = item.line_original_invoice_number
                 if original_number:
                     try:
-                        original_invoice = TWB2BMainItem.objects.get(
-                            invoice_number=original_number,
-                            company=allowance.company
-                        )
+                        original_invoice = TWB2BMainItem.objects.filter(invoice_number=original_number).first()
                         if original_invoice.allowance_status != "已開立折讓單":
                             original_invoice.allowance_status = "已開立折讓單"
                             original_invoice.save()
@@ -541,12 +556,13 @@ def twallowance_export_invoices(request):
     for item in excluded_list:
         print(f"- 折讓單號: {item['allowance_number']}, 金額合法: {item['is_valid_amount']}, 稅額合法: {item['is_valid_tax']}")
 
-    to_email = "waylin@deloitte.com.tw"
-
     send_allowance_summary_email(to_email, success_count, excluded_count,success_list, excluded_list)
+    messages.success(request, f"成功開立 {success_count} 張折讓單")
     
-    
-    return response
+    redirect_url = reverse('twallowance')
+    if return_querystring:
+            redirect_url += '?' + return_querystring
+    return redirect(redirect_url)
 
 
 @csrf_exempt

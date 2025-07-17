@@ -403,8 +403,8 @@ def render_and_merge_invoices(allowance, output_folder, column_widths_cm, header
     draw_table_first_page(allowance, img, draw, (1.3, 1), column_widths_cm, headers, first_page_rows,
                             total_tax_amount,  total_amount, company_name,
                           company_identifier, company_address, wrap_text_fn)
-    page1_path = os.path.join(output_folder, f"page{page_num}.pdf")
-    img.save(page1_path, "PDF", resolution=dpi)
+    # page1_path = os.path.join(output_folder, f"page{page_num}.pdf")
+    # img.save(page1_path, "PDF", resolution=dpi)
     #page_files.append(page1_path)
     #page_num += 1
 
@@ -435,6 +435,8 @@ def render_and_merge_invoices(allowance, output_folder, column_widths_cm, header
     #     if os.path.exists(pdf):
     #         os.remove(pdf)
 
+    # ✅ 存檔：直接以 final name 儲存
+    img.save(merged_path, "PDF", resolution=dpi)
     return merged_path
 
 

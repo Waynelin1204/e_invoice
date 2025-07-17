@@ -112,7 +112,7 @@ class TWB2BMainItem(models.Model):
         null=True)     # 作廢備註
     
     cancel_mof_date = models.DateField(blank=True, null=True)     #    稅局回應日
-    cancel_mof_respone = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
+    cancel_mof_response = models.CharField(max_length=200, blank=True, null=True)     # 稅局回應
     cancel_mof_reason = models.CharField(max_length=200, blank=True, null=True)     # 稅局拒絕理由
     discount_amount = models.DecimalField(max_digits=13, decimal_places=1,blank=True, null=True)
     tax_identifier = models.CharField(max_length=13, blank=True, null=True)
