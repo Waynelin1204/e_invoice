@@ -6,3 +6,6 @@ from .twallowance_models import *
 from .twb2bmainitem_models import *
 from .company_models import Company
 from .twallowance_models import *
+from .config_models import *
+from .buyer_models import *
+from .twb2bmainitemin_models import *

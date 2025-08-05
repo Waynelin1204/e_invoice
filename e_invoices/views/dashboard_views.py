@@ -272,4 +272,5 @@ def invoice_status(request):
             }
     }
 
+
     return JsonResponse(result, safe=False)

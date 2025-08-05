@@ -16,7 +16,7 @@ class NumberDistribution(models.Model):
     invoice_type = models.CharField(max_length=2) # 07 or 08
     current_number = models.CharField(max_length=8, blank=True, null=True)  # 當前號碼
     last_used_date = models.DateField(blank=True, null=True)  # 最後使用日期
-    status = models.CharField(max_length=10, choices=[('available', 'Available'), ('used', 'Used')], default='available')
+    status = models.CharField(max_length=10, choices=[('available', 'Available'), ('uploaded', 'Uploaded')], default='available')
 
     def __str__(self):
         return f"{self.company}"

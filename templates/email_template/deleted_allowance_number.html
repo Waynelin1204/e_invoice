@@ -1,0 +1,13 @@
+<html>
+<body>
+    <p>您好：</p>
+    <p>✅ 本次已成功刪除 <strong>{{ deleted_count }}</strong> 張發票：</p>
+    <ul>
+        {% for line in deleted_list %}
+        <li>{{ line }}</li>
+        {% endfor %}
+    </ul>
+
+    <p>請確認相關狀況。</p>
+</body>
+</html>

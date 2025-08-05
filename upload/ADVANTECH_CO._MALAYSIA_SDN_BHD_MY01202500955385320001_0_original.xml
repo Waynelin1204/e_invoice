@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:pagero:PageroUniversalFormat:Invoice:1.0" xmlns:cac="urn:pagero:CommonAggregateComponents:1.0" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:puf="urn:pagero:ExtensionComponent:1.0" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
+<cbc:CustomizationID>urn:pagero.com:puf:billing:2.0</cbc:CustomizationID>
+<cbc:ProfileID>urn:pagero.com:puf:billing:1.0</cbc:ProfileID>
+<cbc:ID>MY01202500955385320001</cbc:ID>
+<cbc:IssueDate>2025-07-25</cbc:IssueDate>
+<cbc:IssueTime>16:03:43</cbc:IssueTime>
+<cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+<cbc:DocumentCurrencyCode>MYR</cbc:DocumentCurrencyCode>
+<cbc:BuyerReference>SRPMY00004</cbc:BuyerReference>
+<cac:OrderReference>
+<cbc:ID>PO030222</cbc:ID>
+</cac:OrderReference>
+<cac:AccountingSupplierParty>
+<cac:Party>
+<cbc:IndustryClassificationCode name="Trading PC-based automation &amp; industrial PC">47411</cbc:IndustryClassificationCode>
+<cac:PartyIdentification>
+<cbc:ID schemeID="MY:TIN">C12024244030</cbc:ID>
+</cac:PartyIdentification>
+<cac:PartyIdentification>
+<cbc:ID schemeID="MY:BRN">200501036894</cbc:ID>
+</cac:PartyIdentification>
+<cac:PartyName>
+<cbc:Name>ADVANTECH CO. MALAYSIA SDN BHD</cbc:Name>
+</cac:PartyName>
+<cac:PostalAddress>
+<cbc:StreetName>9 &amp; 11, Lorong Saga Jaya 9,</cbc:StreetName>
+<cbc:CityName>Taman Perindustrian Saga Jaya,</cbc:CityName>
+<cbc:PostalZone>13600</cbc:PostalZone>
+<cbc:CountrySubentityCode>07</cbc:CountrySubentityCode>
+<cac:Country>
+<cbc:IdentificationCode>MY</cbc:IdentificationCode>
+</cac:Country>
+</cac:PostalAddress>
+<cac:PartyTaxScheme>
+<cbc:CompanyID>P13-2303-22000003</cbc:CompanyID>
+<cac:TaxScheme>
+<cbc:ID>SST</cbc:ID>
+</cac:TaxScheme>
+</cac:PartyTaxScheme>
+<cac:PartyLegalEntity>
+<cbc:RegistrationName>ADVANTECH CO. MALAYSIA SDN BHD</cbc:RegistrationName>
+</cac:PartyLegalEntity>
+<cac:Contact>
+<cbc:Telephone>(604)537-9188</cbc:Telephone>
+</cac:Contact>
+</cac:Party>
+</cac:AccountingSupplierParty>
+<cac:AccountingCustomerParty>
+<cbc:SupplierAssignedAccountID>MPC125</cbc:SupplierAssignedAccountID>
+<cac:Party>
+<cac:PartyIdentification>
+<cbc:ID schemeID="MY:TIN">C11070247060</cbc:ID>
+</cac:PartyIdentification>
+<cac:PartyIdentification>
+<cbc:ID schemeID="MY:BRN">200201033928</cbc:ID>
+</cac:PartyIdentification>
+<cac:PartyName>
+<cbc:Name>CG SOLUTIONS ENTERPRISE SDN BHD</cbc:Name>
+</cac:PartyName>
+<cac:PostalAddress>
+<cbc:StreetName>771, JALAN CASSIA SELATAN 3/9, TAMAN PERINDUSTRIAN BATU KAWAN</cbc:StreetName>
+<cbc:CityName>BANDAR CASSIA, PULAU PINANG</cbc:CityName>
+<cbc:PostalZone>14110</cbc:PostalZone>
+<cbc:CountrySubentityCode>07</cbc:CountrySubentityCode>
+<cac:Country>
+<cbc:IdentificationCode>MY</cbc:IdentificationCode>
+</cac:Country>
+</cac:PostalAddress>
+<cac:PartyTaxScheme>
+<cbc:CompanyID>NA</cbc:CompanyID>
+<cac:TaxScheme>
+<cbc:ID>SST</cbc:ID>
+</cac:TaxScheme>
+</cac:PartyTaxScheme>
+<cac:PartyLegalEntity>
+<cbc:RegistrationName>CG SOLUTIONS ENTERPRISE SDN BHD</cbc:RegistrationName>
+</cac:PartyLegalEntity>
+<cac:Contact>
+<cbc:Telephone>604 588 1648</cbc:Telephone>
+<cbc:ElectronicMail>buye-invoice@cgsolus.com</cbc:ElectronicMail>
+</cac:Contact>
+</cac:Party>
+<cac:AccountingContact>
+<cbc:Name>CG SOLUTIONS ENTERPRISE SDN BHD</cbc:Name>
+<cbc:Telephone>604 588 1648</cbc:Telephone>
+<cbc:ElectronicMail>buye-invoice@cgsolus.com</cbc:ElectronicMail>
+</cac:AccountingContact>
+</cac:AccountingCustomerParty>
+<cac:Delivery>
+<cac:DeliveryLocation>
+<cac:Address>
+<cbc:StreetName>771, JALAN CASSIA SELATAN 3/9, TAMAN PERINDUSTRIAN BATU KAWAN</cbc:StreetName>
+<cbc:CityName>BANDAR CASSIA, PULAU PINANG</cbc:CityName>
+<cbc:PostalZone>14110</cbc:PostalZone>
+<cbc:CountrySubentityCode>07</cbc:CountrySubentityCode>
+<cac:Country>
+<cbc:IdentificationCode>MY</cbc:IdentificationCode>
+</cac:Country>
+</cac:Address>
+</cac:DeliveryLocation>
+<cac:DeliveryParty>
+<cac:PartyIdentification>
+<cbc:ID schemeID="MY:TIN">C11070247060</cbc:ID>
+</cac:PartyIdentification>
+<cac:PartyName>
+<cbc:Name>CG SOLUTIONS ENTERPRISE SDN BHD</cbc:Name>
+</cac:PartyName>
+<cac:PartyTaxScheme>
+<cbc:CompanyID>NA</cbc:CompanyID>
+<cac:TaxScheme>
+<cbc:ID>SST</cbc:ID>
+</cac:TaxScheme>
+</cac:PartyTaxScheme>
+</cac:DeliveryParty>
+</cac:Delivery>
+<cac:TaxTotal>
+<cbc:TaxAmount currencyID="MYR">2054.02</cbc:TaxAmount>
+<cac:TaxSubtotal>
+<cbc:TaxableAmount currencyID="MYR">41080.31</cbc:TaxableAmount>
+<cbc:TaxAmount currencyID="MYR">2054.02</cbc:TaxAmount>
+<cac:TaxCategory>
+<cbc:ID>S</cbc:ID>
+<cbc:Percent>5.00</cbc:Percent>
+<cac:TaxScheme>
+<cbc:ID>SST</cbc:ID>
+<cbc:Name>01</cbc:Name>
+</cac:TaxScheme>
+</cac:TaxCategory>
+</cac:TaxSubtotal>
+</cac:TaxTotal>
+<cac:LegalMonetaryTotal>
+<cbc:LineExtensionAmount currencyID="MYR">41080.31</cbc:LineExtensionAmount>
+<cbc:TaxExclusiveAmount currencyID="MYR">41080.31</cbc:TaxExclusiveAmount>
+<cbc:TaxInclusiveAmount currencyID="MYR">43134.33</cbc:TaxInclusiveAmount>
+<cbc:PrepaidAmount currencyID="MYR">0.00</cbc:PrepaidAmount>
+<cbc:PayableAmount currencyID="MYR">43134.33</cbc:PayableAmount>
+</cac:LegalMonetaryTotal>
+<cac:InvoiceLine>
+<ext:UBLExtensions>
+<ext:UBLExtension>
+<ext:ExtensionURI>urn:pagero:ExtensionComponent:1.0:PageroExtension:LineExtension</ext:ExtensionURI>
+<ext:ExtensionContent>
+<puf:PageroExtension>
+<puf:LineExtension>
+<puf:LineExclAllowanceChargeAmount currencyID="MYR">41080.31</puf:LineExclAllowanceChargeAmount>
+</puf:LineExtension>
+</puf:PageroExtension>
+</ext:ExtensionContent>
+</ext:UBLExtension>
+</ext:UBLExtensions>
+<cbc:ID>1</cbc:ID>
+<cbc:InvoicedQuantity unitCode="EA">1</cbc:InvoicedQuantity>
+<cbc:LineExtensionAmount currencyID="MYR">41080.31</cbc:LineExtensionAmount>
+<cac:TaxTotal>
+<cbc:TaxAmount currencyID="MYR">2054.02</cbc:TaxAmount>
+<cac:TaxSubtotal>
+<cbc:TaxableAmount currencyID="MYR">41080.31</cbc:TaxableAmount>
+<cbc:TaxAmount currencyID="MYR">2054.02</cbc:TaxAmount>
+<cac:TaxCategory>
+<cbc:ID>S</cbc:ID>
+<cbc:Percent>5.00</cbc:Percent>
+<cac:TaxScheme>
+<cbc:ID>SST</cbc:ID>
+<cbc:Name>01</cbc:Name>
+</cac:TaxScheme>
+</cac:TaxCategory>
+</cac:TaxSubtotal>
+</cac:TaxTotal>
+<cac:Item>
+<cbc:Name>XASEANASGEN003</cbc:Name>
+<cac:CommodityClassification>
+<cbc:ItemClassificationCode listID="CLASS">030</cbc:ItemClassificationCode>
+</cac:CommodityClassification>
+</cac:Item>
+<cac:Price>
+<cbc:PriceAmount currencyID="MYR">41080.31</cbc:PriceAmount>
+</cac:Price>
+</cac:InvoiceLine>
+</Invoice>

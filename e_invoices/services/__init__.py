@@ -10,3 +10,4 @@ from .parse_response_service import *
 from .parse_invoice_number_service1 import *
 from .parse_invoice_number_service import *
 from .generate_blank_invoice_xml_services import *
+from .parse_E0502_xml import *

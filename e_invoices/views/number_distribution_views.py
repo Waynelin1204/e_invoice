@@ -42,7 +42,7 @@ from e_invoices.models import (
     NumberDistribution, TWB2BMainItem, TWB2BLineItem
 )
 from e_invoices.forms import NumberDistributionForm
-from e_invoices.services import process_all_e0501_xml, generate_e0401_xml
+from e_invoices.services import process_all_E0501_xml, generate_E0402_xml
 
 
 
@@ -89,17 +89,18 @@ def get_next_invoice_number(distribution):
     
 @csrf_exempt
 def run_script_invoice_no_parse(request):
-    process_all_e0501_xml()
-    return HttpResponse("已處理完畢")
+    process_all_E0501_xml()
+    messages.success(request, "已處理完畢")
+    return redirect('create_number_distribution')
 
 @csrf_exempt
 def run_script_blank_invoice_no(request):
-    output_path = r"C:\\Users\\waylin\\mydjango\\e_invoice\\E0401\\"
     now = datetime.now()
     
     current_roc_year = now.year - 1911
     current_roc_month = now.month
     current_period = "11408" #current_roc_year * 100 + current_roc_month  # e.g., 11502
     period = current_period
-    generate_e0401_xml(output_path, period)
-    return HttpResponse("已處理完畢")
+    generate_E0402_xml(period)
+    messages.success(request, "已處理完畢")
+    return redirect('number_distribution')

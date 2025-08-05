@@ -20,7 +20,7 @@
  
         /* 側邊導覽欄 */
         .sidebar {
-            width: 220px;
+            width: 250px;
             background-color: #ffffff; /* 背景顏色 */
             border-radius: 8px; /* 圓角 */
             padding: 20px;
@@ -255,11 +255,14 @@
                 </a>
                 <div class="show" id="invoiceMenu">
                     <ul class="nav flex-column text-end">
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2B</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem' %}">銷項發票B2C</a></li>
-                        <li><a class="nav-link" href="{% url 'twallowance' %}">折讓證明單B2B</a></li>
-                        <li><a class="nav-link" href="{% url 'twallowance' %}">折讓證明單B2C</a></li>
-                        <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}">銷項發票(<span class="text-primary">存證模式</span>)</a></li>
+                        <!-- <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}">銷項發票B2C(存證)</a></li> -->
+                        <!-- <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單(存證)</a></li> -->
+                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單(<span class="text-primary">存證模式</span>)</a></li>
+                        <li><a class="nav-link" href="{% url 'twb2bmainitem_exchange_filter' %}">銷項發票(<span class="text-danger">交換模式</span>)</a></li>
+                        <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2B">折讓證明單(<span class="text-danger">交換模式</span>)</a></li>                        
+                        <!-- <li><a class="nav-link" href="{% url 'twallowance' %}?b2b_b2c=B2C">折讓證明單B2C</a></li> -->
+                        <!-- <li><a class="nav-link" href="{% url 'twb2bmainitem_filter' %}?invoice_status=已作廢">作廢發票</a></li> -->
                     </ul>
                 </div>
             </li>
@@ -293,7 +296,7 @@
     <div class="content">
         <!-- 發票列表 -->
         <div class="title-section mt-3">
-            <h3 class="fw-bold mb-4" style="color: black;" >折讓單列表</h3>
+            <h3 class="fw-bold mb-4" style="color: black;" >折讓單列表 - 存證模式</h3>
         </div>
                     <!-- 公司發票狀態總覽 Card -->
         <div class="card mb-4">
@@ -454,7 +457,6 @@
                 <div class="d-flex justify-content-start gap-1 mb-10">
                     <button type="submit" class="btn btn-success btn-spacing" id="exportExcelBtn">開立折讓單</button>
                     <input type="hidden" name="return_querystring" value="{{ request.GET.urlencode }}">
-
                 </div>
             </form> 
                        
@@ -604,7 +606,44 @@
                     </tbody>
                 </table>
             </div>
-            <div class="d-flex justify-content-center my-3">
+                        <div class="d-flex justify-content-center my-3">
+                <nav aria-label="Page navigation" class="mt-3">
+                    {% with querystring=request.GET.urlencode %}
+                        <ul class="pagination justify-content-end">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                            <a class="page-link" href="?{{ querystring }}&page=1">&laquo; 第一頁</a>
+                            </li>
+                            <li class="page-item">
+                            <a class="page-link" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">上一頁</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo; 第一頁</span></li>
+                            <li class="page-item disabled"><span class="page-link">上一頁</span></li>
+                        {% endif %}
+
+                        <li class="page-item disabled">
+                            <span class="page-link">
+                            頁碼 {{ page_obj.number }} 共 {{ page_obj.paginator.num_pages }} 頁
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                            <a class="page-link" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">下一頁</a>
+                            </li>
+                            <li class="page-item">
+                            <a class="page-link" href="?{{ querystring }}&page={{ page_obj.paginator.num_pages }}">最後一頁 &raquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">下一頁</span></li>
+                            <li class="page-item disabled"><span class="page-link">最後一頁 &raquo;</span></li>
+                        {% endif %}
+                        </ul>
+                        {% endwith %}
+                </nav>
+            </div>
+            <!-- <div class="d-flex justify-content-center my-3">
                 <nav aria-label="Page navigation" class="mt-3">
                     <ul class="pagination justify-content-end">
                         {% if page_obj.has_previous %}
@@ -638,7 +677,7 @@
                         {% endif %}
                     </ul>
                 </nav>
-            </div>
+            </div> -->
         </form>
     </div>
 </div>
@@ -1143,30 +1182,47 @@ document.addEventListener("DOMContentLoaded", function () {
         const get = (status, field) =>
             filtered.find(item => item.invoice_status === status)?.[field] || 0;
 
-        document.getElementById(`${prefix}NotIssued`).textContent = get('未開立', 'invoice_count');
-        document.getElementById(`${prefix}NotIssuedAmount`).textContent = formatNumber(get('未開立', 'total_amount'));
-        document.getElementById(`${prefix}NotIssuedTaxAmount`).textContent = formatNumber(get('未開立', 'total_tax_amount'));
-        
-        document.getElementById(`${prefix}NotIssuedAllowance`).textContent = get('未開立', 'allowance_count');
-        document.getElementById(`${prefix}NotIssuedAllowanceAmount`).textContent = formatNumber(get('未開立', 'allowance_amount'));
-        document.getElementById(`${prefix}NotIssuedAllowanceTaxAmount`).textContent = formatNumber(get('未開立', 'allowance_tax'));
+        // 🔧 安全設定元素內容（避免 null 錯誤）
+        const safeSetText = (id, value) => {
+            const el = document.getElementById(id);
+            if (!el) {
+                console.warn(`⚠️ 無法找到 DOM ID: ${id}`);
+                return;
+            }
+            el.textContent = value;
+        };
 
+        // ✅ Debug Logs
+        console.log(`🔍 ${prefix} filtered data for company ${companyId}:`, filtered);
+        filtered.forEach(item => {
+            console.log(`🧾 狀態: ${item.invoice_status}, count: ${item.invoice_count}`);
+        });
 
-        document.getElementById(`${prefix}Issued`).textContent = get('已開立', 'invoice_count');
-        document.getElementById(`${prefix}IssuedAmount`).textContent = formatNumber(get('已開立', 'total_amount'));
-        document.getElementById(`${prefix}IssuedTaxAmount`).textContent = formatNumber(get('已開立', 'total_tax_amount'));
+        // 發票區塊
+        safeSetText(`${prefix}NotIssued`, get('未開立', 'invoice_count'));
+        safeSetText(`${prefix}NotIssuedAmount`, formatNumber(get('未開立', 'total_amount')));
+        safeSetText(`${prefix}NotIssuedTaxAmount`, formatNumber(get('未開立', 'total_tax_amount')));
 
-        document.getElementById(`${prefix}Allowance`).textContent = get('已開立', 'allowance_count');
-        document.getElementById(`${prefix}AllowanceAmount`).textContent = formatNumber(get('已開立', 'allowance_amount'));
-        document.getElementById(`${prefix}AllowanceTaxAmount`).textContent = formatNumber(get('已開立', 'allowance_tax'));
+        safeSetText(`${prefix}Issued`, get('已開立', 'invoice_count'));
+        safeSetText(`${prefix}IssuedAmount`, formatNumber(get('已開立', 'total_amount')));
+        safeSetText(`${prefix}IssuedTaxAmount`, formatNumber(get('已開立', 'total_tax_amount')));
 
-        document.getElementById(`${prefix}Canceled`).textContent = get('已作廢', 'invoice_count');
-        document.getElementById(`${prefix}CanceledAmount`).textContent = formatNumber(get('已作廢', 'total_amount'));
-        document.getElementById(`${prefix}CanceledTaxAmount`).textContent = formatNumber(get('已作廢', 'total_tax_amount'));
+        safeSetText(`${prefix}Canceled`, get('已作廢', 'invoice_count'));
+        safeSetText(`${prefix}CanceledAmount`, formatNumber(get('已作廢', 'total_amount')));
+        safeSetText(`${prefix}CanceledTaxAmount`, formatNumber(get('已作廢', 'total_tax_amount')));
 
-        document.getElementById(`${prefix}CanceledAllowance`).textContent = get('已作廢', 'allowance_count');
-        document.getElementById(`${prefix}CanceledAllowanceAmount`).textContent = formatNumber(get('已作廢', 'allowance_amount'));
-        document.getElementById(`${prefix}CanceledAllowanceTaxAmount`).textContent = formatNumber(get('已作廢', 'allowance_tax'));
+        // 折讓區塊
+        safeSetText(`${prefix}NotIssuedAllowance`, get('未開立', 'allowance_count'));
+        safeSetText(`${prefix}NotIssuedAllowanceAmount`, formatNumber(get('未開立', 'allowance_amount')));
+        safeSetText(`${prefix}NotIssuedAllowanceTaxAmount`, formatNumber(get('未開立', 'allowance_tax')));
+
+        safeSetText(`${prefix}Allowance`, get('已開立', 'allowance_count'));
+        safeSetText(`${prefix}AllowanceAmount`, formatNumber(get('已開立', 'allowance_amount')));
+        safeSetText(`${prefix}AllowanceTaxAmount`, formatNumber(get('已開立', 'allowance_tax')));
+
+        safeSetText(`${prefix}CanceledAllowance`, get('已作廢', 'allowance_count'));
+        safeSetText(`${prefix}CanceledAllowanceAmount`, formatNumber(get('已作廢', 'allowance_amount')));
+        safeSetText(`${prefix}CanceledAllowanceTaxAmount`, formatNumber(get('已作廢', 'allowance_tax')));
     }
 </script>
 <script>
@@ -1188,14 +1244,17 @@ document.addEventListener("DOMContentLoaded", function () {
             cancelReasonModal.show();
         });
     });
-
+    function showSystemMessage(message) {
+        document.getElementById("modalMessage").innerText = message;
+        new bootstrap.Modal(document.getElementById("resultModal")).show();
+    }
     // 輸入理由後點確認 -> 彈出最終確認 modal
     document.getElementById("confirmCancelInputBtn").addEventListener("click", function () {
         const reason = document.getElementById("cancelReason").value.trim();
         const remark = document.getElementById("cancelRemark").value.trim();
 
         if (!reason) {
-            alert("請輸入作廢理由！");
+            showSystemMessage("請輸入作廢理由！");
             return;
         }
 
@@ -1227,15 +1286,15 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                alert("作廢成功，G0501.xml 已產生！");
-                location.reload();
+                showSystemMessage("✅ " + data.message);
+                setTimeout(() => location.reload(), 1500);
             } else {
-                alert("作廢失敗：" + (data.message || "未知錯誤"));
+                showSystemMessage("❌ " + (data.message || "作廢失敗"));
             }
         })
         .catch(err => {
             console.error("作廢發生錯誤", err);
-            alert("作廢發生錯誤，請稍後再試。");
+            showSystemMessage("🚫 作廢發生錯誤，請稍後再試。");
         });
     });
 });

@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<RejectInvoiceConfirm xmlns="urn:GEINV:eInvoiceMessage:A0302:4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:GEINV:eInvoiceMessage:A0102:4.0 A0302.xsd">
+  <RejectInvoiceNumber>AB00001480</RejectInvoiceNumber>
+  <InvoiceDate>20250731</InvoiceDate>
+  <BuyerId>85491329</BuyerId>
+  <SellerId>65330715</SellerId>
+  <RejectDate>20250731</RejectDate>
+  <RejectTime>09:05:22</RejectTime>
+  <Remark>A</Remark>
+</RejectInvoiceConfirm>

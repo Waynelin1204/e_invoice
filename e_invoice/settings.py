@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'e_invoices',
     'widget_tweaks',  # For custom form widgets
+    'django_celery_beat'
 ]
 
 MIDDLEWARE = [
@@ -53,6 +55,13 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
 ]
+
+CELERY_BEAT_SCHEDULE = {
+    "e0502-run-every-5min": {
+        "task": "e_invoices.tasks.run_e0502_parsing_task",
+        "schedule": crontab(minute="*/1"),  # 每 5 分鐘執行一次
+    }
+}
 
 ROOT_URLCONF = 'e_invoice.urls'
 
@@ -110,8 +119,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 #LANGUAGE_CODE = 'en-us'
 LANGUAGE_CODE = 'zh-hant'
-TIME_ZONE = 'UTC'
-
+#TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Taipei'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True

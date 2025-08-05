@@ -42,14 +42,14 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from e_invoices.models import (
     RegisterForm, LoginForm,
     Twa0101, Twa0101Item, Ocr, Ocritem, Company, UserProfile,TWAllowance,TWAllowanceLineItem,
-    NumberDistribution, TWB2BMainItem, TWB2BLineItem
+    NumberDistribution, TWB2BMainItem, TWB2BLineItem, CompanyNotificationConfig, SystemConfig
 )
 from e_invoices.forms import NumberDistributionForm
 from e_invoices.services.validate_allowance import validate_allowance
 from decimal import Decimal, InvalidOperation
-from e_invoices.services import generate_G0401_xml_files, generate_G0501_xml_files, generate_allowance_pdf, send_allowance_summary_email, send_allowance_canceled_email
-output_path = r"C:\\Users\\waylin\\mydjango\\e_invoice\\print\\"
-to_email = "waylin@deloitte.com.tw"
+from e_invoices.services import generate_G0401_xml_files, generate_G0501_xml_files, generate_allowance_pdf, send_allowance_summary_email, send_allowance_canceled_email, send_allowance_deleted_email
+
+
 def update_decimal_field(obj, field_name, raw_val):
     """
     如果 raw_val 有值且為合法 Decimal，更新 obj 的指定欄位。
@@ -332,6 +332,22 @@ def twallowance_update(request, id):
 
 @csrf_exempt
 def twallowance_export_invoices(request):
+    config = SystemConfig.objects.first()
+    to_email = config.operator_output_email_address if config else None
+    F0401_XSD_path = config.F0401_XSD_path
+    F0501_XSD_path = config.F0501_XSD_path
+    G0401_XSD_path = config.G0401_XSD_path
+    G0501_XSD_path = config.G0501_XSD_path
+    A0201_XSD_path = config.A0201_XSD_path
+    A0301_XSD_path = config.A0301_XSD_path
+    A0101_XSD_path = config.A0101_XSD_path
+    A0102_XSD_path = config.A0102_XSD_path
+    A0202_XSD_path = config.A0202_XSD_path
+    A0302_XSD_path = config.A0302_XSD_path
+    B0101_XSD_path = config.B0101_XSD_path
+    B0102_XSD_path = config.B0101_XSD_path
+    B0201_XSD_path = config.B0201_XSD_path
+    B0202_XSD_path = config.B0101_XSD_path
     if request.method != 'POST':
         #return HttpResponse("Only POST allowed", status=405)
         return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
@@ -480,11 +496,12 @@ def twallowance_export_invoices(request):
                     except TWB2BMainItem.DoesNotExist:
                         pass  # 如找不到可記錄 log 或忽略
             
+            config = CompanyNotificationConfig.objects.filter(company__company_id=allowance.company.company_id).first()
 
-            output_dir_G0401 = r"C:\Users\waylin\mydjango\e_invoice\G0401"
-            xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\G0401.xsd"
-            generate_G0401_xml_files(allowance, output_dir_G0401, xsd_path)
-            generate_allowance_pdf(allowance, output_path)
+            output_dir_G0401 = config.output_dir_G0401
+            output_dir_A4_paper = config.output_dir_allowance_A4_paper
+            generate_G0401_xml_files(allowance, output_dir_G0401, G0401_XSD_path)
+            generate_allowance_pdf(allowance, output_dir_A4_paper)
 
             for item in allowance.items.all():
                 sheet.cell(row=row, column=1, value=allowance.company.company_id)
@@ -567,23 +584,59 @@ def twallowance_export_invoices(request):
 
 @csrf_exempt
 def twallowance_delete_selected_invoices(request):
+    config = SystemConfig.objects.first()
+    to_email = config.operator_output_email_address if config else None
+    F0401_XSD_path = config.F0401_XSD_path
+    F0501_XSD_path = config.F0501_XSD_path
+    G0401_XSD_path = config.G0401_XSD_path
+    G0501_XSD_path = config.G0501_XSD_path
+    A0201_XSD_path = config.A0201_XSD_path
+    A0301_XSD_path = config.A0301_XSD_path
+    A0101_XSD_path = config.A0101_XSD_path
+    A0102_XSD_path = config.A0102_XSD_path
+    A0202_XSD_path = config.A0202_XSD_path
+    A0302_XSD_path = config.A0302_XSD_path
+    B0101_XSD_path = config.B0101_XSD_path
+    B0102_XSD_path = config.B0101_XSD_path
+    B0201_XSD_path = config.B0201_XSD_path
+    B0202_XSD_path = config.B0101_XSD_path
     if request.method == 'POST':
         selected_ids_raw = request.POST.get('selected_documents', '')
         selected_ids = selected_ids_raw.split(',') if selected_ids_raw else []
+        
+        return_querystring = request.POST.get('return_querystring', '')  # ⬅️ 關鍵步驟
 
         if not selected_ids:
             messages.error(request, "刪除失敗：未選擇任何發票。")
-            return redirect('twallowance')
+            if return_querystring:
+                redirect_url += '?' + return_querystring
+            return redirect(redirect_url)
         
-        invoices_to_delete = TWAllowance.objects.filter(id__in=selected_ids, allowance_status="未開立")
-        deleted_count, _ = invoices_to_delete.delete()
+
+        invalid_condition = Q(allowance_status='已開立') | Q(allowance_status='已作廢')
+        allowance_to_delete = TWAllowance.objects.filter(id__in=selected_ids).prefetch_related('items').exclude(invalid_condition)
+        deleted_count = allowance_to_delete.count()
+
+        deleted_list=[]
+
+        deleted_list = [
+            f"{allowance.company.company_id} - {allowance.erp_number}"
+            for allowance in allowance_to_delete
+        ]
+
+        allowance_to_delete.delete()
 
         if deleted_count > 0:
-            messages.success(request, f"成功刪除 {deleted_count} 筆發票。")
-        else:
-            messages.warning(request, "未找到對應的發票資料，未進行刪除。")
+            send_allowance_deleted_email(to_email, deleted_count, deleted_list)
 
-        return redirect('twallowance')
+            messages.success(request, f"成功刪除 {deleted_count} 筆折讓單。")
+        else:
+            messages.warning(request, "所選取的發票皆為已開立發的折讓單未進行刪除。")
+        
+        redirect_url = reverse('twallowance')
+        if return_querystring:
+            redirect_url += '?' + return_querystring
+        return redirect(redirect_url)
     else:
         return redirect('twallowance')
         
@@ -666,6 +719,22 @@ def twallowance_delete_selected_invoices(request):
 
 @csrf_exempt
 def twallowance_update_cancel_status(request):
+    config = SystemConfig.objects.first()
+    to_email = config.operator_output_email_address if config else None
+    F0401_XSD_path = config.F0401_XSD_path
+    F0501_XSD_path = config.F0501_XSD_path
+    G0401_XSD_path = config.G0401_XSD_path
+    G0501_XSD_path = config.G0501_XSD_path
+    A0201_XSD_path = config.A0201_XSD_path
+    A0301_XSD_path = config.A0301_XSD_path
+    A0101_XSD_path = config.A0101_XSD_path
+    A0102_XSD_path = config.A0102_XSD_path
+    A0202_XSD_path = config.A0202_XSD_path
+    A0302_XSD_path = config.A0302_XSD_path
+    B0101_XSD_path = config.B0101_XSD_path
+    B0102_XSD_path = config.B0101_XSD_path
+    B0201_XSD_path = config.B0201_XSD_path
+    B0202_XSD_path = config.B0101_XSD_path
     if request.method != 'POST':
         return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
 
@@ -679,7 +748,6 @@ def twallowance_update_cancel_status(request):
             return JsonResponse({"success": False, "message": "缺少折讓單 ID"}, status=400)
         if not cancel_reason:
             return JsonResponse({"success": False, "message": "請輸入作廢理由"}, status=400)
-
         try:
             allowance= TWAllowance.objects.select_related('company').get(id=allowance_id)
         except TWAllowance.DoesNotExist:
@@ -687,9 +755,12 @@ def twallowance_update_cancel_status(request):
 
         if allowance.allowance_status == '未開立':
             return JsonResponse({"success": False, "message": "該折讓單為未開立狀態，無法作廢"}, status=400)
-        if allowance.allowance_status == '已開立折讓單':
-            return JsonResponse({"success": False, "message": "該折讓單已開立折讓單，無法作廢"}, status=400)
-        if allowance.mof_response != 'S0001':
+        elif allowance.allowance_status == '已作廢':
+            return JsonResponse({"success": False, "message": "該折讓單已作廢，無法再次作廢"}, status=400)
+        #elif allowance.allowance_status == '已開立折讓單':
+        #    return JsonResponse({"success": False, "message": "該折讓單已開立折讓單，無法作廢"}, status=400)
+        #    messages.error(request, f"該折讓單已開立折讓單，無法作廢")
+        elif allowance.mof_response != 'S0001':
             return JsonResponse({"success": False, "message": "該折讓單稅局未認證，無法作廢"}, status=400)
 
         
@@ -725,14 +796,13 @@ def twallowance_update_cancel_status(request):
         xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\G0501.xsd"
         generate_G0501_xml_files(allowance, output_dir_F0501, xsd_path)
 
-        to_email = "waylin@deloitte.com.tw"
         success_list = [f"{allowance.company.company_name} - {allowance.allowance_number}"]
         excluded_list = []
         send_allowance_canceled_email(to_email, success_count=1, excluded_count=0, success_list=success_list, excluded_list=excluded_list)
 
         allowance.save()
         return JsonResponse({"success": True, "message": "作廢成功並產出 G0501.xml"})
-
+ 
     except json.JSONDecodeError:
         return JsonResponse({"success": False, "message": "資料格式錯誤"}, status=400)
     except Exception as e:

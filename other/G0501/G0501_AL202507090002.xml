@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CancelAllowance xmlns="urn:GEINV:eInvoiceMessage:G0501:4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:GEINV:eInvoiceMessage:G0501:4.0 G0501.xsd">
+  <CancelAllowanceNumber>AL202507090002</CancelAllowanceNumber>
+  <AllowanceType>2</AllowanceType>
+  <AllowanceDate>20250721</AllowanceDate>
+  <BuyerId>84834924</BuyerId>
+  <SellerId>65330715</SellerId>
+  <CancelDate>20250721</CancelDate>
+  <CancelTime>06:32:23</CancelTime>
+  <CancelReason>Test</CancelReason>
+</CancelAllowance>

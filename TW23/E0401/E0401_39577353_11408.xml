@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BranchTrackBlank xmlns="urn:GEINV:eInvoiceMessage:E0401:4.0">
+  <Main>
+    <HeadBan>39577353</HeadBan>
+    <BranchBan>39577353</BranchBan>
+    <InvoiceType>07</InvoiceType>
+    <YearMonth>11408</YearMonth>
+    <InvoiceTrack>CD</InvoiceTrack>
+  </Main>
+  <Details>
+    <BranchTrackBlankItem>
+      <InvoiceBeginNo>00000016</InvoiceBeginNo>
+      <InvoiceEndNo>00001000</InvoiceEndNo>
+    </BranchTrackBlankItem>
+  </Details>
+</BranchTrackBlank>

@@ -44,6 +44,10 @@ from e_invoices.views import (
     twb2blineitem_update,
     twb2bmainitem_export_invoices_wo_number,
     twb2bmainitem_update_cancel_status,
+    twb2bmainitem_exchange_filter,
+    twb2bmainitem_export_invoices_exchange,
+    twb2bmainitem_exchange_update_cancel_status,
+    twb2bmainitem_exchange_reject_confirm,
 )
 
 from e_invoices.views import (
@@ -121,6 +125,11 @@ urlpatterns = [
     path('twb2bmainitem_update_cancel_status/', twb2bmainitem_update_cancel_status, name='twb2bmainitem_update_cancel_status'),
     path('document/<int:id>/update/', twb2blineitem_update, name='twb2blineitem_update'),
     path('twb2bmainitem_update_cancel_status/', twb2bmainitem_update_cancel_status, name="twb2bmainitem_update_cancel_status"),
+    path('twb2bmainitem_exchange_filter/', twb2bmainitem_exchange_filter, name="twb2bmainitem_exchange_filter"),
+    path("twb2bmainitem_export_invoices_exchange/", twb2bmainitem_export_invoices_exchange, name="twb2bmainitem_export_invoices_exchange"),
+    path('twb2bmainitem_exchange_update_cancel_status/', twb2bmainitem_exchange_update_cancel_status, name="twb2bmainitem_exchange_update_cancel_status"),
+    path('twb2bmainitem_exchange_reject_confirm', twb2bmainitem_exchange_reject_confirm, name="twb2bmainitem_exchange_reject_confirm"),
+    
 
 
 #-------------------for 折讓單-------------------

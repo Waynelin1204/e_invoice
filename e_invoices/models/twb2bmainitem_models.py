@@ -35,14 +35,16 @@ class TWB2BMainItem(models.Model):
     company_identifier = models.CharField(max_length=60, blank=True, null=True) #統一編號
     seller_bp_id = models.CharField(max_length=20, blank=True, null=True)
     seller_name = models.CharField(max_length=60,blank=True, null=True)
-    buyer_identifier = models.CharField(max_length=10,blank=True, null=True) #買方統編
-    buyer_name = models.CharField(max_length=60,blank=True, null=True)
-    buyer_bp_id = models.CharField(max_length=20, blank=True, null=True)
-    buyer_email = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True
-    )
+    #buyer_identifier = models.CharField(max_length=10,blank=True, null=True) #買方統編
+    buyer = models.ForeignKey('e_invoices.Buyer', related_name="twb2bmainitem_buyer", on_delete=models.PROTECT, blank=True, null=True)
+    #buyer_name = models.CharField(max_length=60,blank=True, null=True)
+    #buyer_bp_id = models.CharField(max_length=20, blank=True, null=True)
+    #buyer_email = models.CharField(
+    #    max_length=100,
+    #    blank=True,
+    #    null=True
+    #)
+    #buyer_temp = models.CharField(max_length=8, null=True, blank=True)
     buyer_remark = models.CharField(max_length=100, blank=True, null=True)
     main_remark = models.CharField(max_length=200, blank=True, null=True)
     #group_mark = models.CharField(max_length=1, blank=True, null=True)  # 彙開註記
@@ -119,12 +121,16 @@ class TWB2BMainItem(models.Model):
     accurated_allowance_amount = models.DecimalField(max_digits=13, decimal_places=1, blank=True, null=True)  # 累計折讓金額
     remaining_allowance_amount = models.DecimalField(max_digits=13, decimal_places=1, blank=True, null=True)  # 剩餘可折讓金額
     #description = models.CharField(max_length=255, blank=True, null=True)
-    #remark = models.CharField(max_length=120, blank=True, null=True)
+    remark = models.CharField(max_length=120, blank=True, null=True)
     #payment_status = models.CharField(max_length=10, blank=True, null=True)
     void_date = models.CharField(max_length=10, blank=True, null=True)
     void_time = models.CharField(max_length=10, blank=True, null=True)
     void_reason = models.CharField(max_length=225, blank=True, null=True)
     void_remark = models.CharField(max_length=225, blank=True, null=True)
+    reject_date = models.DateField(blank=True, null=True)     # 退回確認日
+    reject_time =  models.TimeField(blank=True, null=True)    # 退回確認時間
+    exchange_mode = models.BooleanField(default=False, blank=True, null=True)
+
    # 稅局拒絕理由
     def __str__(self):
         return f"{self.sys_number}"

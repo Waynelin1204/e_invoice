@@ -205,8 +205,8 @@ def draw_table_first_page(invoice, draw, canvas, start_cm, column_widths_cm, hea
     draw_text(draw, "電子發票證明聯", (0, 1.6), 0.8, align="center", page_width_px=page_width_px)
     draw_text(draw,  f"{invoice.invoice_date.strftime('%Y-%m-%d')}", (0, 3.3), 0.6, align="center", page_width_px=page_width_px)
     draw_text(draw, f"發票號碼: {invoice.invoice_number}", (1.3, 3.9), 0.5)
-    draw_text(draw, f"買方: {invoice.buyer_name}", (1.3, 4.6), 0.5)
-    draw_text(draw, f"統一編號: {invoice.buyer_identifier}", (1.3, 5.3), 0.5)
+    draw_text(draw, f"買方: {invoice.buyer.buyer_name}", (1.3, 4.6), 0.5)
+    draw_text(draw, f"統一編號: {invoice.buyer.buyer_identifier}", (1.3, 5.3), 0.5)
     draw_text(draw, f"地址: Taipei", (1.3, 6.0), 0.5)
     draw_text(draw, "格     式:25", (17.5, 3.9), 0.5)
     draw_text(draw, f"第1頁/共{(len(data_rows) - 14 + 19) // 20 + 1}頁", (17.2, 6.0), 0.5)
@@ -501,7 +501,7 @@ def render_and_merge_invoices(invoice, output_folder, column_widths_cm, headers,
     merger = PdfMerger()
     for pdf in page_files:
         merger.append(pdf)
-    invoice_filename = f"{invoice.invoice_number}_{invoice.buyer_identifier}_{invoice.invoice_date.strftime('%Y%m%d')}_stamp.pdf"
+    invoice_filename = f"{invoice.invoice_number}_{invoice.buyer.buyer_identifier}_{invoice.invoice_date.strftime('%Y%m%d')}_stamp.pdf"
     merged_path = os.path.join(output_folder, invoice_filename)
     merger.write(merged_path)
     merger.close()

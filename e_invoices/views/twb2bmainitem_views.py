@@ -43,13 +43,26 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from e_invoices.models import (
     RegisterForm, LoginForm,
     Twa0101, Twa0101Item, Ocr, Ocritem, Company, UserProfile,
-    NumberDistribution, TWB2BMainItem, TWB2BLineItem, TWAllowanceLineItem, TWAllowance
+    NumberDistribution, TWB2BMainItem, TWB2BLineItem, TWAllowanceLineItem, TWAllowance,
+    CompanyNotificationConfig, SystemConfig
 )
 from e_invoices.forms import NumberDistributionForm
-from e_invoices.services import generate_invoice_B2C_a4, generate_invoice_B2B_a4, generate_F0401_xml_files, generate_F0701_xml_files,generate_invoice_B2B_format25_pdf,  generate_F0501_xml_files
+from e_invoices.services import generate_invoice_B2C_a4, generate_invoice_B2B_a4,generate_invoice_B2B_format25_pdf
+from e_invoices.services import (
+    generate_F0501_xml_files,
+    generate_F0401_xml_files, 
+    generate_F0701_xml_files,
+    generate_A0101_xml_files,
+    generate_A0201_xml_files,
+    generate_A0302_xml_files
+    )
 from e_invoices.services import send_invoice_summary_email, generate_invoice_B2B_format25_pdf_stamp, send_invoice_canceled_email, send_number_low_storage_remind_email, send_insufficient_number_email, send_invoice_deleted_email
 from decimal import Decimal, InvalidOperation
-to_email = "waylin@deloitte.com.tw"
+
+
+#aes_key = str(config.AES_KEY)
+#aes_key = "73BE69AA9826613AFAEC11C215F08302"
+
 @login_required
 def twb2bmainitem(request):
     # 取得登入使用者的 UserProfile
@@ -260,6 +273,7 @@ def twb2bmainitem_filter(request):
 
     # 其他篩選條件
     invoice_status_filter = request.GET.get("invoice_status")
+    exchange_mode_filter = request.GET.get("exchange_mode")
     #void_status_filter = request.GET.get("void_status")
     tax_type_filter = request.GET.get("tax_type")
     company_id_filter = request.GET.get("company_id")  # 新增公司篩選條件
@@ -319,6 +333,11 @@ def twb2bmainitem_filter(request):
     # 加入公司權限過濾條件
     filters &= Q(company__in=viewable_company_codes)
 
+    filters &= Q(exchange_mode=False)
+
+    filters &= Q(buyer__exchange_mode=False)
+       
+
     # 查詢所有符合條件的發票資料
     documents = TWB2BMainItem.objects.filter(filters).order_by('-erp_date')
 
@@ -368,11 +387,27 @@ def twb2bmainitem_filter(request):
 
 #======================================================B2B發票匯出=======================================================
 
-aes_key = "73BE69AA9826613AFAEC11C215F08302"
-output_path = r"C:\\Users\\waylin\\mydjango\\e_invoice\\print\\"
+
 
 @csrf_exempt
 def twb2bmainitem_export_invoices(request):
+    config = SystemConfig.objects.first()
+    to_email = config.operator_output_email_address if config else None
+
+    F0401_XSD_path = config.F0401_XSD_path
+    F0501_XSD_path = config.F0501_XSD_path
+    G0401_XSD_path = config.G0401_XSD_path
+    G0501_XSD_path = config.G0501_XSD_path
+    A0201_XSD_path = config.A0201_XSD_path
+    A0301_XSD_path = config.A0301_XSD_path
+    A0101_XSD_path = config.A0101_XSD_path
+    A0102_XSD_path = config.A0101_XSD_path
+    A0202_XSD_path = config.A0101_XSD_path
+    A0302_XSD_path = config.A0101_XSD_path
+    B0101_XSD_path = config.B0101_XSD_path
+    B0102_XSD_path = config.B0101_XSD_path
+    B0201_XSD_path = config.B0201_XSD_path
+    B0202_XSD_path = config.B0101_XSD_path
     if request.method != 'POST':
         #return HttpResponse("Only POST allowed", status=405)
         return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
@@ -480,9 +515,10 @@ def twb2bmainitem_export_invoices(request):
         if total_available < count_needed:
             insufficient_companies.append(f"公司 {company_obj.company_name}（剩 {total_available} 張，需求 {count_needed} 張）")
 
-        # elif (total_available > count_needed) and (total_available < 30) :
-            # 如果剩餘號碼大於需求但小於30，則發送提醒郵件
-            # send_number_low_storage_remind_email(to_email, total_available)
+        elif (total_available > count_needed) and (total_available < 30) :
+        
+        # 如果剩餘號碼大於需求但小於30，則發送提醒郵件
+            send_number_low_storage_remind_email(to_email,  company_id, total_available)
             
 
     #if insufficient_companies:
@@ -583,18 +619,23 @@ def twb2bmainitem_export_invoices(request):
             #output_path = r"C:\Users\waylin\mydjango\e_invoice\print"
 
             #output_dir = r"C:\Users\waylin\mydjango\e_invoice\print"
-            output_dir_F0401 = r"C:\Users\waylin\mydjango\e_invoice\F0401"
-            xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\F0401.xsd"
+            #output_dir_F0401 = r"C:\Users\waylin\mydjango\e_invoice\F0401"
+            #xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\F0401.xsd"
             
+            configs = CompanyNotificationConfig.objects.filter(company__company_id=company_id).first()
+            output_dir_F0401 = configs.output_dir_F0401
+            aes_key = configs.AES_KEY
+            output_dir_heatsense_paper = configs.output_dir_invoice_heatsense_paper
+            output_dir_A4_paper = configs.output_dir_invoice_A4_paper
 
             #img_path = generate_invoice_a4(invoice, aes_key, output_dir)
 
 
-            generate_invoice_B2C_a4(invoice, aes_key, output_path, random_codes)
-            generate_invoice_B2B_a4(invoice, aes_key, output_path)
-            generate_F0401_xml_files(invoice, output_dir_F0401, xsd_path,random_codes)
-            generate_invoice_B2B_format25_pdf(invoice, output_path)
-            generate_invoice_B2B_format25_pdf_stamp(invoice, output_path)
+            generate_invoice_B2C_a4(invoice, aes_key, output_dir_heatsense_paper, random_codes)
+            generate_invoice_B2B_a4(invoice, aes_key, output_dir_heatsense_paper)
+            generate_F0401_xml_files(invoice, output_dir_F0401, F0401_XSD_path,random_codes)
+            generate_invoice_B2B_format25_pdf(invoice, output_dir_A4_paper)
+            generate_invoice_B2B_format25_pdf_stamp(invoice, output_dir_A4_paper)
             
 
 
@@ -801,14 +842,31 @@ def twb2bmainitem_export_invoices_wo_number(request):
 
 @csrf_exempt
 def twb2bmainitem_delete_selected_invoices(request):
+    config = SystemConfig.objects.first()
+    to_email = config.operator_output_email_address if config else None
+
+    F0401_XSD_path = config.F0401_XSD_path
+    F0501_XSD_path = config.F0501_XSD_path
+    G0401_XSD_path = config.G0401_XSD_path
+    G0501_XSD_path = config.G0501_XSD_path
+    A0201_XSD_path = config.A0201_XSD_path
+    A0301_XSD_path = config.A0301_XSD_path
+    A0101_XSD_path = config.A0101_XSD_path
+    A0102_XSD_path = config.A0101_XSD_path
+    A0202_XSD_path = config.A0101_XSD_path
+    A0302_XSD_path = config.A0101_XSD_path
+    B0101_XSD_path = config.B0101_XSD_path
+    B0102_XSD_path = config.B0101_XSD_path
+    B0201_XSD_path = config.B0201_XSD_path
+    B0202_XSD_path = config.B0101_XSD_path
     if request.method == 'POST':
         selected_ids_raw = request.POST.get('selected_documents', '')
         #selected_ids = selected_ids_raw.split(',') if selected_ids_raw else []
         selected_ids = [int(x) for x in selected_ids_raw.split(",") if x.strip().isdigit()]
         
 
-        return_querystring = request.POST.get('return_querystring', '')  # ⬅️ 關鍵步驟
 
+        return_querystring = request.POST.get('return_querystring', '')  # ⬅️ 關鍵步驟
         print("選取的 ID：", selected_ids)
 
         if not selected_ids:
@@ -829,7 +887,7 @@ def twb2bmainitem_delete_selected_invoices(request):
         deleted_list=[]
 
         deleted_list = [
-            f"{inv.company.company_name} - {inv.erp_number}"
+            f"{inv.company.company_id} - {inv.erp_number}"
             for inv in invoices_to_delete
         ]
 
@@ -841,7 +899,7 @@ def twb2bmainitem_delete_selected_invoices(request):
             send_invoice_deleted_email(to_email, deleted_count, deleted_list)
             messages.success(request, f"成功刪除 {deleted_count} 筆發票。")
         else:
-            messages.warning(request, "所選取的發票皆為開立發票，請重新選取。")
+            messages.warning(request, "所選取的發票皆為已開立的發票，請重新選取。")
 
         redirect_url = reverse('twb2bmainitem_filter')
         if return_querystring:
@@ -955,6 +1013,23 @@ def twb2bmainitem_delete_selected_invoices(request):
 
 @csrf_exempt
 def twb2bmainitem_update_cancel_status(request):
+    config = SystemConfig.objects.first()
+    to_email = config.operator_output_email_address if config else None
+
+    F0401_XSD_path = config.F0401_XSD_path
+    F0501_XSD_path = config.F0501_XSD_path
+    G0401_XSD_path = config.G0401_XSD_path
+    G0501_XSD_path = config.G0501_XSD_path
+    A0201_XSD_path = config.A0201_XSD_path
+    A0301_XSD_path = config.A0301_XSD_path
+    A0101_XSD_path = config.A0101_XSD_path
+    A0102_XSD_path = config.A0101_XSD_path
+    A0202_XSD_path = config.A0101_XSD_path
+    A0302_XSD_path = config.A0101_XSD_path
+    B0101_XSD_path = config.B0101_XSD_path
+    B0102_XSD_path = config.B0101_XSD_path
+    B0201_XSD_path = config.B0201_XSD_path
+    B0202_XSD_path = config.B0101_XSD_path
     if request.method != 'POST':
         return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
 
@@ -966,25 +1041,31 @@ def twb2bmainitem_update_cancel_status(request):
 
         if not invoice_id:
             return JsonResponse({"success": False, "message": "缺少發票 ID"}, status=400)
+            
         if not cancel_reason:
             return JsonResponse({"success": False, "message": "請輸入作廢理由"}, status=400)
+            
 
         try:
             invoice = TWB2BMainItem.objects.select_related('company').get(id=invoice_id)
         except TWB2BMainItem.DoesNotExist:
             return JsonResponse({"success": False, "message": "找不到該發票"}, status=404)
 
+
         if invoice.invoice_status == '未開立':
             return JsonResponse({"success": False, "message": "該發票為未開立狀態，無法作廢"}, status=400)
-        if invoice.allowance_status == '已開立折讓單':
+            
+        elif invoice.allowance_status == '已開立折讓單':
             return JsonResponse({"success": False, "message": "該發票已開立折讓單，無法作廢"}, status=400)
-        if invoice.mof_response != 'S0001':
+            
+        elif invoice.mof_response != 'S0001':
             return JsonResponse({"success": False, "message": "該發票稅局未認證，無法作廢"}, status=400)
         
         try:
             invoice_period = int(invoice.invoice_period)  # 確保是整數，如 11412
         except (ValueError, TypeError):
             return JsonResponse({"success": False, "message": "發票期別資料異常"}, status=400)
+            
         
         now = localtime()
         current_roc_year = now.year - 1911
@@ -999,11 +1080,13 @@ def twb2bmainitem_update_cancel_status(request):
                 }, status=400)
 
 
+
         invoice.cancel_date = now.date()
         invoice.cancel_time = now.time()
         invoice.cancel_reason = cancel_reason
         invoice.cancel_remark = cancel_remark
         invoice.invoice_status = "已作廢"
+        
         invoice.save()
 
 
@@ -1012,12 +1095,11 @@ def twb2bmainitem_update_cancel_status(request):
 
 
         # 產生 F0501 XML
-        output_dir_F0501 = r"C:\Users\waylin\mydjango\e_invoice\F0501"
-        xsd_path = r"C:\Users\waylin\mydjango\e_invoice\valid_xml\F0501.xsd"
-        generate_F0501_xml_files(invoice, output_dir_F0501, xsd_path)
+        configs = CompanyNotificationConfig.objects.filter(company__company_id=invoice.company.company_id).first()
+        output_dir_F0501 = configs.output_dir_F0501
+        generate_F0501_xml_files(invoice, output_dir_F0501, F0501_XSD_path)
 
         # ✅ 發送作廢成功通知信
-        to_email = "waylin@deloitte.com.tw"
         success_list = [f"{invoice.company.company_name} - {invoice.invoice_number}"]
         excluded_list = []
         send_invoice_canceled_email(to_email, success_count=1, excluded_count=0, success_list=success_list, excluded_list=excluded_list)
@@ -1033,6 +1115,495 @@ def twb2bmainitem_update_cancel_status(request):
     
     
     
+def twb2bmainitem_exchange_filter(request):
+    config = SystemConfig.objects.first()
+    # 預設顯示筆數
+    display_limit = int(request.GET.get("display_limit", 20))  # 默認為20筆資料
+
+    # 其他篩選條件
+    invoice_status_filter = request.GET.get("invoice_status")
+    #void_status_filter = request.GET.get("void_status")
+    tax_type_filter = request.GET.get("tax_type")
+    company_id_filter = request.GET.get("company_id")  # 新增公司篩選條件
+
+
+    # 取得登入使用者的 UserProfile
+    user_profile = request.user.profile
+
+    # 取得該使用者可查看的公司名稱列表
+    company_options = user_profile.viewable_companies.all()
+    #viewable_company_codes = user_profile.viewable_companies.values_list('id', flat=True)
+    viewable_company_codes = user_profile.viewable_companies.values_list('company_id', flat=True)
+
+
+
+    # 計算兩個月前的日期
+    two_months_ago = datetime.today() - timedelta(days=60)
+
+    # 取得時間範圍的過濾條件（默認從兩個月前開始）
+    start_date = request.GET.get("start_date", two_months_ago.strftime('%Y-%m-%d'))
+    end_date = request.GET.get("end_date", datetime.today().strftime('%Y-%m-%d'))
+
+    # 轉換成 datetime 格式
+    try:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    except ValueError:
+        start_date = two_months_ago  # 如果格式錯誤，使用預設的兩個月前日期
+
+    try:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    except ValueError:
+        end_date = datetime.today()  # 如果格式錯誤，使用今天的日期
+
+    if (end_date - start_date).days > 60:
+        messages.error(request, "查詢區間不得超過 60 天")
+        return redirect('twb2bmainitem')
+    if start_date > end_date:
+        messages.error(request, "開始日期不能大於結束日期")
+        return redirect('twb2bmainitem')
+    
+    # 查詢條件構建
+    filters = Q()
+    if invoice_status_filter:
+        filters &= Q(invoice_status=invoice_status_filter)
+    
+    #if void_status_filter:
+    #    filters &= Q(void_status=void_status_filter)
+    if tax_type_filter:
+        filters &= Q(tax_type=tax_type_filter)
+    if company_id_filter:
+        filters &= Q(company_id=company_id_filter)
+
+    # 限制在兩個月前到今天的時間範圍內
+    filters &= Q(erp_date__range=[start_date, end_date])
+
+
+    # 加入公司權限過濾條件
+    filters &= Q(company__in=viewable_company_codes)
+
+    # ✅ 加入買家有使用交換模式的條件
+    filters &= Q(buyer__exchange_mode=True)
+
+    # ✅ 查詢所有符合條件的發票資料，並預載 buyer 以避免 N+1 查詢
+    documents = TWB2BMainItem.objects.select_related("buyer").filter(filters).order_by('-erp_date')
+
+    for document in documents:
+        document.is_disabled = (
+            document.invoice_status == '已作廢' or
+            (
+                document.tax_type == '2' and (
+                    (document.zerotax_sales_amount or 0) <= 0 or
+                    not document.customs_clearance_mark or
+                    not document.bonded_area_confirm or
+                    not document.zero_tax_rate_reason
+                )
+            )
+        )
+
+
+    # 分頁
+    paginator = Paginator(documents, display_limit)  # 每頁顯示的資料筆數
+    page_number = request.GET.get('page')  # 獲取當前頁碼
+    page_obj = paginator.get_page(page_number)  # 根據頁碼獲取相應的頁面資料
+
+    # 獲取篩選條件的選項
+    invoice_status = TWB2BMainItem.objects.values_list('invoice_status', flat=True).distinct()
+    #void_status = TWB2BMainItem.objects.values_list('void_status', flat=True).distinct()
+    tax_type = TWB2BMainItem.objects.values_list('tax_type', flat=True).distinct()
+
+    # 檢查公司ID篩選是否有效
+    if company_id_filter and company_id_filter not in viewable_company_codes:
+        messages.error(request, "您無權限查看該公司資料")
+        return redirect('twb2bmainitem')
+    
+
+    return render(request, "twb2bmainitem_exchange_filter.html", {
+        "company_id_filter": company_id_filter,
+        "documents": page_obj,  # 傳遞分頁結果
+        "company_options": company_options,
+        "invoice_status": invoice_status,
+        "tax_type_filter": tax_type_filter,
+        "invoice_status_filter": invoice_status_filter,
+        #"void_status": void_status,
+        "tax_type": tax_type,
+        "display_limit": display_limit,  # 傳遞選擇的筆數
+        "start_date": start_date.strftime('%Y-%m-%d'),  # 顯示篩選的開始日期
+        "end_date": end_date.strftime('%Y-%m-%d'),  # 顯示篩選的結束日期
+    })
+
+#======================================================B2B交換模式銷項發票開立(A0101)=======================================================
+@csrf_exempt
+def twb2bmainitem_export_invoices_exchange(request):
+    config = SystemConfig.objects.first()
+    to_email = config.operator_output_email_address if config else None
+    A0101_XSD_path = config.A0101_XSD_path
+
+    if request.method != 'POST':
+        #return HttpResponse("Only POST allowed", status=405)
+        return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
+    
+    raw_ids = request.POST.get("selected_documents", "")
+    selected_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
+    print(selected_ids)
+    return_querystring = request.POST.get('return_querystring', '')  # ⬅️ 關鍵步驟
+
+    if not selected_ids:
+        messages.error(request, "開立失敗：未選擇任何發票。")
+        redirect_url = reverse('twb2bmainitem_exchange_filter')
+        if return_querystring:
+            redirect_url += '?' + return_querystring
+        return redirect(redirect_url)
+
+    # if not selected_ids:
+    #     return JsonResponse({"success": False, "message": "請至少選擇一筆未開立發票"}, status=400)
+
+    #invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items')
+    # 零稅率欄位不合法的條件
+    zero_tax_invalid = (
+        Q(tax_type='2') & (
+            Q(zerotax_sales_amount__lte=0) |
+            Q(customs_clearance_mark__in=[None, '']) |
+            Q(bonded_area_confirm__in=[None, '']) |
+            Q(zero_tax_rate_reason__in=[None, ''])
+        )
+    )
+
+    # 綜合排除條件
+    invalid_condition = Q(invoice_status='已開立') | zero_tax_invalid
+
+    invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items').exclude(invalid_condition)
+
+    #if not invoices.exists():
+    #     return HttpResponse("No invoices found", status=404)
+    if not invoices.exists():
+        messages.error(request, "找不到可配號的發票，請確認是否重複或資料不完整")
+        redirect_url = reverse('twb2bmainitem_exchange_filter')
+        if return_querystring:
+            redirect_url += '?' + return_querystring
+        return redirect(redirect_url)
+
+    # 1️⃣ 統計各公司所需發票數
+    invoice_count_by_company_id = defaultdict(int)
+
+    for invoice in invoices:
+        invoice_count_by_company_id[invoice.company.company_id] += 1
+
+    # 2️⃣ 建立公司代碼對應的 Company 資料（查主鍵）
+    company_map = {
+        company.company_id: company for company in Company.objects.filter(company_id__in=invoice_count_by_company_id.keys())
+    }
+
+    # 3️⃣ 驗證每間公司是否有足夠的號碼可以使用
+    insufficient_companies = []
+
+    for company_id, count_needed in invoice_count_by_company_id.items():
+        company_obj = company_map.get(company_id)
+        if not company_obj:
+            insufficient_companies.append(f"公司代碼 {company_id} 找不到對應公司資料")
+            continue
+
+        distributions = NumberDistribution.objects.filter(
+            company=company_obj,
+            status='available'
+        )
+
+        total_available = sum(
+            int(d.end_number) - int(d.current_number or d.start_number) + 1
+            for d in distributions
+        )
+
+        if total_available < count_needed:
+            insufficient_companies.append(f"公司 {company_obj.company_name}（剩 {total_available} 張，需求 {count_needed} 張）")
+
+        elif (total_available > count_needed) and (total_available < 30) :
+        
+        # 如果剩餘號碼大於需求但小於30，則發送提醒郵件
+            send_number_low_storage_remind_email(to_email,  company_id, total_available)
+
+    if insufficient_companies:
+        messages.warning(request, f"號碼不足，請檢查以下公司：\n" + "\n".join(insufficient_companies))
+
+    # 4️⃣ 準備號碼池（以 company.id 為 key）
+    number_pool = defaultdict(list)
+    for dist in NumberDistribution.objects.filter(status='available'):
+        number_pool[dist.company.company_id].append(dist)
+
+    success_invoices = []
+    # 6️⃣ 開始配號與寫入 Excel
+    with transaction.atomic():
+
+        for invoice in invoices:
+            
+
+            company_obj = company_map.get(invoice.company.company_id)
+            if not company_obj:
+                #raise ValueError(f"找不到公司代碼為 {invoice.company_id} 的公司資料")
+                raise ValueError(f"找不到公司代碼為 {invoice.company.company_id} 的公司資料")
+
+
+            distributions = sorted(
+                #number_pool[company_obj.id],
+                number_pool[company_obj.company_id],
+                key=lambda d: int(d.current_number or d.start_number)
+            )
+
+            
+
+            # 找一組號碼配給發票
+            assigned = False
+            for dist in distributions:
+                current = int(dist.current_number or dist.start_number)
+                invoice_number = f"{dist.initial_char}{str(current).zfill(len(dist.start_number))}"
+
+                if current <= int(dist.end_number):
+                    if invoice.invoice_number:
+                        invoice.invoice_number = invoice.invoice_number
+                        invoice.invoice_date = invoice.invoice_date
+                        invoice.invoice_time = invoice.invoice_time
+                        invoice.invoice_period = invoice.invoice_period
+                        invoice.invoice_status = '註銷後重開'
+                    else:    
+                        invoice.invoice_number = invoice_number
+                        invoice.invoice_date = localtime(timezone.now()).replace(tzinfo=None).date()
+                        invoice.invoice_time = localtime(timezone.now()).strftime('%H:%M:%S')
+                        invoice.exchange_mode = True
+                        invoice.invoice_period = dist.period
+                        dist.current_number = str(current + 1).zfill(len(dist.start_number))
+                        dist.last_used_date = timezone.now().date()
+                        dist.save()
+                        invoice.invoice_status = '已開立'
+
+                    
+                    invoice.export_date = localtime(timezone.now()).replace(tzinfo=None).date()
+                    
+                    invoice.save()
+                    success_invoices.append(invoice)
+                    assigned = True
+                    break
+
+            if not assigned:
+                #raise ValueError(f"公司 {company_obj.company_name} 號碼區間不足")
+                messages.warning(request, f"{company_obj.company_name} 號碼配發失敗，號碼區間不足")
+                redirect_url = reverse('twb2bmainitem_filter')
+                if return_querystring:
+                    redirect_url += '?' + return_querystring
+                return redirect(redirect_url)
+
+            configs = CompanyNotificationConfig.objects.filter(company__company_id=company_id).first()
+            output_dir_A0101 = configs.output_dir_A0101
+            generate_A0101_xml_files(invoice, output_dir_A0101, A0101_XSD_path)
+            output_dir_A4_paper = configs.output_dir_invoice_A4_paper
+            generate_invoice_B2B_format25_pdf(invoice, output_dir_A4_paper)
+            generate_invoice_B2B_format25_pdf_stamp(invoice, output_dir_A4_paper)
+
+
+    # 先找出所有選取的發票
+    all_selected_invoices = TWB2BMainItem.objects.filter(id__in=selected_ids).prefetch_related('items')
+    
+    # 被排除發票
+    
+    excluded_invoices = []
+
+    for inv in all_selected_invoices:
+        reasons = []
+        if inv.tax_type == '2':
+            if inv.zerotax_sales_amount <= 0:
+                reasons.append("零稅率金額為 0")
+            if not inv.customs_clearance_mark:
+                reasons.append("缺少報關註記")
+            if not inv.bonded_area_confirm:
+                reasons.append("缺少保稅註記")
+            if not inv.zero_tax_rate_reason:
+                reasons.append("缺少零稅率原因")
+
+        if reasons:
+            excluded_invoices.append({
+                "company_name": inv.company.company_name,
+                "invoice_number": inv.invoice_number or "(尚未配號)",
+                "reasons": reasons
+            })
+
+    # 這裡才正確
+    success_count = len(success_invoices)
+    excluded_count = len(excluded_invoices)
+
+    success_list = [
+        f"{inv.company.company_name} - {inv.invoice_number}"
+        for inv in success_invoices
+    ]
+    excluded_list = [
+        f"{e['company_name']} - {e['invoice_number']}：{', '.join(e['reasons'])}"
+        for e in excluded_invoices
+    ]
+
+    send_invoice_summary_email(to_email, success_count, excluded_count,success_list, excluded_list)
+    messages.success(request, f"成功配號 {success_count} 張發票")
+    
+    redirect_url = reverse('twb2bmainitem_exchange_filter')
+    if return_querystring:
+            redirect_url += '?' + return_querystring
+    return redirect(redirect_url)
+
+#======================================================B2B交換模式銷項發票作廢(A0201)=======================================================
+
+@csrf_exempt
+def twb2bmainitem_exchange_update_cancel_status(request):
+    config = SystemConfig.objects.first()
+    to_email = config.operator_output_email_address if config else None
+    A0201_XSD_path = config.A0201_XSD_path
+    if request.method != 'POST':
+        return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        invoice_id = data.get("invoice_id")
+        cancel_reason = data.get("cancel_reason", "").strip()
+        cancel_remark = data.get("cancel_remark", "").strip()
+
+        if not invoice_id:
+            return JsonResponse({"success": False, "message": "缺少發票 ID"}, status=400)
+            
+        if not cancel_reason:
+            return JsonResponse({"success": False, "message": "請輸入作廢理由"}, status=400)
+            
+
+        try:
+            invoice = TWB2BMainItem.objects.select_related('company').get(id=invoice_id)
+        except TWB2BMainItem.DoesNotExist:
+            return JsonResponse({"success": False, "message": "找不到該發票"}, status=404)
+
+
+        if invoice.invoice_status == '未開立':
+            return JsonResponse({"success": False, "message": "該發票為未開立狀態，無法作廢"}, status=400)
+            
+        elif invoice.allowance_status == '已開立折讓單':
+            return JsonResponse({"success": False, "message": "該發票已開立折讓單，無法作廢"}, status=400)
+            
+        elif invoice.mof_response != 'S0001':
+            return JsonResponse({"success": False, "message": "該發票稅局未認證，無法作廢"}, status=400)
+        
+        try:
+            invoice_period = int(invoice.invoice_period)  # 確保是整數，如 11412
+        except (ValueError, TypeError):
+            return JsonResponse({"success": False, "message": "發票期別資料異常"}, status=400)
+            
+        
+        now = localtime()
+        current_roc_year = now.year - 1911
+        current_roc_month = now.month
+        current_period = current_roc_year * 100 + current_roc_month  # e.g., 11502
+        
+        if invoice_period < current_period:
+            if not invoice.returntax_document_number or invoice.returntax_document_number.strip() == '':
+                return JsonResponse({
+                    "success": False,
+                    "message": "跨期作廢的發票需填寫專案作廢核准文號(returntax_document_number)。"
+                }, status=400)
+
+
+
+        invoice.cancel_date = now.date()
+        invoice.cancel_time = now.time()
+        invoice.cancel_reason = cancel_reason
+        invoice.cancel_remark = cancel_remark
+        invoice.invoice_status = "已作廢"
+        
+        invoice.save()
+
+
+        
+        # ✅ 檢查是否跨期作廢 → 要填 returntax_document_number
+
+
+        # 產生 F0201 XML
+        configs = CompanyNotificationConfig.objects.filter(company__company_id=invoice.company.company_id).first()
+        output_dir_A0201 = configs.output_dir_A0201
+        print(output_dir_A0201)
+        generate_A0201_xml_files(invoice, output_dir_A0201, A0201_XSD_path)
+
+        # ✅ 發送作廢成功通知信
+        success_list = [f"{invoice.company.company_name} - {invoice.invoice_number}"]
+        excluded_list = []
+        send_invoice_canceled_email(to_email, success_count=1, excluded_count=0, success_list=success_list, excluded_list=excluded_list)
+
+        invoice.save()
+        
+        return JsonResponse({"success": True, "message": "作廢成功並產出 A0201.xml"})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "資料格式錯誤"}, status=400)
+    except Exception as e:
+        print(e)
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+    
+#======================================================B2B交換模式銷項發票退回確認(A0302)=======================================================
+@csrf_exempt
+def twb2bmainitem_exchange_reject_confirm(request):
+    config = SystemConfig.objects.first()
+    to_email = config.operator_output_email_address if config else None
+    A0302_XSD_path = config.A0302_XSD_path
+    if request.method != 'POST':
+        return JsonResponse({"success": False, "message": "Only POST allowed"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        invoice_id = data.get("invoice_id")
+        remark = data.get("remark", "").strip()
+
+        if not invoice_id:
+            return JsonResponse({"success": False, "message": "缺少發票 ID"}, status=400)
+            
+
+        try:
+            invoice = TWB2BMainItem.objects.select_related('company').get(id=invoice_id)
+        except TWB2BMainItem.DoesNotExist:
+            return JsonResponse({"success": False, "message": "找不到該發票"}, status=404)
+        try:
+            invoice_period = int(invoice.invoice_period)  # 確保是整數，如 11412
+        except (ValueError, TypeError):
+            return JsonResponse({"success": False, "message": "發票期別資料異常"}, status=400)
+            
+        
+        now = localtime()
+        current_roc_year = now.year - 1911
+        current_roc_month = now.month
+        current_period = current_roc_year * 100 + current_roc_month  # e.g., 11502
+    
+
+        invoice.reject_date = now.date()
+
+        invoice.reject_time = now.time()
+        invoice.remark = remark
+        invoice.invoice_status = "退回已確認"
+        
+        invoice.save()
+
+
+        
+
+
+
+        # 產生 F0201 XML
+        configs = CompanyNotificationConfig.objects.filter(company__company_id=invoice.company.company_id).first()
+        output_dir_A0302 = configs.output_dir_A0302
+        generate_A0302_xml_files(invoice, output_dir_A0302, A0302_XSD_path)
+
+        # ✅ 發送作廢成功通知信
+        success_list = [f"{invoice.company.company_name} - {invoice.invoice_number}"]
+        excluded_list = []
+        #send_invoice_canceled_email(to_email, success_count=1, excluded_count=0, success_list=success_list, excluded_list=excluded_list)
+
+        invoice.save()
+        
+        return JsonResponse({"success": True, "message": "退回確認成功並產出 A0302.xml"})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "資料格式錯誤"}, status=400)
+    except Exception as e:
+        print(e)
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+    
+
 
 # @csrf_exempt
 # def twb2bmainitem_update_cancel_status(request):
